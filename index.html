@@ -205,13 +205,9 @@ async function saveConfig(cfg) {
 }
 
 // ===== PROGRESS DATA =====
-function getData(ck) {
-  return cache['progress_' + ck] || {};
-}
-
-async function saveData(ck, data) {
-  await apiSave('progress_' + ck, data);
-}
+function progressKey(ck, speaker) { return `progress_${ck}_${speaker}`; }
+function getData(ck, speaker) { return cache[progressKey(ck, speaker)] || {}; }
+async function saveData(ck, speaker, data) { await apiSave(progressKey(ck, speaker), data); }
 
 function taskKey(wi, ti) { return `w${wi}_t${ti}`; }
 function noteKey(wi, ti) { return `w${wi}_t${ti}_note`; }
@@ -222,8 +218,10 @@ function buildUserMap() {
   const map = {};
   map[cfg.adminPassword] = { role: 'admin' };
   cfg.pairs.forEach(p => {
-    if (p.consultant) map[p.consultant] = { role: 'consultant', speaker: p.speaker, consultantKey: p.consultant };
-    if (p.speaker) map[p.speaker] = { role: 'speaker', consultant: p.consultant, consultantKey: p.consultant };
+    // 顧問：可有多個講者，只記 role
+    if (p.consultant && !map[p.consultant]) map[p.consultant] = { role: 'consultant', consultantKey: p.consultant };
+    // 講者：對應到哪位顧問
+    if (p.speaker) map[p.speaker] = { role: 'speaker', consultantKey: p.consultant, speaker: p.speaker };
   });
   return map;
 }
@@ -293,12 +291,11 @@ function renderApp() {
     renderAdmin();
   } else if (currentRole === 'consultant') {
     document.getElementById('headerTitle').textContent = '顧問進度回報';
-    renderConsultant(currentConsultantKey, true);
+    renderConsultantOverview(currentConsultantKey);
   } else {
     document.getElementById('headerTitle').textContent = '我的進度';
     const users = buildUserMap();
-    const ck = users[currentUser].consultantKey;
-    renderConsultant(ck, false);
+    renderConsultant(users[currentUser].consultantKey, users[currentUser].speaker, false);
   }
 }
 
@@ -308,19 +305,15 @@ function renderAdmin() {
   let html = '';
   cfg.pairs.forEach((p, pi) => {
     if (!p.consultant && !p.speaker) return;
-    const ck = p.consultant;
-    const data = getData(ck);
+    const data = getData(p.consultant, p.speaker);
     const total = WEEKS.reduce((s, w) => s + w.tasks.length, 0);
     const done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
     const pct = total ? Math.round(done / total * 100) : 0;
-
     const weekDots = WEEKS.map((w, wi) => {
-      const wT = w.tasks.length;
       const wD = w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length;
-      let cls = wD === wT ? 'done' : wD > 0 ? 'partial' : '';
+      const cls = wD === w.tasks.length ? 'done' : wD > 0 ? 'partial' : '';
       return `<span class="week-dot ${cls}">${w.label}</span>`;
     }).join('');
-
     html += `
       <div class="pair-card">
         <div class="pair-header">
@@ -328,13 +321,13 @@ function renderAdmin() {
           <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
           <span class="progress-pct">${pct}%</span>
         </div>
-        ${p.presentationTime ? `<div style="font-size:13px; color:#888; margin-bottom:6px;">簡報時間：${p.presentationTime}</div>` : ''}
+        ${p.presentationTime ? `<div style="font-size:13px;color:#888;margin-bottom:6px;">簡報時間：${p.presentationTime}</div>` : ''}
         <div class="week-dots">${weekDots}</div>
-        <button class="expand-btn" onclick="toggleDetail('ad_${pi}', this)">查看詳細 ▼</button>
-        <div id="ad_${pi}" style="display:none; margin-top:12px;">${renderWeeksReadonly(ck)}</div>
+        <button class="expand-btn" onclick="toggleDetail('ad_${pi}',this)">查看詳細 ▼</button>
+        <div id="ad_${pi}" style="display:none;margin-top:12px;">${renderWeeksReadonly(p.consultant, p.speaker)}</div>
       </div>`;
   });
-  document.getElementById('mainContent').innerHTML = html || '<div class="card"><p style="color:#888;">尚未設定任何配對，請至⚙️設定頁面新增。</p></div>';
+  document.getElementById('mainContent').innerHTML = html || '<div class="card"><p style="color:#888;">尚未設定任何配對，請至設定頁面新增。</p></div>';
 }
 
 function toggleDetail(id, btn) {
@@ -343,8 +336,8 @@ function toggleDetail(id, btn) {
   btn.textContent = el.style.display === 'none' ? '查看詳細 ▼' : '收起 ▲';
 }
 
-function renderWeeksReadonly(ck) {
-  const data = getData(ck);
+function renderWeeksReadonly(ck, speaker) {
+  const data = getData(ck, speaker);
   return WEEKS.map((w, wi) => {
     const tasks = w.tasks.map((t, ti) => {
       const checked = data[taskKey(wi, ti)] ? 'checked' : '';
@@ -354,7 +347,7 @@ function renderWeeksReadonly(ck) {
         <input type="checkbox" class="task-check" ${checked} disabled>
         <div class="task-content">
           <div class="task-label ${cls}">${t}</div>
-          ${note ? `<div style="font-size:13px;color:#888;margin-top:4px;">📝 ${note}</div>` : ''}
+          ${note ? `<div style="font-size:13px;color:#888;margin-top:4px;">備註：${note}</div>` : ''}
         </div>
       </div>`;
     }).join('');
@@ -362,18 +355,56 @@ function renderWeeksReadonly(ck) {
   }).join('');
 }
 
-// ===== CONSULTANT VIEW =====
-function renderConsultant(ck, canEdit) {
+// ===== CONSULTANT OVERVIEW =====
+function renderConsultantOverview(ck) {
   const cfg = getConfig();
-  const pair = cfg.pairs.find(p => p.consultant === ck) || {};
-  const data = getData(ck);
+  const myPairs = cfg.pairs.filter(p => p.consultant === ck && (p.consultant || p.speaker));
+  if (myPairs.length === 0) {
+    document.getElementById('mainContent').innerHTML = '<div class="card"><p style="color:#888;">目前尚未配對任何講者。</p></div>';
+    return;
+  }
+  if (myPairs.length === 1) {
+    renderConsultant(ck, myPairs[0].speaker, true);
+    return;
+  }
+  let html = '<div class="weeks-container">';
+  myPairs.forEach(p => {
+    const data = getData(ck, p.speaker);
+    const total = WEEKS.reduce((s, w) => s + w.tasks.length, 0);
+    const done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
+    const pct = total ? Math.round(done / total * 100) : 0;
+    html += `
+      <div class="pair-card" style="cursor:pointer;" onclick="renderConsultant('${ck}','${p.speaker}',true)">
+        <div class="pair-header">
+          <span class="pair-title">${p.speaker || '—'}</span>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+          <span class="progress-pct">${pct}%</span>
+        </div>
+        ${p.presentationTime ? `<div style="font-size:13px;color:#888;margin-top:6px;">簡報時間：${p.presentationTime}</div>` : ''}
+        <div style="font-size:13px;color:#c0392b;margin-top:10px;">點擊查看詳細進度 →</div>
+      </div>`;
+  });
+  html += '</div>';
+  document.getElementById('mainContent').innerHTML = html;
+}
+
+// ===== CONSULTANT DETAIL =====
+function renderConsultant(ck, speaker, canEdit) {
+  const cfg = getConfig();
+  const myPairs = cfg.pairs.filter(p => p.consultant === ck);
+  const data = getData(ck, speaker);
   const total = WEEKS.reduce((s, w) => s + w.tasks.length, 0);
   const done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
   const pct = total ? Math.round(done / total * 100) : 0;
 
   let html = '';
-  if (canEdit && pair.speaker) {
-    html += `<div class="speaker-info"><p>配對講者：<strong>${pair.speaker}</strong></p></div>`;
+  if (canEdit && myPairs.length > 1) {
+    html += `<div style="margin-bottom:16px;">
+      <button class="btn btn-sm btn-outline" onclick="renderConsultantOverview('${ck}')">← 返回</button>
+    </div>`;
+  }
+  if (speaker) {
+    html += `<div class="speaker-info"><p>輔導講者：<strong>${speaker}</strong></p></div>`;
   }
   html += `
     <div class="overall-progress">
@@ -392,15 +423,14 @@ function renderConsultant(ck, canEdit) {
       const cls = data[taskKey(wi, ti)] ? 'checked' : '';
       const dis = canEdit ? '' : 'disabled';
       return `<div class="task-item">
-        <input type="checkbox" class="task-check" id="cb_${wi}_${ti}" ${checked} ${dis} onchange="toggleTask('${ck}',${wi},${ti},this)">
+        <input type="checkbox" class="task-check" id="cb_${wi}_${ti}" ${checked} ${dis} onchange="toggleTask('${ck}','${speaker}',${wi},${ti},this)">
         <div class="task-content">
           <div class="task-label ${cls}" id="lbl_${wi}_${ti}">${t}</div>
           <textarea class="task-note" id="note_${wi}_${ti}" ${dis} placeholder="${canEdit ? '備註（選填）' : ''}"
-            onchange="saveNote('${ck}',${wi},${ti},this.value)">${note}</textarea>
+            onchange="saveNote('${ck}','${speaker}',${wi},${ti},this.value)">${note}</textarea>
         </div>
       </div>`;
     }).join('');
-
     html += `<div class="week-card">
       <div class="week-header" onclick="toggleWeek('wb_${wi}')">
         <div><h3>${w.label}</h3><div class="week-sub">${w.theme}</div></div>
@@ -412,8 +442,8 @@ function renderConsultant(ck, canEdit) {
 
   html += '</div>';
   if (canEdit) {
-    html += `<div style="margin-top:20px; padding-bottom:20px;">
-      <button class="btn" onclick="saveAll('${ck}')">儲存</button>
+    html += `<div style="margin-top:20px;padding-bottom:20px;">
+      <button class="btn" onclick="saveAll('${ck}','${speaker}')">儲存</button>
     </div>`;
   }
   document.getElementById('mainContent').innerHTML = html;
@@ -426,8 +456,8 @@ function renderConsultant(ck, canEdit) {
 
 function toggleWeek(id) { document.getElementById(id)?.classList.toggle('open'); }
 
-async function toggleTask(ck, wi, ti, cb) {
-  const data = getData(ck);
+async function toggleTask(ck, speaker, wi, ti, cb) {
+  const data = getData(ck, speaker);
   data[taskKey(wi, ti)] = cb.checked;
   const lbl = document.getElementById(`lbl_${wi}_${ti}`);
   if (lbl) lbl.className = 'task-label' + (cb.checked ? ' checked' : '');
@@ -438,11 +468,11 @@ async function toggleTask(ck, wi, ti, cb) {
   const txt = document.querySelector('.overall-pct-text');
   if (fill) fill.style.width = pct + '%';
   if (txt) txt.textContent = pct + '%';
-  await saveData(ck, data);
+  await saveData(ck, speaker, data);
 }
 
-async function saveAll(ck) {
-  const data = getData(ck);
+async function saveAll(ck, speaker) {
+  const data = getData(ck, speaker);
   WEEKS.forEach((w, wi) => {
     w.tasks.forEach((_, ti) => {
       const cb = document.getElementById(`cb_${wi}_${ti}`);
@@ -452,15 +482,15 @@ async function saveAll(ck) {
     });
   });
   showLoader(true, '儲存中...');
-  await saveData(ck, data);
+  await saveData(ck, speaker, data);
   showLoader(false);
   showToast('✅ 已儲存！');
 }
 
-async function saveNote(ck, wi, ti, val) {
-  const data = getData(ck);
+async function saveNote(ck, speaker, wi, ti, val) {
+  const data = getData(ck, speaker);
   data[noteKey(wi, ti)] = val;
-  await saveData(ck, data);
+  await saveData(ck, speaker, data);
 }
 
 // ===== SETTINGS PAGE =====
