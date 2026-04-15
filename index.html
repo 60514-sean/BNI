@@ -178,7 +178,7 @@ const WEEKS = [
   { label: '倒數5週', theme: '定出主題', tasks: ['提供EDM資訊','訂出主題','合作對象','理想引薦','夢幻引薦','提供形象照'] },
   { label: '倒數4週', theme: '邀請來賓', tasks: ['製作簡報','列來賓名單'] },
   { label: '倒數3週', theme: '請求資源', tasks: ['群組告知適合邀約之來賓','EDM完成'] },
-  { label: '倒數2週', theme: '簡報演練', tasks: ['交稿','約Re稿時間','自己練好8分鐘完整版','Re完後最後調整定稿','給網管組貼文文案'] },
+  { label: '倒數2週', theme: '簡報演練', tasks: ['交稿','約Re稿時間','自己練習好5分鐘完整版','Re完後最後調整定稿','給網管組貼文文案'] },
   { label: '倒數1週', theme: '跟進來賓', tasks: ['簡報日「前10天」上傳定稿簡報','來賓出席確認'] },
   { label: '當週', theme: '尊榮時刻', tasks: ['準備500元以上價值禮物','週五提早到場熟悉環境','適應簡報筆'] }
 ];
@@ -391,10 +391,10 @@ function renderConsultant(ck, canEdit) {
       const cls = data[taskKey(wi, ti)] ? 'checked' : '';
       const dis = canEdit ? '' : 'disabled';
       return `<div class="task-item">
-        <input type="checkbox" class="task-check" ${checked} ${dis} onchange="toggleTask('${ck}',${wi},${ti},this)">
+        <input type="checkbox" class="task-check" id="cb_${wi}_${ti}" ${checked} ${dis} onchange="toggleTask('${ck}',${wi},${ti},this)">
         <div class="task-content">
           <div class="task-label ${cls}" id="lbl_${wi}_${ti}">${t}</div>
-          <textarea class="task-note" ${dis} placeholder="${canEdit ? '備註（選填）' : ''}"
+          <textarea class="task-note" id="note_${wi}_${ti}" ${dis} placeholder="${canEdit ? '備註（選填）' : ''}"
             onchange="saveNote('${ck}',${wi},${ti},this.value)">${note}</textarea>
         </div>
       </div>`;
@@ -410,6 +410,11 @@ function renderConsultant(ck, canEdit) {
   });
 
   html += '</div>';
+  if (canEdit) {
+    html += `<div style="margin-top:20px; padding-bottom:20px;">
+      <button class="btn" onclick="saveAll('${ck}')">儲存</button>
+    </div>`;
+  }
   document.getElementById('mainContent').innerHTML = html;
 
   for (let wi = 0; wi < WEEKS.length; wi++) {
@@ -433,6 +438,22 @@ async function toggleTask(ck, wi, ti, cb) {
   if (fill) fill.style.width = pct + '%';
   if (txt) txt.textContent = pct + '%';
   await saveData(ck, data);
+}
+
+async function saveAll(ck) {
+  const data = getData(ck);
+  WEEKS.forEach((w, wi) => {
+    w.tasks.forEach((_, ti) => {
+      const cb = document.getElementById(`cb_${wi}_${ti}`);
+      const note = document.getElementById(`note_${wi}_${ti}`);
+      if (cb) data[taskKey(wi, ti)] = cb.checked;
+      if (note) data[noteKey(wi, ti)] = note.value;
+    });
+  });
+  showLoader(true, '儲存中...');
+  await saveData(ck, data);
+  showLoader(false);
+  showToast('✅ 已儲存！');
 }
 
 async function saveNote(ck, wi, ti, val) {
@@ -464,7 +485,7 @@ function showSettings() {
         <p class="hint">負責人用這個名稱登入系統</p>
       </div>
       <div style="margin-top:12px;">
-        <button class="btn btn-sm btn-green" onclick="saveSettings()">💾 儲存設定</button>
+        <button class="btn btn-sm" onclick="saveSettings()">儲存設定</button>
       </div>
     </div>
 
@@ -476,12 +497,12 @@ function showSettings() {
         <button class="add-pair-btn" onclick="addPair()">＋ 新增配對</button>
       </div>
       <div style="margin-top:12px;">
-        <button class="btn btn-sm btn-green" onclick="saveSettings()">💾 儲存設定</button>
+        <button class="btn btn-sm" onclick="saveSettings()">儲存設定</button>
       </div>
     </div>
 
     <div style="display:flex; gap:10px; flex-wrap:wrap;">
-      <button class="btn btn-sm btn-green" onclick="saveSettings()">💾 儲存設定</button>
+      <button class="btn btn-sm" onclick="saveSettings()">儲存設定</button>
       <button class="btn btn-sm btn-gray" onclick="renderApp()">取消</button>
     </div>
   `;
