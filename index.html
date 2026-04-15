@@ -605,7 +605,7 @@ function renderConsultant(ck, speaker, canEdit) {
         <input type="checkbox" class="task-check" id="scb_${ti}" ${checked} ${dis} onchange="toggleTaskSimple('${ck}','${speaker}',${ti},this)">
         <div class="task-content">
           <div class="task-label ${cls}" id="slbl_${ti}">${t}</div>
-          <textarea class="task-note" id="snote_${ti}" placeholder="備註（顧問與講者共筆）"
+          <textarea class="task-note" id="snote_${ti}" placeholder=""
             onchange="saveNoteSimple('${ck}','${speaker}',${ti},this.value)">${note}</textarea>
         </div>
       </div>`;
@@ -630,7 +630,7 @@ function renderConsultant(ck, speaker, canEdit) {
           <input type="checkbox" class="task-check" id="cb_${wi}_${ti}" ${checked} ${dis} onchange="toggleTask('${ck}','${speaker}',${wi},${ti},this)">
           <div class="task-content">
             <div class="task-label ${cls}" id="lbl_${wi}_${ti}">${t}</div>
-            <textarea class="task-note" id="note_${wi}_${ti}" placeholder="${WEEK_HINTS[wi]?.[ti] || '備註（顧問與講者共筆）'}"
+            <textarea class="task-note" id="note_${wi}_${ti}" placeholder="${WEEK_HINTS[wi]?.[ti] || ''}"
               onchange="saveNote('${ck}','${speaker}',${wi},${ti},this.value)">${note}</textarea>
           </div>
         </div>`;
