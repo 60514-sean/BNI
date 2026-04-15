@@ -605,14 +605,14 @@ function renderConsultant(ck, speaker, canEdit) {
         <input type="checkbox" class="task-check" id="scb_${ti}" ${checked} ${dis} onchange="toggleTaskSimple('${ck}','${speaker}',${ti},this)">
         <div class="task-content">
           <div class="task-label ${cls}" id="slbl_${ti}">${t}</div>
-          <textarea class="task-note" id="snote_${ti}" ${dis} placeholder="${canEdit ? '備註（選填）' : ''}"
+          <textarea class="task-note" id="snote_${ti}" placeholder="備註（顧問與講者共筆）"
             onchange="saveNoteSimple('${ck}','${speaker}',${ti},this.value)">${note}</textarea>
         </div>
       </div>`;
     }).join('');
     html += `</div></div>`;
     if (canEdit) html += `<div style="margin-top:20px;padding-bottom:20px;"><button class="btn" style="background:${color}" onclick="saveAllSimple('${ck}','${speaker}')">儲存</button></div>`;
-    if (!canEdit) html += `</div>`; // close tabProgress
+    if (!canEdit) html += `<div style="margin-top:16px;padding-bottom:20px;"><button class="btn" style="background:${color}" onclick="saveAllSimple('${ck}','${speaker}')">儲存備註</button></div></div>`;// close tabProgress
   } else {
     // 6週進度
     const { currentWeekIdx } = getPresentationInfo(pair.presentationTime);
@@ -630,7 +630,7 @@ function renderConsultant(ck, speaker, canEdit) {
           <input type="checkbox" class="task-check" id="cb_${wi}_${ti}" ${checked} ${dis} onchange="toggleTask('${ck}','${speaker}',${wi},${ti},this)">
           <div class="task-content">
             <div class="task-label ${cls}" id="lbl_${wi}_${ti}">${t}</div>
-            <textarea class="task-note" id="note_${wi}_${ti}" ${dis} placeholder="${WEEK_HINTS[wi]?.[ti] || (canEdit ? '備註（選填）' : '')}"
+            <textarea class="task-note" id="note_${wi}_${ti}" placeholder="${WEEK_HINTS[wi]?.[ti] || '備註（顧問與講者共筆）'}"
               onchange="saveNote('${ck}','${speaker}',${wi},${ti},this.value)">${note}</textarea>
           </div>
         </div>`;
@@ -648,7 +648,7 @@ function renderConsultant(ck, speaker, canEdit) {
     });
     html += `</div>`;
     if (canEdit) html += `<div style="margin-top:20px;padding-bottom:20px;"><button class="btn" onclick="saveAll('${ck}','${speaker}')">儲存</button></div>`;
-    if (!canEdit) html += `</div>`; // close tabProgress
+    if (!canEdit) html += `<div style="margin-top:16px;padding-bottom:20px;"><button class="btn" style="background:${color}" onclick="saveAll('${ck}','${speaker}')">儲存備註</button></div></div>`; // close tabProgress
 
     document.getElementById('mainContent').innerHTML = html;
     for (let wi = 0; wi < WEEKS.length; wi++) {
