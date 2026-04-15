@@ -343,8 +343,8 @@ function renderAdmin() {
           return `<span class="week-dot ${cls}">${w.label}</span>`;
         }).join('');
     const dates = [
-      p.submitDate1 ? `${DATE_LABELS[0]}：${p.submitDate1}` : '',
-      p.submitDate2 ? `${DATE_LABELS[1]}：${p.submitDate2}` : '',
+      isSimpleType(act) && p.submitDate1 ? `${DATE_LABELS[0]}：${p.submitDate1}` : '',
+      isSimpleType(act) && p.submitDate2 ? `${DATE_LABELS[1]}：${p.submitDate2}` : '',
       p.presentationTime ? `${DATE_LABELS[2]}：${p.presentationTime}` : '',
     ].filter(Boolean).join('　');
     const detail = isSimpleType(act) ? renderSimpleReadonly(p.consultant, p.speaker) : renderWeeksReadonly(p.consultant, p.speaker);
@@ -432,8 +432,8 @@ function renderConsultantOverview(ck) {
     }
     const pct = total ? Math.round(done / total * 100) : 0;
     const dates = [
-      p.submitDate1 ? `${DATE_LABELS[0]}：${p.submitDate1}` : '',
-      p.submitDate2 ? `${DATE_LABELS[1]}：${p.submitDate2}` : '',
+      isSimpleType(act) && p.submitDate1 ? `${DATE_LABELS[0]}：${p.submitDate1}` : '',
+      isSimpleType(act) && p.submitDate2 ? `${DATE_LABELS[1]}：${p.submitDate2}` : '',
       p.presentationTime ? `${DATE_LABELS[2]}：${p.presentationTime}` : '',
     ].filter(Boolean).join('　');
     html += `
@@ -470,8 +470,8 @@ function renderConsultant(ck, speaker, canEdit) {
   const pct = total ? Math.round(done / total * 100) : 0;
 
   const dates = [
-    pair.submitDate1 ? `${DATE_LABELS[0]}：${pair.submitDate1}` : '',
-    pair.submitDate2 ? `${DATE_LABELS[1]}：${pair.submitDate2}` : '',
+    isSimpleType(act) && pair.submitDate1 ? `${DATE_LABELS[0]}：${pair.submitDate1}` : '',
+    isSimpleType(act) && pair.submitDate2 ? `${DATE_LABELS[1]}：${pair.submitDate2}` : '',
     pair.presentationTime ? `${DATE_LABELS[2]}：${pair.presentationTime}` : '',
   ].filter(Boolean);
 
@@ -808,14 +808,18 @@ function readFormIntoCfg() {
   cfg.adminPassword = document.getElementById('adminPw')?.value.trim() || cfg.adminPassword;
   // sync YMD selects to hidden inputs before reading
   cfg.pairs.forEach((_, i) => { syncYMD(i, 1); syncYMD(i, 2); });
-  cfg.pairs = cfg.pairs.map((_, i) => ({
-    activityType: document.getElementById(`act_${i}`)?.value || '主題簡報',
-    consultant: document.getElementById(`con_${i}`)?.value.trim() || '',
-    speaker: document.getElementById(`spk_${i}`)?.value.trim() || '',
-    submitDate1: document.getElementById(`time1_${i}`)?.value.trim() || '',
-    submitDate2: document.getElementById(`time2_${i}`)?.value.trim() || '',
-    presentationTime: document.getElementById(`time3_${i}`)?.value.trim() || '',
-  }));
+  cfg.pairs = cfg.pairs.map((_, i) => {
+    const act = document.getElementById(`act_${i}`)?.value || '主題簡報';
+    const simple = isSimpleType(act);
+    return {
+      activityType: act,
+      consultant: document.getElementById(`con_${i}`)?.value.trim() || '',
+      speaker: document.getElementById(`spk_${i}`)?.value.trim() || '',
+      submitDate1: simple ? (document.getElementById(`time1_${i}`)?.value.trim() || '') : '',
+      submitDate2: simple ? (document.getElementById(`time2_${i}`)?.value.trim() || '') : '',
+      presentationTime: document.getElementById(`time3_${i}`)?.value.trim() || '',
+    };
+  });
   return cfg;
 }
 
