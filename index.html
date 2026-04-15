@@ -143,7 +143,7 @@
     <h2 id="headerTitle">簡報進度系統</h2>
     <div class="header-right">
       <span class="user-badge" id="userBadge"></span>
-      <button class="settings-btn" id="settingsBtn" onclick="showSettings()" style="display:none">⚙️ 設定</button>
+      <button class="settings-btn" id="settingsBtn" onclick="showSettings()" style="display:none">設定</button>
       <button class="logout-btn" onclick="doLogout()">登出</button>
     </div>
   </div>
@@ -328,6 +328,7 @@ function renderAdmin() {
           <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
           <span class="progress-pct">${pct}%</span>
         </div>
+        ${p.presentationTime ? `<div style="font-size:13px; color:#888; margin-bottom:6px;">簡報時間：${p.presentationTime}</div>` : ''}
         <div class="week-dots">${weekDots}</div>
         <button class="expand-btn" onclick="toggleDetail('ad_${pi}', this)">查看詳細 ▼</button>
         <div id="ad_${pi}" style="display:none; margin-top:12px;">${renderWeeksReadonly(ck)}</div>
@@ -468,16 +469,22 @@ function showSettings() {
   const cfg = getConfig();
 
   let pairsHtml = cfg.pairs.map((p, i) => `
-    <div class="pair-row" id="pairRow_${i}">
-      <input type="text" placeholder="顧問姓名" value="${p.consultant || ''}" id="con_${i}" />
-      <span class="pair-arrow">↔</span>
-      <input type="text" placeholder="講者姓名" value="${p.speaker || ''}" id="spk_${i}" />
-      <button class="btn btn-sm btn-danger" onclick="removePair(${i})">刪除</button>
+    <div style="border:1px solid #eee; border-radius:8px; padding:12px; margin-bottom:10px;" id="pairRow_${i}">
+      <div class="pair-row" style="margin-bottom:8px;">
+        <input type="text" placeholder="顧問姓名" value="${p.consultant || ''}" id="con_${i}" />
+        <span class="pair-arrow">↔</span>
+        <input type="text" placeholder="講者姓名" value="${p.speaker || ''}" id="spk_${i}" />
+        <button class="btn btn-sm btn-danger" onclick="removePair(${i})">刪除</button>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <label style="font-size:13px; color:#555; white-space:nowrap;">簡報時間</label>
+        <input type="text" placeholder="例：2026/05/08 07:30" value="${p.presentationTime || ''}" id="time_${i}" style="flex:1; padding:6px 10px; border:1px solid #ddd; border-radius:6px; font-size:13px; outline:none;" />
+      </div>
     </div>`).join('');
 
   document.getElementById('mainContent').innerHTML = `
     <div class="card">
-      <div class="card-title">👤 負責人登入密碼</div>
+      <div class="card-title">負責人登入密碼</div>
       <div class="settings-section">
         <div class="admin-pw-row">
           <input type="text" id="adminPw" value="${cfg.adminPassword}" placeholder="負責人姓名／密碼" />
@@ -490,7 +497,7 @@ function showSettings() {
     </div>
 
     <div class="card">
-      <div class="card-title">👥 顧問與講者配對</div>
+      <div class="card-title">顧問與講者配對</div>
       <div class="settings-section">
         <p class="hint" style="margin-bottom:12px;">左側輸入顧問姓名，右側輸入對應講者姓名，姓名即為登入密碼</p>
         <div id="pairsContainer">${pairsHtml}</div>
@@ -513,7 +520,8 @@ function readFormIntoCfg() {
   cfg.adminPassword = document.getElementById('adminPw')?.value.trim() || cfg.adminPassword;
   cfg.pairs = cfg.pairs.map((_, i) => ({
     consultant: document.getElementById(`con_${i}`)?.value.trim() || '',
-    speaker: document.getElementById(`spk_${i}`)?.value.trim() || ''
+    speaker: document.getElementById(`spk_${i}`)?.value.trim() || '',
+    presentationTime: document.getElementById(`time_${i}`)?.value.trim() || ''
   }));
   return cfg;
 }
