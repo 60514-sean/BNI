@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>簡報進度追蹤系統</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Microsoft JhengHei', Arial, sans-serif; background: #f5f5f5; color: #333; }
+
+  /* LOGIN */
+  .login-page { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+  .login-box { background: white; border-radius: 16px; padding: 40px 32px; width: 100%; max-width: 400px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; }
+  .login-box h1 { font-size: 24px; color: #c0392b; margin-bottom: 8px; }
+  .login-box p { color: #888; margin-bottom: 24px; font-size: 14px; }
+  .login-box input { width: 100%; padding: 12px 16px; border: 2px solid #eee; border-radius: 8px; font-size: 16px; margin-bottom: 16px; outline: none; transition: border 0.2s; }
+  .login-box input:focus { border-color: #c0392b; }
+  .btn { background: #c0392b; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; cursor: pointer; width: 100%; transition: background 0.2s; }
+  .btn:hover { background: #a93226; }
+  .btn-sm { padding: 7px 16px; font-size: 13px; width: auto; border-radius: 6px; }
+  .btn-outline { background: white; color: #c0392b; border: 2px solid #c0392b; }
+  .btn-outline:hover { background: #fdf0f0; }
+  .btn-gray { background: #888; }
+  .btn-gray:hover { background: #666; }
+  .btn-green { background: #27ae60; }
+  .btn-green:hover { background: #1e8449; }
+  .btn-danger { background: #e74c3c; }
+  .btn-danger:hover { background: #c0392b; }
+  .error-msg { color: #c0392b; font-size: 14px; margin-top: 8px; }
+
+  /* APP */
+  .app { display: none; min-height: 100vh; }
+  .header { background: #c0392b; color: white; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .header h2 { font-size: 18px; }
+  .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .user-badge { background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 14px; }
+  .logout-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  .settings-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+
+  .content { padding: 20px; max-width: 900px; margin: 0 auto; }
+
+  /* TABS */
+  .tab-bar { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .tab { padding: 8px 18px; border-radius: 20px; border: 2px solid #c0392b; color: #c0392b; background: white; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+  .tab.active { background: #c0392b; color: white; }
+
+  /* CARDS */
+  .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 16px; }
+  .card-title { font-size: 16px; font-weight: bold; color: #c0392b; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid #f0f0f0; }
+
+  /* ADMIN OVERVIEW */
+  .pair-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 16px; }
+  .pair-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+  .pair-title { font-size: 16px; font-weight: bold; color: #333; }
+  .progress-bar-wrap { background: #eee; border-radius: 10px; height: 10px; flex: 1; margin: 0 12px; min-width: 80px; }
+  .progress-bar-fill { background: #c0392b; height: 10px; border-radius: 10px; transition: width 0.3s; }
+  .progress-pct { font-size: 14px; color: #c0392b; font-weight: bold; min-width: 36px; text-align: right; }
+  .week-dots { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .week-dot { padding: 4px 10px; border-radius: 20px; font-size: 12px; background: #eee; color: #888; }
+  .week-dot.done { background: #c0392b; color: white; }
+  .week-dot.partial { background: #e8a0a0; color: white; }
+  .expand-btn { background: none; border: 1px solid #ddd; border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; color: #666; margin-top: 8px; }
+
+  /* WEEKS */
+  .weeks-container { display: grid; gap: 16px; }
+  .week-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .week-header { background: #c0392b; color: white; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+  .week-header h3 { font-size: 16px; }
+  .week-header .week-sub { font-size: 13px; opacity: 0.85; }
+  .week-body { padding: 16px 20px; display: none; }
+  .week-body.open { display: block; }
+  .task-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+  .task-item:last-child { border-bottom: none; }
+  .task-check { width: 20px; height: 20px; accent-color: #c0392b; cursor: pointer; margin-top: 2px; flex-shrink: 0; }
+  .task-check:disabled { cursor: not-allowed; opacity: 0.5; }
+  .task-content { flex: 1; }
+  .task-label { font-size: 15px; color: #333; line-height: 1.4; }
+  .task-label.checked { text-decoration: line-through; color: #aaa; }
+  .task-note { width: 100%; border: 1px solid #e0e0e0; border-radius: 6px; padding: 6px 10px; font-size: 13px; color: #555; resize: none; min-height: 36px; outline: none; font-family: inherit; transition: border 0.2s; margin-top: 6px; }
+  .task-note:focus { border-color: #c0392b; }
+  .task-note:disabled { background: #fafafa; cursor: not-allowed; color: #888; }
+  .task-note::placeholder { color: #bbb; }
+
+  .overall-progress { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .overall-progress h3 { font-size: 15px; color: #666; margin-bottom: 10px; }
+  .overall-bar-wrap { background: #eee; border-radius: 10px; height: 14px; }
+  .overall-bar-fill { background: #c0392b; height: 14px; border-radius: 10px; transition: width 0.3s; }
+  .overall-pct-text { font-size: 22px; font-weight: bold; color: #c0392b; margin-top: 8px; }
+  .speaker-info { background: white; border-radius: 12px; padding: 16px 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+
+  /* SETTINGS */
+  .settings-section { margin-bottom: 24px; }
+  .settings-section h3 { font-size: 15px; font-weight: bold; color: #555; margin-bottom: 12px; }
+  .pair-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .pair-row input { flex: 1; min-width: 120px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; outline: none; }
+  .pair-row input:focus { border-color: #c0392b; }
+  .pair-arrow { color: #c0392b; font-size: 18px; font-weight: bold; }
+  .add-pair-btn { display: flex; align-items: center; gap: 6px; background: none; border: 2px dashed #c0392b; color: #c0392b; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; margin-top: 4px; }
+  .add-pair-btn:hover { background: #fdf0f0; }
+  .hint { font-size: 13px; color: #888; margin-top: 6px; }
+  .success-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #27ae60; color: white; padding: 12px 24px; border-radius: 8px; font-size: 15px; z-index: 9999; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+
+  /* ADMIN PASSWORD */
+  .admin-pw-row { display: flex; gap: 8px; align-items: center; }
+  .admin-pw-row input { flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; outline: none; }
+
+  @media (max-width: 600px) {
+    .content { padding: 12px; }
+    .login-box { padding: 28px 20px; }
+    .pair-row { flex-direction: row; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-page" id="loginPage">
+  <div class="login-box">
+    <h1>🎤 簡報進度系統</h1>
+    <p>請輸入您的姓名登入</p>
+    <input type="text" id="nameInput" placeholder="輸入姓名" />
+    <button class="btn" onclick="doLogin()">登入</button>
+    <div class="error-msg" id="loginError"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="appPage">
+  <div class="header">
+    <h2 id="headerTitle">簡報進度系統</h2>
+    <div class="header-right">
+      <span class="user-badge" id="userBadge"></span>
+      <button class="settings-btn" id="settingsBtn" onclick="showSettings()" style="display:none">⚙️ 設定</button>
+      <button class="logout-btn" onclick="doLogout()">登出</button>
+    </div>
+  </div>
+  <div class="content" id="mainContent"></div>
+</div>
+
+<div class="success-toast" id="toast"></div>
+
+<script>
+// ===== WEEKS DATA =====
+const WEEKS = [
+  { label: '倒數5週', theme: '定出主題', tasks: ['提供EDM資訊','訂出主題','合作對象','理想引薦','夢幻引薦','提供形象照'] },
+  { label: '倒數4週', theme: '邀請來賓', tasks: ['製作簡報','列來賓名單'] },
+  { label: '倒數3週', theme: '請求資源', tasks: ['群組告知適合邀約之來賓','EDM完成'] },
+  { label: '倒數2週', theme: '簡報演練', tasks: ['交稿','約Re稿時間','自己練好8分鐘完整版','Re完後最後調整定稿','給網管組貼文文案'] },
+  { label: '倒數1週', theme: '跟進來賓', tasks: ['簡報日「前10天」上傳定稿簡報','來賓出席確認'] },
+  { label: '當週', theme: '尊榮時刻', tasks: ['準備500元以上價值禮物','週五提早到場熟悉環境','適應簡報筆'] }
+];
+
+// ===== USER CONFIG (stored in localStorage) =====
+function getConfig() {
+  try {
+    const raw = localStorage.getItem('system_config');
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  // default config
+  return {
+    adminPassword: '負責人',
+    pairs: [
+      { consultant: 'A', speaker: '講者A' },
+      { consultant: 'B', speaker: '講者B' },
+      { consultant: 'C', speaker: '講者C' },
+      { consultant: 'D', speaker: '講者D' },
+      { consultant: 'E', speaker: '講者E' },
+      { consultant: 'F', speaker: '講者F' },
+    ]
+  };
+}
+
+function saveConfig(cfg) {
+  localStorage.setItem('system_config', JSON.stringify(cfg));
+}
+
+function buildUserMap() {
+  const cfg = getConfig();
+  const map = {};
+  map[cfg.adminPassword] = { role: 'admin' };
+  cfg.pairs.forEach(p => {
+    if (p.consultant) map[p.consultant] = { role: 'consultant', speaker: p.speaker, consultantKey: p.consultant };
+    if (p.speaker) map[p.speaker] = { role: 'speaker', consultant: p.consultant, consultantKey: p.consultant };
+  });
+  return map;
+}
+
+let currentUser = null;
+let currentRole = null;
+let currentConsultantKey = null;
+
+// ===== STORAGE =====
+function progressKey(consultantKey) { return 'progress_' + consultantKey; }
+function getData(consultantKey) {
+  try { const r = localStorage.getItem(progressKey(consultantKey)); return r ? JSON.parse(r) : {}; } catch { return {}; }
+}
+function saveData(consultantKey, data) { localStorage.setItem(progressKey(consultantKey), JSON.stringify(data)); }
+function taskKey(wi, ti) { return `w${wi}_t${ti}`; }
+function noteKey(wi, ti) { return `w${wi}_t${ti}_note`; }
+
+// ===== LOGIN =====
+function doLogin() {
+  const name = document.getElementById('nameInput').value.trim();
+  const users = buildUserMap();
+  if (!users[name]) {
+    document.getElementById('loginError').textContent = '找不到此姓名，請確認後重試';
+    return;
+  }
+  currentUser = name;
+  currentRole = users[name].role;
+  currentConsultantKey = users[name].consultantKey || null;
+
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('appPage').style.display = 'block';
+  document.getElementById('userBadge').textContent = name;
+  document.getElementById('settingsBtn').style.display = currentRole === 'admin' ? 'block' : 'none';
+  renderApp();
+}
+
+function doLogout() {
+  currentUser = null; currentRole = null; currentConsultantKey = null;
+  document.getElementById('loginPage').style.display = 'flex';
+  document.getElementById('appPage').style.display = 'none';
+  document.getElementById('nameInput').value = '';
+  document.getElementById('loginError').textContent = '';
+}
+
+document.getElementById('nameInput').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+// ===== RENDER =====
+function renderApp() {
+  if (currentRole === 'admin') {
+    document.getElementById('headerTitle').textContent = '進度總覽';
+    renderAdmin();
+  } else if (currentRole === 'consultant') {
+    document.getElementById('headerTitle').textContent = '顧問進度回報';
+    renderConsultant(currentConsultantKey, true);
+  } else {
+    document.getElementById('headerTitle').textContent = '我的進度';
+    const users = buildUserMap();
+    const ck = users[currentUser].consultantKey;
+    renderConsultant(ck, false);
+  }
+}
+
+// ===== ADMIN OVERVIEW =====
+function renderAdmin() {
+  const cfg = getConfig();
+  let html = '';
+  cfg.pairs.forEach((p, pi) => {
+    if (!p.consultant && !p.speaker) return;
+    const ck = p.consultant;
+    const data = getData(ck);
+    const total = WEEKS.reduce((s, w) => s + w.tasks.length, 0);
+    const done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
+    const pct = total ? Math.round(done / total * 100) : 0;
+
+    const weekDots = WEEKS.map((w, wi) => {
+      const wT = w.tasks.length;
+      const wD = w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length;
+      let cls = wD === wT ? 'done' : wD > 0 ? 'partial' : '';
+      return `<span class="week-dot ${cls}">${w.label}</span>`;
+    }).join('');
+
+    html += `
+      <div class="pair-card">
+        <div class="pair-header">
+          <span class="pair-title">顧問 ${p.consultant || '—'} ↔ ${p.speaker || '—'}</span>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+          <span class="progress-pct">${pct}%</span>
+        </div>
+        <div class="week-dots">${weekDots}</div>
+        <button class="expand-btn" onclick="toggleDetail('ad_${pi}', this)">查看詳細 ▼</button>
+        <div id="ad_${pi}" style="display:none; margin-top:12px;">${renderWeeksReadonly(ck)}</div>
+      </div>`;
+  });
+  document.getElementById('mainContent').innerHTML = html || '<div class="card"><p style="color:#888;">尚未設定任何配對，請至⚙️設定頁面新增。</p></div>';
+}
+
+function toggleDetail(id, btn) {
+  const el = document.getElementById(id);
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  btn.textContent = el.style.display === 'none' ? '查看詳細 ▼' : '收起 ▲';
+}
+
+function renderWeeksReadonly(ck) {
+  const data = getData(ck);
+  return WEEKS.map((w, wi) => {
+    const tasks = w.tasks.map((t, ti) => {
+      const checked = data[taskKey(wi, ti)] ? 'checked' : '';
+      const note = data[noteKey(wi, ti)] || '';
+      const cls = data[taskKey(wi, ti)] ? 'checked' : '';
+      return `<div class="task-item">
+        <input type="checkbox" class="task-check" ${checked} disabled>
+        <div class="task-content">
+          <div class="task-label ${cls}">${t}</div>
+          ${note ? `<div style="font-size:13px;color:#888;margin-top:4px;">📝 ${note}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+    return `<div style="margin-bottom:12px;"><strong style="color:#c0392b;">${w.label}｜${w.theme}</strong>${tasks}</div>`;
+  }).join('');
+}
+
+// ===== CONSULTANT VIEW =====
+function renderConsultant(ck, canEdit) {
+  const cfg = getConfig();
+  const pair = cfg.pairs.find(p => p.consultant === ck) || {};
+  const data = getData(ck);
+  const total = WEEKS.reduce((s, w) => s + w.tasks.length, 0);
+  const done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
+  const pct = total ? Math.round(done / total * 100) : 0;
+
+  let html = '';
+  if (canEdit && pair.speaker) {
+    html += `<div class="speaker-info"><p>配對講者：<strong>${pair.speaker}</strong></p></div>`;
+  }
+  html += `
+    <div class="overall-progress">
+      <h3>整體完成進度</h3>
+      <div class="overall-bar-wrap"><div class="overall-bar-fill" style="width:${pct}%"></div></div>
+      <div class="overall-pct-text">${pct}%</div>
+    </div>
+    <div class="weeks-container">`;
+
+  WEEKS.forEach((w, wi) => {
+    const wT = w.tasks.length;
+    const wD = w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length;
+    const tasks = w.tasks.map((t, ti) => {
+      const checked = data[taskKey(wi, ti)] ? 'checked' : '';
+      const note = data[noteKey(wi, ti)] || '';
+      const cls = data[taskKey(wi, ti)] ? 'checked' : '';
+      const dis = canEdit ? '' : 'disabled';
+      return `<div class="task-item">
+        <input type="checkbox" class="task-check" ${checked} ${dis} onchange="toggleTask('${ck}',${wi},${ti},this)">
+        <div class="task-content">
+          <div class="task-label ${cls}" id="lbl_${wi}_${ti}">${t}</div>
+          <textarea class="task-note" ${dis} placeholder="${canEdit ? '備註（選填）' : ''}"
+            onchange="saveNote('${ck}',${wi},${ti},this.value)">${note}</textarea>
+        </div>
+      </div>`;
+    }).join('');
+
+    html += `<div class="week-card">
+      <div class="week-header" onclick="toggleWeek('wb_${wi}')">
+        <div><h3>${w.label}</h3><div class="week-sub">${w.theme}</div></div>
+        <span>${wD}/${wT}</span>
+      </div>
+      <div class="week-body" id="wb_${wi}">${tasks}</div>
+    </div>`;
+  });
+
+  html += '</div>';
+  document.getElementById('mainContent').innerHTML = html;
+
+  for (let wi = 0; wi < WEEKS.length; wi++) {
+    const wD = WEEKS[wi].tasks.filter((_, ti) => data[taskKey(wi, ti)]).length;
+    if (wD < WEEKS[wi].tasks.length) { document.getElementById(`wb_${wi}`)?.classList.add('open'); break; }
+  }
+}
+
+function toggleWeek(id) { document.getElementById(id)?.classList.toggle('open'); }
+
+function toggleTask(ck, wi, ti, cb) {
+  const data = getData(ck); data[taskKey(wi, ti)] = cb.checked; saveData(ck, data);
+  const lbl = document.getElementById(`lbl_${wi}_${ti}`);
+  if (lbl) lbl.className = 'task-label' + (cb.checked ? ' checked' : '');
+  // refresh progress bar
+  const total = WEEKS.reduce((s, w) => s + w.tasks.length, 0);
+  const done = WEEKS.reduce((s, w, wi2) => s + w.tasks.filter((_, ti2) => data[taskKey(wi2, ti2)]).length, 0);
+  const pct = total ? Math.round(done / total * 100) : 0;
+  const fill = document.querySelector('.overall-bar-fill');
+  const txt = document.querySelector('.overall-pct-text');
+  if (fill) fill.style.width = pct + '%';
+  if (txt) txt.textContent = pct + '%';
+}
+
+function saveNote(ck, wi, ti, val) {
+  const data = getData(ck); data[noteKey(wi, ti)] = val; saveData(ck, data);
+}
+
+// ===== SETTINGS PAGE =====
+function showSettings() {
+  document.getElementById('headerTitle').textContent = '系統設定';
+  const cfg = getConfig();
+
+  let pairsHtml = cfg.pairs.map((p, i) => `
+    <div class="pair-row" id="pairRow_${i}">
+      <input type="text" placeholder="顧問姓名" value="${p.consultant || ''}" id="con_${i}" />
+      <span class="pair-arrow">↔</span>
+      <input type="text" placeholder="講者姓名" value="${p.speaker || ''}" id="spk_${i}" />
+      <button class="btn btn-sm btn-danger" onclick="removePair(${i})">刪除</button>
+    </div>`).join('');
+
+  document.getElementById('mainContent').innerHTML = `
+    <div class="card">
+      <div class="card-title">👤 負責人登入密碼</div>
+      <div class="settings-section">
+        <div class="admin-pw-row">
+          <input type="text" id="adminPw" value="${cfg.adminPassword}" placeholder="負責人姓名／密碼" />
+        </div>
+        <p class="hint">負責人用這個名稱登入系統</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">👥 顧問與講者配對</div>
+      <div class="settings-section">
+        <p class="hint" style="margin-bottom:12px;">左側輸入顧問姓名，右側輸入對應講者姓名，姓名即為登入密碼</p>
+        <div id="pairsContainer">${pairsHtml}</div>
+        <button class="add-pair-btn" onclick="addPair()">＋ 新增配對</button>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn btn-sm btn-green" onclick="saveSettings()">💾 儲存設定</button>
+      <button class="btn btn-sm btn-gray" onclick="renderApp()">取消</button>
+    </div>
+  `;
+}
+
+function addPair() {
+  const cfg = getConfig();
+  cfg.pairs.push({ consultant: '', speaker: '' });
+  saveConfig(cfg);
+  showSettings();
+}
+
+function removePair(i) {
+  const cfg = getConfig();
+  cfg.pairs.splice(i, 1);
+  saveConfig(cfg);
+  showSettings();
+}
+
+function saveSettings() {
+  const cfg = getConfig();
+  cfg.adminPassword = document.getElementById('adminPw').value.trim();
+  cfg.pairs = cfg.pairs.map((_, i) => {
+    const con = document.getElementById(`con_${i}`)?.value.trim() || '';
+    const spk = document.getElementById(`spk_${i}`)?.value.trim() || '';
+    return { consultant: con, speaker: spk };
+  }).filter(p => p.consultant || p.speaker);
+  saveConfig(cfg);
+  showToast('✅ 設定已儲存！');
+  setTimeout(() => renderApp(), 800);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 2500);
+}
+</script>
+</body>
+</html>
