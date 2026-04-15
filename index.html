@@ -8,6 +8,13 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Microsoft JhengHei', Arial, sans-serif; background: #f5f5f5; color: #333; }
 
+  /* LOADER */
+  .loader-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.85); display: none; align-items: center; justify-content: center; z-index: 9999; flex-direction: column; gap: 12px; }
+  .loader-overlay.show { display: flex; }
+  .loader-spinner { width: 36px; height: 36px; border: 4px solid #eee; border-top-color: #c0392b; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loader-text { color: #c0392b; font-size: 15px; }
+
   /* LOGIN */
   .login-page { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
   .login-box { background: white; border-radius: 16px; padding: 40px 32px; width: 100%; max-width: 400px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; }
@@ -113,6 +120,12 @@
 </head>
 <body>
 
+<!-- LOADER -->
+<div class="loader-overlay" id="loader">
+  <div class="loader-spinner"></div>
+  <div class="loader-text" id="loaderText">載入中...</div>
+</div>
+
 <!-- LOGIN -->
 <div class="login-page" id="loginPage">
   <div class="login-box">
@@ -140,6 +153,26 @@
 <div class="success-toast" id="toast"></div>
 
 <script>
+// ===== API =====
+const API_URL = 'https://script.google.com/macros/s/AKfycbzBdCa_GQlxwxXa4LHsYSlhDlEXI6xoJQfRgJXL3uepbgcz4V-R9Oxrx7dAQvDJ4wiZ/exec';
+
+let cache = {};
+
+async function apiFetchAll() {
+  const res = await fetch(API_URL);
+  const json = await res.json();
+  cache = json.data || {};
+}
+
+async function apiSave(key, data) {
+  cache[key] = data;
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ key, data })
+  });
+}
+
 // ===== WEEKS DATA =====
 const WEEKS = [
   { label: '倒數5週', theme: '定出主題', tasks: ['提供EDM資訊','訂出主題','合作對象','理想引薦','夢幻引薦','提供形象照'] },
@@ -150,13 +183,10 @@ const WEEKS = [
   { label: '當週', theme: '尊榮時刻', tasks: ['準備500元以上價值禮物','週五提早到場熟悉環境','適應簡報筆'] }
 ];
 
-// ===== USER CONFIG (stored in localStorage) =====
+// ===== CONFIG =====
 function getConfig() {
-  try {
-    const raw = localStorage.getItem('system_config');
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  // default config
+  const data = cache['__config__'];
+  if (data && data.adminPassword) return data;
   return {
     adminPassword: '負責人',
     pairs: [
@@ -170,10 +200,23 @@ function getConfig() {
   };
 }
 
-function saveConfig(cfg) {
-  localStorage.setItem('system_config', JSON.stringify(cfg));
+async function saveConfig(cfg) {
+  await apiSave('__config__', cfg);
 }
 
+// ===== PROGRESS DATA =====
+function getData(ck) {
+  return cache['progress_' + ck] || {};
+}
+
+async function saveData(ck, data) {
+  await apiSave('progress_' + ck, data);
+}
+
+function taskKey(wi, ti) { return `w${wi}_t${ti}`; }
+function noteKey(wi, ti) { return `w${wi}_t${ti}_note`; }
+
+// ===== USER MAP =====
 function buildUserMap() {
   const cfg = getConfig();
   const map = {};
@@ -189,23 +232,38 @@ let currentUser = null;
 let currentRole = null;
 let currentConsultantKey = null;
 
-// ===== STORAGE =====
-function progressKey(consultantKey) { return 'progress_' + consultantKey; }
-function getData(consultantKey) {
-  try { const r = localStorage.getItem(progressKey(consultantKey)); return r ? JSON.parse(r) : {}; } catch { return {}; }
+// ===== LOADER =====
+function showLoader(show, text) {
+  const el = document.getElementById('loader');
+  if (show) {
+    el.classList.add('show');
+    document.getElementById('loaderText').textContent = text || '載入中...';
+  } else {
+    el.classList.remove('show');
+  }
 }
-function saveData(consultantKey, data) { localStorage.setItem(progressKey(consultantKey), JSON.stringify(data)); }
-function taskKey(wi, ti) { return `w${wi}_t${ti}`; }
-function noteKey(wi, ti) { return `w${wi}_t${ti}_note`; }
 
 // ===== LOGIN =====
-function doLogin() {
+async function doLogin() {
   const name = document.getElementById('nameInput').value.trim();
+  if (!name) return;
+
+  showLoader(true, '連線中...');
+  try {
+    await apiFetchAll();
+  } catch {
+    document.getElementById('loginError').textContent = '無法連線，請檢查網路後重試';
+    showLoader(false);
+    return;
+  }
+  showLoader(false);
+
   const users = buildUserMap();
   if (!users[name]) {
     document.getElementById('loginError').textContent = '找不到此姓名，請確認後重試';
     return;
   }
+
   currentUser = name;
   currentRole = users[name].role;
   currentConsultantKey = users[name].consultantKey || null;
@@ -219,6 +277,7 @@ function doLogin() {
 
 function doLogout() {
   currentUser = null; currentRole = null; currentConsultantKey = null;
+  cache = {};
   document.getElementById('loginPage').style.display = 'flex';
   document.getElementById('appPage').style.display = 'none';
   document.getElementById('nameInput').value = '';
@@ -361,11 +420,11 @@ function renderConsultant(ck, canEdit) {
 
 function toggleWeek(id) { document.getElementById(id)?.classList.toggle('open'); }
 
-function toggleTask(ck, wi, ti, cb) {
-  const data = getData(ck); data[taskKey(wi, ti)] = cb.checked; saveData(ck, data);
+async function toggleTask(ck, wi, ti, cb) {
+  const data = getData(ck);
+  data[taskKey(wi, ti)] = cb.checked;
   const lbl = document.getElementById(`lbl_${wi}_${ti}`);
   if (lbl) lbl.className = 'task-label' + (cb.checked ? ' checked' : '');
-  // refresh progress bar
   const total = WEEKS.reduce((s, w) => s + w.tasks.length, 0);
   const done = WEEKS.reduce((s, w, wi2) => s + w.tasks.filter((_, ti2) => data[taskKey(wi2, ti2)]).length, 0);
   const pct = total ? Math.round(done / total * 100) : 0;
@@ -373,10 +432,13 @@ function toggleTask(ck, wi, ti, cb) {
   const txt = document.querySelector('.overall-pct-text');
   if (fill) fill.style.width = pct + '%';
   if (txt) txt.textContent = pct + '%';
+  await saveData(ck, data);
 }
 
-function saveNote(ck, wi, ti, val) {
-  const data = getData(ck); data[noteKey(wi, ti)] = val; saveData(ck, data);
+async function saveNote(ck, wi, ti, val) {
+  const data = getData(ck);
+  data[noteKey(wi, ti)] = val;
+  await saveData(ck, data);
 }
 
 // ===== SETTINGS PAGE =====
@@ -419,21 +481,21 @@ function showSettings() {
   `;
 }
 
-function addPair() {
+async function addPair() {
   const cfg = getConfig();
   cfg.pairs.push({ consultant: '', speaker: '' });
-  saveConfig(cfg);
+  await saveConfig(cfg);
   showSettings();
 }
 
-function removePair(i) {
+async function removePair(i) {
   const cfg = getConfig();
   cfg.pairs.splice(i, 1);
-  saveConfig(cfg);
+  await saveConfig(cfg);
   showSettings();
 }
 
-function saveSettings() {
+async function saveSettings() {
   const cfg = getConfig();
   cfg.adminPassword = document.getElementById('adminPw').value.trim();
   cfg.pairs = cfg.pairs.map((_, i) => {
@@ -441,7 +503,9 @@ function saveSettings() {
     const spk = document.getElementById(`spk_${i}`)?.value.trim() || '';
     return { consultant: con, speaker: spk };
   }).filter(p => p.consultant || p.speaker);
-  saveConfig(cfg);
+  showLoader(true, '儲存中...');
+  await saveConfig(cfg);
+  showLoader(false);
   showToast('✅ 設定已儲存！');
   setTimeout(() => renderApp(), 800);
 }
