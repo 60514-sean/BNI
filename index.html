@@ -323,8 +323,8 @@ function renderAdmin() {
         </div>
         ${p.presentationTime ? `<div style="font-size:13px;color:#888;margin-bottom:6px;">簡報時間：${p.presentationTime}</div>` : ''}
         <div class="week-dots">${weekDots}</div>
-        <button class="expand-btn" onclick="toggleDetail('ad_${pi}',this)">查看詳細 ▼</button>
-        <div id="ad_${pi}" style="display:none;margin-top:12px;">${renderWeeksReadonly(p.consultant, p.speaker)}</div>
+        <button class="expand-btn" onclick="toggleDetail('ad_${pi}',this)">收起 ▲</button>
+        <div id="ad_${pi}" style="display:block;margin-top:12px;">${renderWeeksReadonly(p.consultant, p.speaker)}</div>
       </div>`;
   });
   document.getElementById('mainContent').innerHTML = html || '<div class="card"><p style="color:#888;">尚未設定任何配對，請至設定頁面新增。</p></div>';
