@@ -463,6 +463,9 @@ function showSettings() {
         </div>
         <p class="hint">負責人用這個名稱登入系統</p>
       </div>
+      <div style="margin-top:12px;">
+        <button class="btn btn-sm btn-green" onclick="saveSettings()">💾 儲存設定</button>
+      </div>
     </div>
 
     <div class="card">
@@ -471,6 +474,9 @@ function showSettings() {
         <p class="hint" style="margin-bottom:12px;">左側輸入顧問姓名，右側輸入對應講者姓名，姓名即為登入密碼</p>
         <div id="pairsContainer">${pairsHtml}</div>
         <button class="add-pair-btn" onclick="addPair()">＋ 新增配對</button>
+      </div>
+      <div style="margin-top:12px;">
+        <button class="btn btn-sm btn-green" onclick="saveSettings()">💾 儲存設定</button>
       </div>
     </div>
 
@@ -481,28 +487,33 @@ function showSettings() {
   `;
 }
 
-async function addPair() {
+function readFormIntoCfg() {
   const cfg = getConfig();
+  cfg.adminPassword = document.getElementById('adminPw')?.value.trim() || cfg.adminPassword;
+  cfg.pairs = cfg.pairs.map((_, i) => ({
+    consultant: document.getElementById(`con_${i}`)?.value.trim() || '',
+    speaker: document.getElementById(`spk_${i}`)?.value.trim() || ''
+  }));
+  return cfg;
+}
+
+function addPair() {
+  const cfg = readFormIntoCfg();
   cfg.pairs.push({ consultant: '', speaker: '' });
-  await saveConfig(cfg);
+  cache['__config__'] = cfg;
   showSettings();
 }
 
-async function removePair(i) {
-  const cfg = getConfig();
+function removePair(i) {
+  const cfg = readFormIntoCfg();
   cfg.pairs.splice(i, 1);
-  await saveConfig(cfg);
+  cache['__config__'] = cfg;
   showSettings();
 }
 
 async function saveSettings() {
-  const cfg = getConfig();
-  cfg.adminPassword = document.getElementById('adminPw').value.trim();
-  cfg.pairs = cfg.pairs.map((_, i) => {
-    const con = document.getElementById(`con_${i}`)?.value.trim() || '';
-    const spk = document.getElementById(`spk_${i}`)?.value.trim() || '';
-    return { consultant: con, speaker: spk };
-  }).filter(p => p.consultant || p.speaker);
+  const cfg = readFormIntoCfg();
+  cfg.pairs = cfg.pairs.filter(p => p.consultant || p.speaker);
   showLoader(true, '儲存中...');
   await saveConfig(cfg);
   showLoader(false);
