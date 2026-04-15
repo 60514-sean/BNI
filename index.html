@@ -638,23 +638,69 @@ function getUpcomingFridays(count) {
 }
 
 function makeDatePicker(i, field, label, value, hidden) {
-  const fridays = getUpcomingFridays(8);
-  return `<div style="display:${hidden?'none':'block'};margin-top:10px;" id="dateRow_${i}_${field}">
-    <label style="font-size:12px;color:#555;display:block;margin-bottom:4px;">${label}</label>
-    <div style="position:relative;">
-      <button type="button" onclick="toggleDatePanel(${i},${field})" id="dateBtn_${i}_${field}"
-        style="width:100%;text-align:left;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;background:white;cursor:pointer;color:${value?'#333':'#bbb'};">
-        ${value||'選擇日期'}
-      </button>
-      <div id="datePanel_${i}_${field}" style="display:none;position:absolute;top:34px;left:0;background:white;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.12);z-index:300;padding:12px;min-width:240px;">
-        <div style="font-size:11px;color:#888;margin-bottom:6px;font-weight:bold;">快速選擇（週五）</div>
-        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">
-          ${fridays.map(d=>`<button type="button" onclick="quickSelectDate(${i},${field},'${d}')" style="padding:4px 8px;border:1px solid #ddd;border-radius:4px;font-size:12px;cursor:pointer;background:white;" onmouseover="this.style.background='#fdf0f0';this.style.borderColor='#c0392b'" onmouseout="this.style.background='white';this.style.borderColor='#ddd'">${d}</button>`).join('')}
+  if (field === 3) {
+    // Friday quick-select for 簡報時間
+    const fridays = getUpcomingFridays(8);
+    return `<div style="display:${hidden?'none':'block'};margin-top:10px;" id="dateRow_${i}_${field}">
+      <label style="font-size:12px;color:#555;display:block;margin-bottom:4px;">${label}</label>
+      <div style="position:relative;">
+        <button type="button" onclick="toggleDatePanel(${i},${field})" id="dateBtn_${i}_${field}"
+          style="width:100%;text-align:left;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;background:white;cursor:pointer;color:${value?'#333':'#bbb'};">
+          ${value||'選擇日期'}
+        </button>
+        <div id="datePanel_${i}_${field}" style="display:none;position:absolute;top:34px;left:0;background:white;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.12);z-index:300;padding:12px;min-width:240px;">
+          <div style="font-size:11px;color:#888;margin-bottom:6px;font-weight:bold;">快速選擇（週五）</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">
+            ${fridays.map(d=>`<button type="button" onclick="quickSelectDate(${i},${field},'${d}')" style="padding:4px 8px;border:1px solid #ddd;border-radius:4px;font-size:12px;cursor:pointer;background:white;" onmouseover="this.style.background='#fdf0f0';this.style.borderColor='#c0392b'" onmouseout="this.style.background='white';this.style.borderColor='#ddd'">${d}</button>`).join('')}
+          </div>
         </div>
       </div>
-    </div>
-    <input type="hidden" id="time${field}_${i}" value="${value||''}" />
-  </div>`;
+      <input type="hidden" id="time${field}_${i}" value="${value||''}" />
+    </div>`;
+  } else {
+    // Year/Month/Day dropdowns for 繳交簡報 and 線上RE稿
+    const curYear = new Date().getFullYear();
+    const parts = value ? value.split('/') : [];
+    const selYear = parts[0] ? parseInt(parts[0]) : curYear;
+    const selMonth = parts[1] ? parseInt(parts[1]) : 0;
+    const selDay = parts[2] ? parseInt(parts[2]) : 0;
+    const years = [curYear, curYear+1];
+    const months = Array.from({length:12}, (_,k) => k+1);
+    const days = Array.from({length:31}, (_,k) => k+1);
+    return `<div style="display:${hidden?'none':'block'};margin-top:10px;" id="dateRow_${i}_${field}">
+      <label style="font-size:12px;color:#555;display:block;margin-bottom:4px;">${label}</label>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <select id="yr_${i}_${field}" onchange="syncYMD(${i},${field})" style="padding:5px 6px;border:1px solid #ddd;border-radius:6px;font-size:13px;flex:2;">
+          ${years.map(y=>`<option value="${y}" ${selYear===y?'selected':''}>${y}年</option>`).join('')}
+        </select>
+        <select id="mo_${i}_${field}" onchange="syncYMD(${i},${field})" style="padding:5px 6px;border:1px solid #ddd;border-radius:6px;font-size:13px;flex:1.5;">
+          <option value="0" ${selMonth===0?'selected':''}>月</option>
+          ${months.map(m=>`<option value="${m}" ${selMonth===m?'selected':''}>${m}月</option>`).join('')}
+        </select>
+        <select id="dy_${i}_${field}" onchange="syncYMD(${i},${field})" style="padding:5px 6px;border:1px solid #ddd;border-radius:6px;font-size:13px;flex:1.5;">
+          <option value="0" ${selDay===0?'selected':''}>日</option>
+          ${days.map(d=>`<option value="${d}" ${selDay===d?'selected':''}>${d}日</option>`).join('')}
+        </select>
+      </div>
+      <input type="hidden" id="time${field}_${i}" value="${value||''}" />
+    </div>`;
+  }
+}
+
+function syncYMD(i, field) {
+  const yr = document.getElementById(`yr_${i}_${field}`)?.value || '';
+  const mo = document.getElementById(`mo_${i}_${field}`)?.value || '0';
+  const dy = document.getElementById(`dy_${i}_${field}`)?.value || '0';
+  const hidden = document.getElementById(`time${field}_${i}`);
+  if (hidden) {
+    if (mo !== '0' && dy !== '0') {
+      const mm = mo.padStart(2,'0');
+      const dd = dy.padStart(2,'0');
+      hidden.value = `${yr}/${mm}/${dd}`;
+    } else {
+      hidden.value = '';
+    }
+  }
 }
 
 function toggleDatePanel(i, field) {
@@ -760,6 +806,8 @@ function showSettings() {
 function readFormIntoCfg() {
   const cfg = getConfig();
   cfg.adminPassword = document.getElementById('adminPw')?.value.trim() || cfg.adminPassword;
+  // sync YMD selects to hidden inputs before reading
+  cfg.pairs.forEach((_, i) => { syncYMD(i, 1); syncYMD(i, 2); });
   cfg.pairs = cfg.pairs.map((_, i) => ({
     activityType: document.getElementById(`act_${i}`)?.value || '主題簡報',
     consultant: document.getElementById(`con_${i}`)?.value.trim() || '',
