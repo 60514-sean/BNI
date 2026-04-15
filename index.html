@@ -638,13 +638,6 @@ function getUpcomingFridays(count) {
 }
 
 function makeDatePicker(i, field, label, value, hidden) {
-  const parts = value ? value.split('/') : [];
-  const curY = new Date().getFullYear();
-  const yr = parts[0] || String(curY);
-  const mo = parts[1] || '', dy = parts[2] || '';
-  const years = Array.from({length: 5}, (_, k) => curY + k);
-  const months = Array.from({length: 12}, (_, k) => String(k+1).padStart(2,'0'));
-  const days = Array.from({length: 31}, (_, k) => String(k+1).padStart(2,'0'));
   const fridays = getUpcomingFridays(8);
   return `<div style="display:${hidden?'none':'block'};margin-top:10px;" id="dateRow_${i}_${field}">
     <label style="font-size:12px;color:#555;display:block;margin-bottom:4px;">${label}</label>
@@ -657,20 +650,6 @@ function makeDatePicker(i, field, label, value, hidden) {
         <div style="font-size:11px;color:#888;margin-bottom:6px;font-weight:bold;">快速選擇（週五）</div>
         <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">
           ${fridays.map(d=>`<button type="button" onclick="quickSelectDate(${i},${field},'${d}')" style="padding:4px 8px;border:1px solid #ddd;border-radius:4px;font-size:12px;cursor:pointer;background:white;" onmouseover="this.style.background='#fdf0f0';this.style.borderColor='#c0392b'" onmouseout="this.style.background='white';this.style.borderColor='#ddd'">${d}</button>`).join('')}
-        </div>
-        <div style="border-top:1px solid #f0f0f0;padding-top:8px;">
-          <div style="font-size:11px;color:#888;margin-bottom:6px;font-weight:bold;">手動調整</div>
-          <div style="display:flex;gap:4px;">
-            <select id="yr_${i}_${field}" onchange="updateDate(${i},${field})" style="flex:2;padding:4px 6px;border:1px solid #ddd;border-radius:4px;font-size:12px;outline:none;">
-              ${years.map(y=>`<option value="${y}" ${yr==y?'selected':''}>${y}年</option>`).join('')}
-            </select>
-            <select id="mo_${i}_${field}" onchange="updateDate(${i},${field})" style="flex:1;padding:4px 2px;border:1px solid #ddd;border-radius:4px;font-size:12px;outline:none;">
-              <option value="">月</option>${months.map(m=>`<option value="${m}" ${mo==m?'selected':''}>${Number(m)}月</option>`).join('')}
-            </select>
-            <select id="dy_${i}_${field}" onchange="updateDate(${i},${field})" style="flex:1;padding:4px 2px;border:1px solid #ddd;border-radius:4px;font-size:12px;outline:none;">
-              <option value="">日</option>${days.map(d=>`<option value="${d}" ${dy==d?'selected':''}>${Number(d)}日</option>`).join('')}
-            </select>
-          </div>
         </div>
       </div>
     </div>
@@ -699,15 +678,6 @@ function quickSelectDate(i, field, date) {
   document.getElementById(`datePanel_${i}_${field}`).style.display = 'none';
 }
 
-function updateDate(i, field) {
-  const yr = document.getElementById(`yr_${i}_${field}`)?.value || '';
-  const mo = document.getElementById(`mo_${i}_${field}`)?.value || '';
-  const dy = document.getElementById(`dy_${i}_${field}`)?.value || '';
-  const val = (yr && mo && dy) ? `${yr}/${mo}/${dy}` : '';
-  document.getElementById(`time${field}_${i}`).value = val;
-  const btn = document.getElementById(`dateBtn_${i}_${field}`);
-  if (btn) { btn.textContent = val || '選擇日期'; btn.style.color = val ? '#333' : '#bbb'; }
-}
 
 document.addEventListener('click', e => {
   if (!e.target.closest('[id^="datePanel_"]') && !e.target.closest('[id^="dateBtn_"]')) {
