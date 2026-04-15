@@ -116,6 +116,21 @@
     .login-box { padding: 28px 20px; }
     .pair-row { flex-direction: row; }
   }
+  .speaker-tabs { display:flex; gap:0; margin-bottom:16px; border-radius:10px; overflow:hidden; border:1px solid #e0e0e0; }
+  .speaker-tab-btn { flex:1; padding:10px 0; font-size:14px; border:none; background:#f5f5f5; color:#888; cursor:pointer; transition:all .2s; font-weight:500; }
+  .speaker-tab-btn.active { background:white; color:#333; box-shadow:inset 0 -2px 0 var(--tab-color, #c0392b); }
+  .guide-section { background:white; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.06); margin-bottom:10px; overflow:hidden; }
+  .guide-header { padding:14px 16px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+  .guide-header h4 { margin:0; font-size:14px; }
+  .guide-sub { font-size:12px; color:#888; margin-top:2px; }
+  .guide-body { padding:0 16px 14px; }
+  .guide-item { padding:10px 0; border-bottom:1px solid #f0f0f0; }
+  .guide-item:last-child { border-bottom:none; }
+  .guide-item-title { font-size:13px; font-weight:500; }
+  .guide-item-desc { font-size:12px; color:#888; margin-top:3px; line-height:1.6; }
+  .guide-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin:8px 0; }
+  .guide-cell { background:#f8f8f8; border-radius:6px; padding:8px 6px; font-size:12px; text-align:center; line-height:1.5; }
+  .guide-tip { font-size:12px; border-radius:6px; padding:8px 10px; margin-top:8px; }
 </style>
 </head>
 <body>
@@ -481,6 +496,14 @@ function renderConsultant(ck, speaker, canEdit) {
   if (canEdit && myPairs.length > 1) {
     html += `<div style="margin-bottom:16px;"><button class="btn btn-sm btn-outline" onclick="renderConsultantOverview('${ck}')">← 返回</button></div>`;
   }
+  if (!canEdit) {
+    html += `<div class="speaker-tabs" style="--tab-color:${color}">
+      <button id="tabBtn_progress" class="speaker-tab-btn active" onclick="switchSpeakerTab('progress')">我的進度</button>
+      <button id="tabBtn_guide" class="speaker-tab-btn" onclick="switchSpeakerTab('guide')">簡報攻略</button>
+    </div>
+    <div id="tabGuide" style="display:none;">${renderGuide(act, color)}</div>
+    <div id="tabProgress">`;
+  }
   html += `<div class="speaker-info">
     <p>輔導講者：<strong>${speaker}</strong>${activityBadge(act)}</p>
     ${dates.length ? `<p style="font-size:13px;color:#888;margin-top:6px;">${dates.join('　')}</p>` : ''}
@@ -512,6 +535,7 @@ function renderConsultant(ck, speaker, canEdit) {
     }).join('');
     html += `</div></div>`;
     if (canEdit) html += `<div style="margin-top:20px;padding-bottom:20px;"><button class="btn" style="background:${color}" onclick="saveAllSimple('${ck}','${speaker}')">儲存</button></div>`;
+    if (!canEdit) html += `</div>`; // close tabProgress
   } else {
     // 6週進度
     const { currentWeekIdx } = getPresentationInfo(pair.presentationTime);
@@ -547,6 +571,7 @@ function renderConsultant(ck, speaker, canEdit) {
     });
     html += `</div>`;
     if (canEdit) html += `<div style="margin-top:20px;padding-bottom:20px;"><button class="btn" onclick="saveAll('${ck}','${speaker}')">儲存</button></div>`;
+    if (!canEdit) html += `</div>`; // close tabProgress
 
     document.getElementById('mainContent').innerHTML = html;
     for (let wi = 0; wi < WEEKS.length; wi++) {
@@ -556,10 +581,89 @@ function renderConsultant(ck, speaker, canEdit) {
     return;
   }
 
+  if (!canEdit) html += `</div>`; // close tabProgress
   document.getElementById('mainContent').innerHTML = html;
 }
 
 function toggleWeek(id) { document.getElementById(id)?.classList.toggle('open'); }
+
+function switchSpeakerTab(tab) {
+  document.getElementById('tabProgress').style.display = tab === 'progress' ? '' : 'none';
+  document.getElementById('tabGuide').style.display = tab === 'guide' ? '' : 'none';
+  document.querySelectorAll('.speaker-tab-btn').forEach(b => {
+    b.classList.toggle('active', b.id === 'tabBtn_' + tab);
+  });
+}
+
+function renderGuide(act, color) {
+  const c = color || '#c0392b';
+
+  function gCard(title, sub, body) {
+    const id = 'gc_' + Math.random().toString(36).slice(2,8);
+    return `<div class="guide-section">
+      <div class="guide-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'':'none'">
+        <div><h4 style="color:${c}">${title}</h4>${sub?`<div class="guide-sub">${sub}</div>`:''}</div>
+        <span style="color:#bbb;font-size:12px;">▼</span>
+      </div>
+      <div class="guide-body">${body}</div>
+    </div>`;
+  }
+
+  function gItem(title, desc) {
+    return `<div class="guide-item">
+      <div class="guide-item-title">${title}</div>
+      ${desc?`<div class="guide-item-desc">${desc}</div>`:''}
+    </div>`;
+  }
+
+  function gGrid(...cells) {
+    return `<div class="guide-grid">${cells.map(t=>`<div class="guide-cell">${t}</div>`).join('')}</div>`;
+  }
+
+  if (act === '主題日') {
+    return gCard('攻略三-4', '主題日 5 分鐘架構',
+      gGrid('封面','我在做什麼','簡述自家產業') +
+      gGrid('最佳 LCD<br><small style="color:#888">描述、案例、小總結</small>','目前在 BNI 億展分會<br>產業鏈的連結','接下來期待<br>發展的方向') +
+      gGrid('總結','要求引薦 CTA','記憶口號')
+    );
+  }
+
+  if (act !== '主題簡報') {
+    return `<div style="padding:30px;text-align:center;color:#bbb;font-size:14px;">此活動類型尚無攻略內容</div>`;
+  }
+
+  // 主題簡報
+  const body1 =
+    gItem('1. 對引薦 / 合作對象有吸引力', '主題與內容針對引薦與合作對象設計<br>EX. 用制服，為你的專業形象再加分 → 受眾：多人公司團隊<br>EX. 用品牌設計，提升餐飲體驗 → 受眾：餐飲業') +
+    gItem('2. 你最想分享的產品 / 品牌優勢', 'EX. 小坪數創造大收益！維繫顧客關係的秘密 → 受眾：小規模經營者') +
+    gItem('3. 秒懂其價值', 'EX. 設立公司還是行號？會計師來告訴你 → 受眾：一人公司、工作室') +
+    gItem('4. 你想分享的價值', 'EX. 創業要翻倍，從學習開始 → 受眾：創業者') +
+    `<div class="guide-tip" style="background:${c}10;color:${c};">標題字數規範：18 字以內</div>`;
+
+  const body2 =
+    gItem('合作對象', '有組成產業服務鏈的機會、一對一表的業務人脈圈') +
+    gItem('理想引薦', '目前已有且多多益善的客源、A 級客戶') +
+    gItem('夢幻引薦', '超想要的！在外面比較難得到的重要資源<br>9981 宮格攤開來，你就知道了') +
+    `<div class="guide-tip" style="background:${c}10;color:${c};">以上三項每項字數規範：16 字以內</div>`;
+
+  const body31 =
+    `<div style="font-size:12px;color:#888;margin-bottom:6px;">第 1 次簡報使用</div>` +
+    gGrid('封面','我在做什麼','我為什麼做這個事業') +
+    gGrid('成功案例 1','成功案例 2','成功案例 3') +
+    gGrid('總結','要求引薦 CTA','記憶口號');
+
+  const body32 =
+    `<div style="font-size:12px;color:#888;margin-bottom:6px;">第 2+ 次簡報使用，呼應 DanceCard</div>` +
+    gGrid('封面','自我介紹 /<br>我在做什麼','獨特銷售主張<br><small style="color:#888">針對目標客群</small>') +
+    gGrid('最佳 LCD<br><small style="color:#888">描述 + 案例 + 總結</small>','如何開啟交易對話<br><small style="color:#888">聽到xxx，告訴他ooo</small>','如何掌握引薦流程<br><small style="color:#888">常見 QA 2~3 個</small>') +
+    gGrid('整體總結','要求引薦 CTA','記憶口號') +
+    `<div class="guide-tip" style="background:#f5f5f5;color:#888;">LCD 科普：產品與服務項目 / 目標市場 / 客戶特定利潤 / 公司傲人事蹟 / 成功案例</div>`;
+
+  return gCard('攻略一', '主題設定參考', body1) +
+    gCard('攻略二', '引薦對象', body2) +
+    gCard('攻略三-1', '333 架構（第 1 次簡報）', body31) +
+    gCard('攻略三-2', '主題簡報架構（第 2+ 次）', body32);
+}
 
 async function toggleTask(ck, speaker, wi, ti, cb) {
   const data = getData(ck, speaker);
