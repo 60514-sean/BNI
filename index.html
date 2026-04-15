@@ -625,25 +625,46 @@ async function saveAllSimple(ck, speaker) {
 }
 
 // ===== DATE PICKER HELPER =====
-function makeDatePicker(i, field, label, value) {
-  const fridays = getUpcomingFridays(10);
-  const btnId = `timeBtn_${i}_${field}`;
-  const pickerId = `datePicker_${i}_${field}`;
-  const hiddenId = `time${field}_${i}`;
-  return `<div style="display:flex;align-items:center;gap:6px;flex:1;min-width:150px;margin-top:8px;">
-    <label style="font-size:12px;color:#555;white-space:nowrap;min-width:56px;">${label}</label>
-    <div style="position:relative;flex:1;">
-      <button type="button" onclick="toggleDatePicker(${i},${field})" id="${btnId}"
-        style="width:100%;text-align:left;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;background:white;cursor:pointer;color:${value ? '#333' : '#bbb'};">
-        ${value || '選擇日期'}
-      </button>
-      <div id="${pickerId}" style="display:none;position:absolute;top:30px;left:0;background:white;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:200;padding:8px;min-width:150px;">
-        ${fridays.map(d => `<div onclick="selectDate(${i},${field},'${d}')" style="padding:7px 12px;border-radius:6px;cursor:pointer;font-size:13px;color:#333;" onmouseover="this.style.background='#fdf0f0'" onmouseout="this.style.background='white'">${d}</div>`).join('')}
-        <div onclick="selectDate(${i},${field},'')" style="padding:7px 12px;border-radius:6px;cursor:pointer;font-size:13px;color:#aaa;border-top:1px solid #f0f0f0;margin-top:4px;" onmouseover="this.style.background='#fdf0f0'" onmouseout="this.style.background='white'">清除</div>
-      </div>
-    </div>
-    <input type="hidden" id="${hiddenId}" value="${value || ''}" />
+function makeDatePicker(i, field, label, value, hidden) {
+  const parts = value ? value.split('/') : [];
+  const yr = parts[0] || '', mo = parts[1] || '', dy = parts[2] || '';
+  const curY = new Date().getFullYear();
+  const years = Array.from({length: 5}, (_, k) => curY + k);
+  const months = Array.from({length: 12}, (_, k) => String(k+1).padStart(2,'0'));
+  const days = Array.from({length: 31}, (_, k) => String(k+1).padStart(2,'0'));
+  return `<div style="display:${hidden?'none':'flex'};align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px;" id="dateRow_${i}_${field}">
+    <label style="font-size:12px;color:#555;white-space:nowrap;min-width:60px;">${label}</label>
+    <select id="yr_${i}_${field}" onchange="updateDate(${i},${field})" style="padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;outline:none;">
+      <option value="">年</option>${years.map(y=>`<option value="${y}" ${yr==y?'selected':''}>${y}</option>`).join('')}
+    </select>
+    <select id="mo_${i}_${field}" onchange="updateDate(${i},${field})" style="padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;outline:none;">
+      <option value="">月</option>${months.map(m=>`<option value="${m}" ${mo==m?'selected':''}>${m}</option>`).join('')}
+    </select>
+    <select id="dy_${i}_${field}" onchange="updateDate(${i},${field})" style="padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;outline:none;">
+      <option value="">日</option>${days.map(d=>`<option value="${d}" ${dy==d?'selected':''}>${d}</option>`).join('')}
+    </select>
+    <input type="hidden" id="time${field}_${i}" value="${value||''}" />
   </div>`;
+}
+
+function updateDate(i, field) {
+  const yr = document.getElementById(`yr_${i}_${field}`)?.value || '';
+  const mo = document.getElementById(`mo_${i}_${field}`)?.value || '';
+  const dy = document.getElementById(`dy_${i}_${field}`)?.value || '';
+  document.getElementById(`time${field}_${i}`).value = (yr&&mo&&dy) ? `${yr}/${mo}/${dy}` : '';
+}
+
+function onActivityChange(i) {
+  const act = document.getElementById(`act_${i}`)?.value || '主題簡報';
+  const sel = document.getElementById(`act_${i}`);
+  if (sel) sel.style.color = ACTIVITY_COLORS[act] || '#c0392b';
+  const simple = isSimpleType(act);
+  [1, 2].forEach(f => {
+    const row = document.getElementById(`dateRow_${i}_${f}`);
+    if (row) row.style.display = simple ? 'flex' : 'none';
+  });
+  const row3 = document.getElementById(`dateRow_${i}_3`);
+  if (row3) row3.style.display = 'flex';
 }
 
 // ===== SETTINGS PAGE =====
@@ -654,10 +675,11 @@ function showSettings() {
   let pairsHtml = cfg.pairs.map((p, i) => {
     const act = p.activityType || '主題簡報';
     const color = ACTIVITY_COLORS[act] || '#c0392b';
+    const simple = isSimpleType(act);
     return `
     <div style="border:1px solid #eee;border-radius:8px;padding:12px;margin-bottom:10px;" id="pairRow_${i}">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
-        <select id="act_${i}" style="padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;color:${color};font-weight:bold;outline:none;cursor:pointer;">
+        <select id="act_${i}" onchange="onActivityChange(${i})" style="padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;color:${color};font-weight:bold;outline:none;cursor:pointer;">
           ${ACTIVITY_TYPES.map(t => `<option value="${t}" ${act===t?'selected':''}>${t}</option>`).join('')}
         </select>
         <input type="text" placeholder="顧問姓名" value="${p.consultant||''}" id="con_${i}" style="flex:1;min-width:90px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;" />
@@ -665,9 +687,9 @@ function showSettings() {
         <input type="text" placeholder="講者姓名" value="${p.speaker||''}" id="spk_${i}" style="flex:1;min-width:90px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;" />
         <button class="btn btn-sm btn-danger" onclick="removePair(${i})">刪除</button>
       </div>
-      ${makeDatePicker(i, 1, DATE_LABELS[0], p.submitDate1||'')}
-      ${makeDatePicker(i, 2, DATE_LABELS[1], p.submitDate2||'')}
-      ${makeDatePicker(i, 3, DATE_LABELS[2], p.presentationTime||'')}
+      ${makeDatePicker(i, 1, DATE_LABELS[0], p.submitDate1||'', !simple)}
+      ${makeDatePicker(i, 2, DATE_LABELS[1], p.submitDate2||'', !simple)}
+      ${makeDatePicker(i, 3, DATE_LABELS[2], p.presentationTime||'', false)}
     </div>`;
   }).join('');
 
@@ -742,44 +764,6 @@ async function saveSettings() {
   setTimeout(() => renderApp(), 800);
 }
 
-function getUpcomingFridays(count) {
-  const dates = [];
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  const day = d.getDay();
-  const daysUntilFriday = (5 - day + 7) % 7 || 7;
-  d.setDate(d.getDate() + daysUntilFriday);
-  for (let i = 0; i < count; i++) {
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    dates.push(`${yyyy}/${mm}/${dd}`);
-    d.setDate(d.getDate() + 7);
-  }
-  return dates;
-}
-
-function toggleDatePicker(i, field) {
-  const id = `datePicker_${i}_${field}`;
-  document.querySelectorAll('[id^="datePicker_"]').forEach(el => {
-    if (el.id !== id) el.style.display = 'none';
-  });
-  const picker = document.getElementById(id);
-  if (picker) picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
-}
-
-function selectDate(i, field, date) {
-  document.getElementById(`time${field}_${i}`).value = date;
-  const btn = document.getElementById(`timeBtn_${i}_${field}`);
-  if (btn) { btn.textContent = date || '選擇日期'; btn.style.color = date ? '#333' : '#bbb'; }
-  document.getElementById(`datePicker_${i}_${field}`).style.display = 'none';
-}
-
-document.addEventListener('click', e => {
-  if (!e.target.closest('[id^="datePicker_"]') && !e.target.closest('[id^="timeBtn_"]')) {
-    document.querySelectorAll('[id^="datePicker_"]').forEach(el => el.style.display = 'none');
-  }
-});
 
 function showToast(msg) {
   const t = document.getElementById('toast');
