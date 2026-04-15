@@ -183,6 +183,22 @@ const WEEKS = [
   { label: '當週', theme: '尊榮時刻', tasks: ['準備500元以上價值禮物','週五提早到場熟悉環境','適應簡報筆'] }
 ];
 
+// ===== ACTIVITY TYPES =====
+const ACTIVITY_TYPES = ['主題簡報', '主題日', '共識會議', 'BOD'];
+const ACTIVITY_COLORS = { '主題簡報': '#c0392b', '主題日': '#e67e22', '共識會議': '#2980b9', 'BOD': '#8e44ad' };
+const SIMPLE_TASKS = ['主題名稱確認', '一般引薦確認', '理想引薦確認', '夢幻引薦確認', '簡報繳交', 'RE稿完成'];
+const DATE_LABELS = ['繳交簡報', '線上RE稿', '簡報時間'];
+
+function simpleTaskKey(ti) { return `s_t${ti}`; }
+function simpleNoteKey(ti) { return `s_t${ti}_note`; }
+
+function activityBadge(type) {
+  const color = ACTIVITY_COLORS[type] || '#888';
+  return `<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:bold;background:${color};color:white;margin-left:8px;">${type || '主題簡報'}</span>`;
+}
+
+function isSimpleType(type) { return type && type !== '主題簡報'; }
+
 // ===== CONFIG =====
 function getConfig() {
   const data = cache['__config__'];
@@ -305,26 +321,44 @@ function renderAdmin() {
   let html = '';
   cfg.pairs.forEach((p, pi) => {
     if (!p.consultant && !p.speaker) return;
+    const act = p.activityType || '主題簡報';
     const data = getData(p.consultant, p.speaker);
-    const total = WEEKS.reduce((s, w) => s + w.tasks.length, 0);
-    const done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
+    let total, done;
+    if (isSimpleType(act)) {
+      total = SIMPLE_TASKS.length;
+      done = SIMPLE_TASKS.filter((_, ti) => data[simpleTaskKey(ti)]).length;
+    } else {
+      total = WEEKS.reduce((s, w) => s + w.tasks.length, 0);
+      done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
+    }
     const pct = total ? Math.round(done / total * 100) : 0;
-    const weekDots = WEEKS.map((w, wi) => {
-      const wD = w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length;
-      const cls = wD === w.tasks.length ? 'done' : wD > 0 ? 'partial' : '';
-      return `<span class="week-dot ${cls}">${w.label}</span>`;
-    }).join('');
+    const weekDots = isSimpleType(act)
+      ? SIMPLE_TASKS.map((t, ti) => {
+          const cls = data[simpleTaskKey(ti)] ? 'done' : '';
+          return `<span class="week-dot ${cls}" style="font-size:11px;">${t}</span>`;
+        }).join('')
+      : WEEKS.map((w, wi) => {
+          const wD = w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length;
+          const cls = wD === w.tasks.length ? 'done' : wD > 0 ? 'partial' : '';
+          return `<span class="week-dot ${cls}">${w.label}</span>`;
+        }).join('');
+    const dates = [
+      p.submitDate1 ? `${DATE_LABELS[0]}：${p.submitDate1}` : '',
+      p.submitDate2 ? `${DATE_LABELS[1]}：${p.submitDate2}` : '',
+      p.presentationTime ? `${DATE_LABELS[2]}：${p.presentationTime}` : '',
+    ].filter(Boolean).join('　');
+    const detail = isSimpleType(act) ? renderSimpleReadonly(p.consultant, p.speaker) : renderWeeksReadonly(p.consultant, p.speaker);
     html += `
       <div class="pair-card">
         <div class="pair-header">
-          <span class="pair-title">顧問 ${p.consultant || '—'} ↔ ${p.speaker || '—'}</span>
-          <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
-          <span class="progress-pct">${pct}%</span>
+          <span class="pair-title">顧問 ${p.consultant||'—'} ↔ ${p.speaker||'—'}${activityBadge(act)}</span>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%;background:${ACTIVITY_COLORS[act]||'#c0392b'}"></div></div>
+          <span class="progress-pct" style="color:${ACTIVITY_COLORS[act]||'#c0392b'}">${pct}%</span>
         </div>
-        ${p.presentationTime ? `<div style="font-size:13px;color:#888;margin-bottom:6px;">簡報時間：${p.presentationTime}</div>` : ''}
+        ${dates ? `<div style="font-size:12px;color:#888;margin-bottom:6px;">${dates}</div>` : ''}
         <div class="week-dots">${weekDots}</div>
         <button class="expand-btn" onclick="toggleDetail('ad_${pi}',this)">查看詳細 ▼</button>
-        <div id="ad_${pi}" style="display:none;margin-top:12px;">${renderWeeksReadonly(p.consultant, p.speaker)}</div>
+        <div id="ad_${pi}" style="display:none;margin-top:12px;">${detail}</div>
       </div>`;
   });
   document.getElementById('mainContent').innerHTML = html || '<div class="card"><p style="color:#888;">尚未設定任何配對，請至設定頁面新增。</p></div>';
@@ -334,6 +368,23 @@ function toggleDetail(id, btn) {
   const el = document.getElementById(id);
   el.style.display = el.style.display === 'none' ? 'block' : 'none';
   btn.textContent = el.style.display === 'none' ? '查看詳細 ▼' : '收起 ▲';
+}
+
+function renderSimpleReadonly(ck, speaker) {
+  const data = getData(ck, speaker);
+  const tasks = SIMPLE_TASKS.map((t, ti) => {
+    const checked = data[simpleTaskKey(ti)] ? 'checked' : '';
+    const note = data[simpleNoteKey(ti)] || '';
+    const cls = data[simpleTaskKey(ti)] ? 'checked' : '';
+    return `<div class="task-item">
+      <input type="checkbox" class="task-check" ${checked} disabled>
+      <div class="task-content">
+        <div class="task-label ${cls}">${t}</div>
+        ${note ? `<div style="font-size:13px;color:#555;margin-top:6px;padding:6px 10px;background:#fff8f0;border-left:3px solid #c0392b;border-radius:4px;">備註：${note}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+  return `<div style="margin-bottom:8px;">${tasks}</div>`;
 }
 
 function renderWeeksReadonly(ck, speaker) {
@@ -369,19 +420,31 @@ function renderConsultantOverview(ck) {
   }
   let html = '<div class="weeks-container">';
   myPairs.forEach(p => {
+    const act = p.activityType || '主題簡報';
+    const color = ACTIVITY_COLORS[act] || '#c0392b';
     const data = getData(ck, p.speaker);
-    const total = WEEKS.reduce((s, w) => s + w.tasks.length, 0);
-    const done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
+    let total, done;
+    if (isSimpleType(act)) {
+      total = SIMPLE_TASKS.length; done = SIMPLE_TASKS.filter((_, ti) => data[simpleTaskKey(ti)]).length;
+    } else {
+      total = WEEKS.reduce((s, w) => s + w.tasks.length, 0);
+      done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
+    }
     const pct = total ? Math.round(done / total * 100) : 0;
+    const dates = [
+      p.submitDate1 ? `${DATE_LABELS[0]}：${p.submitDate1}` : '',
+      p.submitDate2 ? `${DATE_LABELS[1]}：${p.submitDate2}` : '',
+      p.presentationTime ? `${DATE_LABELS[2]}：${p.presentationTime}` : '',
+    ].filter(Boolean).join('　');
     html += `
       <div class="pair-card" style="cursor:pointer;" onclick="renderConsultant('${ck}','${p.speaker}',true)">
         <div class="pair-header">
-          <span class="pair-title">${p.speaker || '—'}</span>
-          <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
-          <span class="progress-pct">${pct}%</span>
+          <span class="pair-title">${p.speaker||'—'}${activityBadge(act)}</span>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+          <span class="progress-pct" style="color:${color}">${pct}%</span>
         </div>
-        ${p.presentationTime ? `<div style="font-size:13px;color:#888;margin-top:6px;">簡報時間：${p.presentationTime}</div>` : ''}
-        <div style="font-size:13px;color:#c0392b;margin-top:10px;">點擊查看詳細進度 →</div>
+        ${dates ? `<div style="font-size:12px;color:#888;margin-top:6px;">${dates}</div>` : ''}
+        <div style="font-size:13px;color:${color};margin-top:10px;">點擊查看詳細進度 →</div>
       </div>`;
   });
   html += '</div>';
@@ -392,66 +455,100 @@ function renderConsultantOverview(ck) {
 function renderConsultant(ck, speaker, canEdit) {
   const cfg = getConfig();
   const myPairs = cfg.pairs.filter(p => p.consultant === ck);
+  const pair = cfg.pairs.find(p => p.consultant === ck && p.speaker === speaker) || {};
+  const act = pair.activityType || '主題簡報';
+  const color = ACTIVITY_COLORS[act] || '#c0392b';
   const data = getData(ck, speaker);
-  const total = WEEKS.reduce((s, w) => s + w.tasks.length, 0);
-  const done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
+
+  let total, done;
+  if (isSimpleType(act)) {
+    total = SIMPLE_TASKS.length; done = SIMPLE_TASKS.filter((_, ti) => data[simpleTaskKey(ti)]).length;
+  } else {
+    total = WEEKS.reduce((s, w) => s + w.tasks.length, 0);
+    done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
+  }
   const pct = total ? Math.round(done / total * 100) : 0;
+
+  const dates = [
+    pair.submitDate1 ? `${DATE_LABELS[0]}：${pair.submitDate1}` : '',
+    pair.submitDate2 ? `${DATE_LABELS[1]}：${pair.submitDate2}` : '',
+    pair.presentationTime ? `${DATE_LABELS[2]}：${pair.presentationTime}` : '',
+  ].filter(Boolean);
 
   let html = '';
   if (canEdit && myPairs.length > 1) {
-    html += `<div style="margin-bottom:16px;">
-      <button class="btn btn-sm btn-outline" onclick="renderConsultantOverview('${ck}')">← 返回</button>
-    </div>`;
+    html += `<div style="margin-bottom:16px;"><button class="btn btn-sm btn-outline" onclick="renderConsultantOverview('${ck}')">← 返回</button></div>`;
   }
-  if (speaker) {
-    html += `<div class="speaker-info"><p>輔導講者：<strong>${speaker}</strong></p></div>`;
-  }
+  html += `<div class="speaker-info">
+    <p>輔導講者：<strong>${speaker}</strong>${activityBadge(act)}</p>
+    ${dates.length ? `<p style="font-size:13px;color:#888;margin-top:6px;">${dates.join('　')}</p>` : ''}
+  </div>`;
   html += `
     <div class="overall-progress">
       <h3>整體完成進度</h3>
-      <div class="overall-bar-wrap"><div class="overall-bar-fill" style="width:${pct}%"></div></div>
-      <div class="overall-pct-text">${pct}%</div>
-    </div>
-    <div class="weeks-container">`;
+      <div class="overall-bar-wrap"><div class="overall-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      <div class="overall-pct-text" style="color:${color}">${pct}%</div>
+    </div>`;
 
-  WEEKS.forEach((w, wi) => {
-    const wT = w.tasks.length;
-    const wD = w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length;
-    const tasks = w.tasks.map((t, ti) => {
-      const checked = data[taskKey(wi, ti)] ? 'checked' : '';
-      const note = data[noteKey(wi, ti)] || '';
-      const cls = data[taskKey(wi, ti)] ? 'checked' : '';
+  if (isSimpleType(act)) {
+    // 簡化清單
+    html += `<div class="week-card"><div class="week-header" style="background:${color}"><div><h3>進度清單</h3><div class="week-sub">${act}</div></div><span>${done}/${total}</span></div><div class="week-body open">`;
+    html += SIMPLE_TASKS.map((t, ti) => {
+      const checked = data[simpleTaskKey(ti)] ? 'checked' : '';
+      const note = data[simpleNoteKey(ti)] || '';
+      const cls = data[simpleTaskKey(ti)] ? 'checked' : '';
       const dis = canEdit ? '' : 'disabled';
       return `<div class="task-item">
-        <input type="checkbox" class="task-check" id="cb_${wi}_${ti}" ${checked} ${dis} onchange="toggleTask('${ck}','${speaker}',${wi},${ti},this)">
+        <input type="checkbox" class="task-check" id="scb_${ti}" ${checked} ${dis} onchange="toggleTaskSimple('${ck}','${speaker}',${ti},this)">
         <div class="task-content">
-          <div class="task-label ${cls}" id="lbl_${wi}_${ti}">${t}</div>
-          <textarea class="task-note" id="note_${wi}_${ti}" ${dis} placeholder="${canEdit ? '備註（選填）' : ''}"
-            onchange="saveNote('${ck}','${speaker}',${wi},${ti},this.value)">${note}</textarea>
+          <div class="task-label ${cls}" id="slbl_${ti}">${t}</div>
+          <textarea class="task-note" id="snote_${ti}" ${dis} placeholder="${canEdit ? '備註（選填）' : ''}"
+            onchange="saveNoteSimple('${ck}','${speaker}',${ti},this.value)">${note}</textarea>
         </div>
       </div>`;
     }).join('');
-    html += `<div class="week-card">
-      <div class="week-header" onclick="toggleWeek('wb_${wi}')">
-        <div><h3>${w.label}</h3><div class="week-sub">${w.theme}</div></div>
-        <span>${wD}/${wT}</span>
-      </div>
-      <div class="week-body" id="wb_${wi}">${tasks}</div>
-    </div>`;
-  });
+    html += `</div></div>`;
+    if (canEdit) html += `<div style="margin-top:20px;padding-bottom:20px;"><button class="btn" style="background:${color}" onclick="saveAllSimple('${ck}','${speaker}')">儲存</button></div>`;
+  } else {
+    // 6週進度
+    html += `<div class="weeks-container">`;
+    WEEKS.forEach((w, wi) => {
+      const wT = w.tasks.length;
+      const wD = w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length;
+      const tasks = w.tasks.map((t, ti) => {
+        const checked = data[taskKey(wi, ti)] ? 'checked' : '';
+        const note = data[noteKey(wi, ti)] || '';
+        const cls = data[taskKey(wi, ti)] ? 'checked' : '';
+        const dis = canEdit ? '' : 'disabled';
+        return `<div class="task-item">
+          <input type="checkbox" class="task-check" id="cb_${wi}_${ti}" ${checked} ${dis} onchange="toggleTask('${ck}','${speaker}',${wi},${ti},this)">
+          <div class="task-content">
+            <div class="task-label ${cls}" id="lbl_${wi}_${ti}">${t}</div>
+            <textarea class="task-note" id="note_${wi}_${ti}" ${dis} placeholder="${canEdit ? '備註（選填）' : ''}"
+              onchange="saveNote('${ck}','${speaker}',${wi},${ti},this.value)">${note}</textarea>
+          </div>
+        </div>`;
+      }).join('');
+      html += `<div class="week-card">
+        <div class="week-header" onclick="toggleWeek('wb_${wi}')">
+          <div><h3>${w.label}</h3><div class="week-sub">${w.theme}</div></div>
+          <span>${wD}/${wT}</span>
+        </div>
+        <div class="week-body" id="wb_${wi}">${tasks}</div>
+      </div>`;
+    });
+    html += `</div>`;
+    if (canEdit) html += `<div style="margin-top:20px;padding-bottom:20px;"><button class="btn" onclick="saveAll('${ck}','${speaker}')">儲存</button></div>`;
 
-  html += '</div>';
-  if (canEdit) {
-    html += `<div style="margin-top:20px;padding-bottom:20px;">
-      <button class="btn" onclick="saveAll('${ck}','${speaker}')">儲存</button>
-    </div>`;
+    document.getElementById('mainContent').innerHTML = html;
+    for (let wi = 0; wi < WEEKS.length; wi++) {
+      const wD = WEEKS[wi].tasks.filter((_, ti) => data[taskKey(wi, ti)]).length;
+      if (wD < WEEKS[wi].tasks.length) { document.getElementById(`wb_${wi}`)?.classList.add('open'); break; }
+    }
+    return;
   }
+
   document.getElementById('mainContent').innerHTML = html;
-
-  for (let wi = 0; wi < WEEKS.length; wi++) {
-    const wD = WEEKS[wi].tasks.filter((_, ti) => data[taskKey(wi, ti)]).length;
-    if (wD < WEEKS[wi].tasks.length) { document.getElementById(`wb_${wi}`)?.classList.add('open'); break; }
-  }
 }
 
 function toggleWeek(id) { document.getElementById(id)?.classList.toggle('open'); }
@@ -493,43 +590,86 @@ async function saveNote(ck, speaker, wi, ti, val) {
   await saveData(ck, speaker, data);
 }
 
+async function toggleTaskSimple(ck, speaker, ti, cb) {
+  const data = getData(ck, speaker);
+  data[simpleTaskKey(ti)] = cb.checked;
+  const lbl = document.getElementById(`slbl_${ti}`);
+  if (lbl) lbl.className = 'task-label' + (cb.checked ? ' checked' : '');
+  const done = SIMPLE_TASKS.filter((_, i) => data[simpleTaskKey(i)]).length;
+  const pct = Math.round(done / SIMPLE_TASKS.length * 100);
+  const fill = document.querySelector('.overall-bar-fill');
+  const txt = document.querySelector('.overall-pct-text');
+  if (fill) fill.style.width = pct + '%';
+  if (txt) txt.textContent = pct + '%';
+  await saveData(ck, speaker, data);
+}
+
+async function saveNoteSimple(ck, speaker, ti, val) {
+  const data = getData(ck, speaker);
+  data[simpleNoteKey(ti)] = val;
+  await saveData(ck, speaker, data);
+}
+
+async function saveAllSimple(ck, speaker) {
+  const data = getData(ck, speaker);
+  SIMPLE_TASKS.forEach((_, ti) => {
+    const cb = document.getElementById(`scb_${ti}`);
+    const note = document.getElementById(`snote_${ti}`);
+    if (cb) data[simpleTaskKey(ti)] = cb.checked;
+    if (note) data[simpleNoteKey(ti)] = note.value;
+  });
+  showLoader(true, '儲存中...');
+  await saveData(ck, speaker, data);
+  showLoader(false);
+  showToast('✅ 已儲存！');
+}
+
+// ===== DATE PICKER HELPER =====
+function makeDatePicker(i, field, label, value) {
+  const fridays = getUpcomingFridays(10);
+  const btnId = `timeBtn_${i}_${field}`;
+  const pickerId = `datePicker_${i}_${field}`;
+  const hiddenId = `time${field}_${i}`;
+  return `<div style="display:flex;align-items:center;gap:6px;flex:1;min-width:150px;margin-top:8px;">
+    <label style="font-size:12px;color:#555;white-space:nowrap;min-width:56px;">${label}</label>
+    <div style="position:relative;flex:1;">
+      <button type="button" onclick="toggleDatePicker(${i},${field})" id="${btnId}"
+        style="width:100%;text-align:left;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;background:white;cursor:pointer;color:${value ? '#333' : '#bbb'};">
+        ${value || '選擇日期'}
+      </button>
+      <div id="${pickerId}" style="display:none;position:absolute;top:30px;left:0;background:white;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:200;padding:8px;min-width:150px;">
+        ${fridays.map(d => `<div onclick="selectDate(${i},${field},'${d}')" style="padding:7px 12px;border-radius:6px;cursor:pointer;font-size:13px;color:#333;" onmouseover="this.style.background='#fdf0f0'" onmouseout="this.style.background='white'">${d}</div>`).join('')}
+        <div onclick="selectDate(${i},${field},'')" style="padding:7px 12px;border-radius:6px;cursor:pointer;font-size:13px;color:#aaa;border-top:1px solid #f0f0f0;margin-top:4px;" onmouseover="this.style.background='#fdf0f0'" onmouseout="this.style.background='white'">清除</div>
+      </div>
+    </div>
+    <input type="hidden" id="${hiddenId}" value="${value || ''}" />
+  </div>`;
+}
+
 // ===== SETTINGS PAGE =====
 function showSettings() {
   document.getElementById('headerTitle').textContent = '系統設定';
   const cfg = getConfig();
 
-  let pairsHtml = cfg.pairs.map((p, i) => `
-    <div style="border:1px solid #eee; border-radius:8px; padding:12px; margin-bottom:10px;" id="pairRow_${i}">
-      <div class="pair-row" style="margin-bottom:8px;">
-        <input type="text" placeholder="顧問姓名" value="${p.consultant || ''}" id="con_${i}" />
-        <span class="pair-arrow">↔</span>
-        <input type="text" placeholder="講者姓名" value="${p.speaker || ''}" id="spk_${i}" />
+  let pairsHtml = cfg.pairs.map((p, i) => {
+    const act = p.activityType || '主題簡報';
+    const color = ACTIVITY_COLORS[act] || '#c0392b';
+    return `
+    <div style="border:1px solid #eee;border-radius:8px;padding:12px;margin-bottom:10px;" id="pairRow_${i}">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+        <select id="act_${i}" style="padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;color:${color};font-weight:bold;outline:none;cursor:pointer;">
+          ${ACTIVITY_TYPES.map(t => `<option value="${t}" ${act===t?'selected':''}>${t}</option>`).join('')}
+        </select>
+        <input type="text" placeholder="顧問姓名" value="${p.consultant||''}" id="con_${i}" style="flex:1;min-width:90px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;" />
+        <span style="color:#c0392b;font-weight:bold;">↔</span>
+        <input type="text" placeholder="講者姓名" value="${p.speaker||''}" id="spk_${i}" style="flex:1;min-width:90px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;" />
         <button class="btn btn-sm btn-danger" onclick="removePair(${i})">刪除</button>
       </div>
-      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-        <label style="font-size:13px; color:#555; white-space:nowrap;">簡報時間</label>
-        <div style="position:relative; flex:1;">
-          <button type="button" onclick="toggleDatePicker(${i})" id="timeBtn_${i}"
-            style="width:100%; text-align:left; padding:6px 10px; border:1px solid #ddd; border-radius:6px; font-size:13px; background:white; cursor:pointer; color:${p.presentationTime ? '#333' : '#bbb'};">
-            ${p.presentationTime || '選擇日期'}
-          </button>
-          <div id="datePicker_${i}" style="display:none; position:absolute; top:34px; left:0; background:white; border:1px solid #ddd; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1); z-index:100; padding:8px; min-width:160px;">
-            ${getUpcomingFridays(10).map(d => `
-              <div onclick="selectDate(${i},'${d}')"
-                style="padding:8px 12px; border-radius:6px; cursor:pointer; font-size:13px; color:#333;"
-                onmouseover="this.style.background='#fdf0f0'" onmouseout="this.style.background='white'">
-                ${d}
-              </div>`).join('')}
-            <div onclick="selectDate(${i},'')"
-              style="padding:8px 12px; border-radius:6px; cursor:pointer; font-size:13px; color:#aaa; border-top:1px solid #f0f0f0; margin-top:4px;"
-              onmouseover="this.style.background='#fdf0f0'" onmouseout="this.style.background='white'">
-              清除
-            </div>
-          </div>
-        </div>
-        <input type="hidden" id="time_${i}" value="${p.presentationTime || ''}" />
-      </div>
-    </div>`).join('');
+      ${makeDatePicker(i, 1, DATE_LABELS[0], p.submitDate1||'')}
+      ${makeDatePicker(i, 2, DATE_LABELS[1], p.submitDate2||'')}
+      ${makeDatePicker(i, 3, DATE_LABELS[2], p.presentationTime||'')}
+    </div>`;
+  }).join('');
 
   document.getElementById('mainContent').innerHTML = `
     <div class="card">
@@ -568,9 +708,12 @@ function readFormIntoCfg() {
   const cfg = getConfig();
   cfg.adminPassword = document.getElementById('adminPw')?.value.trim() || cfg.adminPassword;
   cfg.pairs = cfg.pairs.map((_, i) => ({
+    activityType: document.getElementById(`act_${i}`)?.value || '主題簡報',
     consultant: document.getElementById(`con_${i}`)?.value.trim() || '',
     speaker: document.getElementById(`spk_${i}`)?.value.trim() || '',
-    presentationTime: document.getElementById(`time_${i}`)?.value.trim() || ''
+    submitDate1: document.getElementById(`time1_${i}`)?.value.trim() || '',
+    submitDate2: document.getElementById(`time2_${i}`)?.value.trim() || '',
+    presentationTime: document.getElementById(`time3_${i}`)?.value.trim() || '',
   }));
   return cfg;
 }
@@ -603,7 +746,6 @@ function getUpcomingFridays(count) {
   const dates = [];
   const d = new Date();
   d.setHours(0, 0, 0, 0);
-  // 找下一個週五（5 = Friday）
   const day = d.getDay();
   const daysUntilFriday = (5 - day + 7) % 7 || 7;
   d.setDate(d.getDate() + daysUntilFriday);
@@ -617,23 +759,22 @@ function getUpcomingFridays(count) {
   return dates;
 }
 
-function toggleDatePicker(i) {
+function toggleDatePicker(i, field) {
+  const id = `datePicker_${i}_${field}`;
   document.querySelectorAll('[id^="datePicker_"]').forEach(el => {
-    if (el.id !== `datePicker_${i}`) el.style.display = 'none';
+    if (el.id !== id) el.style.display = 'none';
   });
-  const picker = document.getElementById(`datePicker_${i}`);
-  picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
+  const picker = document.getElementById(id);
+  if (picker) picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
 }
 
-function selectDate(i, date) {
-  document.getElementById(`time_${i}`).value = date;
-  const btn = document.getElementById(`timeBtn_${i}`);
-  btn.textContent = date || '選擇日期';
-  btn.style.color = date ? '#333' : '#bbb';
-  document.getElementById(`datePicker_${i}`).style.display = 'none';
+function selectDate(i, field, date) {
+  document.getElementById(`time${field}_${i}`).value = date;
+  const btn = document.getElementById(`timeBtn_${i}_${field}`);
+  if (btn) { btn.textContent = date || '選擇日期'; btn.style.color = date ? '#333' : '#bbb'; }
+  document.getElementById(`datePicker_${i}_${field}`).style.display = 'none';
 }
 
-// 點擊外部關閉日期選單
 document.addEventListener('click', e => {
   if (!e.target.closest('[id^="datePicker_"]') && !e.target.closest('[id^="timeBtn_"]')) {
     document.querySelectorAll('[id^="datePicker_"]').forEach(el => el.style.display = 'none');
