@@ -86,7 +86,7 @@
   .task-note { width: 100%; border: 1px solid #e0e0e0; border-radius: 6px; padding: 6px 10px; font-size: 13px; color: #555; resize: none; min-height: 36px; outline: none; font-family: inherit; transition: border 0.2s; margin-top: 6px; }
   .task-note:focus { border-color: #c0392b; }
   .task-note:disabled { background: #fafafa; cursor: not-allowed; color: #888; }
-  .task-note::placeholder { color: #bbb; }
+  .task-note::placeholder { color: #858585; }
 
   .overall-progress { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
   .overall-progress h3 { font-size: 15px; color: #666; margin-bottom: 10px; }
@@ -191,15 +191,15 @@ async function apiSave(key, data) {
 // ===== WEEKS DATA =====
 const WEEKS = [
   { label: '倒數5週', theme: '定出主題', tasks: [
-    '主題簡報輔導（333架構、範例簡報、簡報美化）',
-    '構思EDM資訊（合作/理想/夢幻引薦）、演講題目、形象照、社群貼文文案',
+    '主題簡報輔導',
+    '構思EDM資訊、演講題目、形象照、社群貼文文案',
     '列出潛在來賓名單',
     '與主講者第一次一對一',
     '參加簡報工作坊'
   ]},
   { label: '倒數4週', theme: '邀請來賓', tasks: [
-    '週二前提供EDM資訊及社群貼文文案（po至準備群）',
-    '參考公版PPT，開始製作簡報（不放動畫、影片）',
+    '週二前提供EDM資訊及社群貼文文案',
+    '參考公版PPT，開始製作簡報',
     '每週40秒舖陳',
     '確認來賓名單'
   ]},
@@ -211,19 +211,19 @@ const WEEKS = [
     '簡報完成並與顧問第一次RE稿'
   ]},
   { label: '倒數2週', theme: '簡報演練', tasks: [
-    '最終簡報RE稿（當週四晚09:00，需先自行演練至8分鐘內）',
+    '最終簡報RE稿',
     '邀約來賓／每週40秒舖陳'
   ]},
   { label: '倒數1週', theme: '跟進來賓', tasks: [
-    '繳交最後定稿簡報（週二前提供給佳霖）',
-    '確認來賓出席（至少3位）',
+    '繳交最後定稿簡報',
+    '確認來賓出席',
     '每週40秒舖陳'
   ]},
   { label: '當週', theme: '尊榮時刻', tasks: [
-    '確認來賓出席（群組來賓接龍）',
-    '每週40秒舖陳（讓人期待主題簡報）',
-    '準備獎品（500元以上兩份）',
-    '當天上台前彩排（走位/確認簡報/簡報筆）'
+    '確認來賓出席',
+    '每週40秒舖陳',
+    '準備獎品',
+    '當天上台前彩排'
   ]}
 ];
 
@@ -253,7 +253,7 @@ const WEEK_HINTS = [
     '回報來賓進度'
   ],
   [ // W5 倒數1週
-    '星期二前在群組提供給佳霖',
+    '星期二前在群組提供給DJ手',
     '至少3位來賓',
     '需要被引薦的專業別'
   ],
