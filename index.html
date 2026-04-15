@@ -355,8 +355,9 @@ function renderAdmin() {
           <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%;background:${ACTIVITY_COLORS[act]||'#c0392b'}"></div></div>
           <span class="progress-pct" style="color:${ACTIVITY_COLORS[act]||'#c0392b'}">${pct}%</span>
         </div>
-        ${dates ? `<div style="font-size:12px;color:#888;margin-bottom:6px;">${dates}</div>` : ''}
-        <div class="week-dots">${weekDots}</div>
+        ${dates ? `<div style="font-size:12px;color:#888;margin-bottom:4px;">${dates}</div>` : ''}
+        ${countdownHtml(p.presentationTime, act, ACTIVITY_COLORS[act])}
+        <div class="week-dots" style="margin-top:6px;">${weekDots}</div>
         <button class="expand-btn" onclick="toggleDetail('ad_${pi}',this)">查看詳細 ▼</button>
         <div id="ad_${pi}" style="display:none;margin-top:12px;">${detail}</div>
       </div>`;
@@ -444,7 +445,8 @@ function renderConsultantOverview(ck) {
           <span class="progress-pct" style="color:${color}">${pct}%</span>
         </div>
         ${dates ? `<div style="font-size:12px;color:#888;margin-top:6px;">${dates}</div>` : ''}
-        <div style="font-size:13px;color:${color};margin-top:10px;">點擊查看詳細進度 →</div>
+        ${countdownHtml(p.presentationTime, act, color)}
+        <div style="font-size:13px;color:${color};margin-top:8px;">點擊查看詳細進度 →</div>
       </div>`;
   });
   html += '</div>';
@@ -482,6 +484,7 @@ function renderConsultant(ck, speaker, canEdit) {
   html += `<div class="speaker-info">
     <p>輔導講者：<strong>${speaker}</strong>${activityBadge(act)}</p>
     ${dates.length ? `<p style="font-size:13px;color:#888;margin-top:6px;">${dates.join('　')}</p>` : ''}
+    ${countdownHtml(pair.presentationTime, act, color)}
   </div>`;
   html += `
     <div class="overall-progress">
@@ -511,10 +514,12 @@ function renderConsultant(ck, speaker, canEdit) {
     if (canEdit) html += `<div style="margin-top:20px;padding-bottom:20px;"><button class="btn" style="background:${color}" onclick="saveAllSimple('${ck}','${speaker}')">儲存</button></div>`;
   } else {
     // 6週進度
+    const { currentWeekIdx } = getPresentationInfo(pair.presentationTime);
     html += `<div class="weeks-container">`;
     WEEKS.forEach((w, wi) => {
       const wT = w.tasks.length;
       const wD = w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length;
+      const isCurWeek = wi === currentWeekIdx;
       const tasks = w.tasks.map((t, ti) => {
         const checked = data[taskKey(wi, ti)] ? 'checked' : '';
         const note = data[noteKey(wi, ti)] || '';
@@ -529,9 +534,12 @@ function renderConsultant(ck, speaker, canEdit) {
           </div>
         </div>`;
       }).join('');
-      html += `<div class="week-card">
+      html += `<div class="week-card" ${isCurWeek ? `style="border:2px solid ${color};"` : ''}>
         <div class="week-header" onclick="toggleWeek('wb_${wi}')">
-          <div><h3>${w.label}</h3><div class="week-sub">${w.theme}</div></div>
+          <div>
+            <h3>${w.label}${isCurWeek ? ` <span style="font-size:11px;background:white;color:${color};border:1px solid ${color};border-radius:8px;padding:1px 7px;vertical-align:middle;">本週</span>` : ''}</h3>
+            <div class="week-sub">${w.theme}</div>
+          </div>
           <span>${wD}/${wT}</span>
         </div>
         <div class="week-body" id="wb_${wi}">${tasks}</div>
@@ -625,6 +633,47 @@ async function saveAllSimple(ck, speaker) {
 }
 
 // ===== DATE PICKER HELPER =====
+function getPresentationInfo(presentationTime) {
+  if (!presentationTime) return { countdown: null, currentWeekIdx: -1 };
+  const parts = presentationTime.split('/');
+  if (parts.length < 3) return { countdown: null, currentWeekIdx: -1 };
+  const presDate = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+  const today = new Date(); today.setHours(0,0,0,0); presDate.setHours(0,0,0,0);
+  const diffDays = Math.round((presDate - today) / (1000*60*60*24));
+  let weekIdx = -1;
+  if (diffDays <= 0) weekIdx = 5;
+  else if (diffDays <= 7) weekIdx = 4;
+  else if (diffDays <= 14) weekIdx = 3;
+  else if (diffDays <= 21) weekIdx = 2;
+  else if (diffDays <= 28) weekIdx = 1;
+  else if (diffDays <= 35) weekIdx = 0;
+  return { countdown: diffDays, currentWeekIdx: weekIdx };
+}
+
+function countdownHtml(presentationTime, act, color) {
+  const { countdown, currentWeekIdx } = getPresentationInfo(presentationTime);
+  if (countdown === null) return '';
+  const c = color || '#c0392b';
+  let cdText, cdStyle;
+  if (countdown > 0) {
+    cdText = `倒數 ${countdown} 天`;
+    cdStyle = `background:${c}15;color:${c};border:1px solid ${c}40;`;
+  } else if (countdown === 0) {
+    cdText = '就是今天！';
+    cdStyle = `background:#c0392b;color:white;border:1px solid #c0392b;`;
+  } else {
+    cdText = `已過 ${Math.abs(countdown)} 天`;
+    cdStyle = `background:#f5f5f5;color:#999;border:1px solid #ddd;`;
+  }
+  const wkHtml = (!isSimpleType(act) && currentWeekIdx >= 0)
+    ? `<span style="padding:2px 8px;border-radius:10px;font-size:11px;background:${c};color:white;">當前：${WEEKS[currentWeekIdx].label}</span>`
+    : '';
+  return `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
+    <span style="padding:2px 8px;border-radius:10px;font-size:11px;${cdStyle}">${cdText}</span>
+    ${wkHtml}
+  </div>`;
+}
+
 function getUpcomingFridays(count) {
   const dates = [], d = new Date();
   d.setHours(0,0,0,0);
