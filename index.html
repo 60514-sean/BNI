@@ -625,34 +625,95 @@ async function saveAllSimple(ck, speaker) {
 }
 
 // ===== DATE PICKER HELPER =====
+function getUpcomingFridays(count) {
+  const dates = [], d = new Date();
+  d.setHours(0,0,0,0);
+  const diff = (5 - d.getDay() + 7) % 7 || 7;
+  d.setDate(d.getDate() + diff);
+  for (let k = 0; k < count; k++) {
+    dates.push(`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`);
+    d.setDate(d.getDate() + 7);
+  }
+  return dates;
+}
+
 function makeDatePicker(i, field, label, value, hidden) {
   const parts = value ? value.split('/') : [];
-  const yr = parts[0] || '', mo = parts[1] || '', dy = parts[2] || '';
   const curY = new Date().getFullYear();
+  const yr = parts[0] || String(curY);
+  const mo = parts[1] || '', dy = parts[2] || '';
   const years = Array.from({length: 5}, (_, k) => curY + k);
   const months = Array.from({length: 12}, (_, k) => String(k+1).padStart(2,'0'));
   const days = Array.from({length: 31}, (_, k) => String(k+1).padStart(2,'0'));
-  return `<div style="display:${hidden?'none':'flex'};align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px;" id="dateRow_${i}_${field}">
-    <label style="font-size:12px;color:#555;white-space:nowrap;min-width:60px;">${label}</label>
-    <select id="yr_${i}_${field}" onchange="updateDate(${i},${field})" style="padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;outline:none;">
-      <option value="">年</option>${years.map(y=>`<option value="${y}" ${yr==y?'selected':''}>${y}</option>`).join('')}
-    </select>
-    <select id="mo_${i}_${field}" onchange="updateDate(${i},${field})" style="padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;outline:none;">
-      <option value="">月</option>${months.map(m=>`<option value="${m}" ${mo==m?'selected':''}>${m}</option>`).join('')}
-    </select>
-    <select id="dy_${i}_${field}" onchange="updateDate(${i},${field})" style="padding:4px 6px;border:1px solid #ddd;border-radius:6px;font-size:12px;outline:none;">
-      <option value="">日</option>${days.map(d=>`<option value="${d}" ${dy==d?'selected':''}>${d}</option>`).join('')}
-    </select>
+  const fridays = getUpcomingFridays(8);
+  return `<div style="display:${hidden?'none':'block'};margin-top:10px;" id="dateRow_${i}_${field}">
+    <label style="font-size:12px;color:#555;display:block;margin-bottom:4px;">${label}</label>
+    <div style="position:relative;">
+      <button type="button" onclick="toggleDatePanel(${i},${field})" id="dateBtn_${i}_${field}"
+        style="width:100%;text-align:left;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;background:white;cursor:pointer;color:${value?'#333':'#bbb'};">
+        ${value||'選擇日期'}
+      </button>
+      <div id="datePanel_${i}_${field}" style="display:none;position:absolute;top:34px;left:0;background:white;border:1px solid #ddd;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.12);z-index:300;padding:12px;min-width:240px;">
+        <div style="font-size:11px;color:#888;margin-bottom:6px;font-weight:bold;">快速選擇（週五）</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">
+          ${fridays.map(d=>`<button type="button" onclick="quickSelectDate(${i},${field},'${d}')" style="padding:4px 8px;border:1px solid #ddd;border-radius:4px;font-size:12px;cursor:pointer;background:white;" onmouseover="this.style.background='#fdf0f0';this.style.borderColor='#c0392b'" onmouseout="this.style.background='white';this.style.borderColor='#ddd'">${d}</button>`).join('')}
+        </div>
+        <div style="border-top:1px solid #f0f0f0;padding-top:8px;">
+          <div style="font-size:11px;color:#888;margin-bottom:6px;font-weight:bold;">手動調整</div>
+          <div style="display:flex;gap:4px;">
+            <select id="yr_${i}_${field}" onchange="updateDate(${i},${field})" style="flex:2;padding:4px 6px;border:1px solid #ddd;border-radius:4px;font-size:12px;outline:none;">
+              ${years.map(y=>`<option value="${y}" ${yr==y?'selected':''}>${y}年</option>`).join('')}
+            </select>
+            <select id="mo_${i}_${field}" onchange="updateDate(${i},${field})" style="flex:1;padding:4px 2px;border:1px solid #ddd;border-radius:4px;font-size:12px;outline:none;">
+              <option value="">月</option>${months.map(m=>`<option value="${m}" ${mo==m?'selected':''}>${Number(m)}月</option>`).join('')}
+            </select>
+            <select id="dy_${i}_${field}" onchange="updateDate(${i},${field})" style="flex:1;padding:4px 2px;border:1px solid #ddd;border-radius:4px;font-size:12px;outline:none;">
+              <option value="">日</option>${days.map(d=>`<option value="${d}" ${dy==d?'selected':''}>${Number(d)}日</option>`).join('')}
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
     <input type="hidden" id="time${field}_${i}" value="${value||''}" />
   </div>`;
+}
+
+function toggleDatePanel(i, field) {
+  const id = `datePanel_${i}_${field}`;
+  document.querySelectorAll('[id^="datePanel_"]').forEach(el => { if (el.id !== id) el.style.display = 'none'; });
+  const panel = document.getElementById(id);
+  if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function quickSelectDate(i, field, date) {
+  document.getElementById(`time${field}_${i}`).value = date;
+  const btn = document.getElementById(`dateBtn_${i}_${field}`);
+  if (btn) { btn.textContent = date; btn.style.color = '#333'; }
+  const parts = date.split('/');
+  const yr = document.getElementById(`yr_${i}_${field}`);
+  const mo = document.getElementById(`mo_${i}_${field}`);
+  const dy = document.getElementById(`dy_${i}_${field}`);
+  if (yr) yr.value = parts[0];
+  if (mo) mo.value = parts[1];
+  if (dy) dy.value = parts[2];
+  document.getElementById(`datePanel_${i}_${field}`).style.display = 'none';
 }
 
 function updateDate(i, field) {
   const yr = document.getElementById(`yr_${i}_${field}`)?.value || '';
   const mo = document.getElementById(`mo_${i}_${field}`)?.value || '';
   const dy = document.getElementById(`dy_${i}_${field}`)?.value || '';
-  document.getElementById(`time${field}_${i}`).value = (yr&&mo&&dy) ? `${yr}/${mo}/${dy}` : '';
+  const val = (yr && mo && dy) ? `${yr}/${mo}/${dy}` : '';
+  document.getElementById(`time${field}_${i}`).value = val;
+  const btn = document.getElementById(`dateBtn_${i}_${field}`);
+  if (btn) { btn.textContent = val || '選擇日期'; btn.style.color = val ? '#333' : '#bbb'; }
 }
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('[id^="datePanel_"]') && !e.target.closest('[id^="dateBtn_"]')) {
+    document.querySelectorAll('[id^="datePanel_"]').forEach(el => el.style.display = 'none');
+  }
+});
 
 function onActivityChange(i) {
   const act = document.getElementById(`act_${i}`)?.value || '主題簡報';
@@ -661,10 +722,10 @@ function onActivityChange(i) {
   const simple = isSimpleType(act);
   [1, 2].forEach(f => {
     const row = document.getElementById(`dateRow_${i}_${f}`);
-    if (row) row.style.display = simple ? 'flex' : 'none';
+    if (row) row.style.display = simple ? 'block' : 'none';
   });
   const row3 = document.getElementById(`dateRow_${i}_3`);
-  if (row3) row3.style.display = 'flex';
+  if (row3) row3.style.display = 'block';
 }
 
 // ===== SETTINGS PAGE =====
