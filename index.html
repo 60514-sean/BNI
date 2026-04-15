@@ -476,9 +476,28 @@ function showSettings() {
         <input type="text" placeholder="講者姓名" value="${p.speaker || ''}" id="spk_${i}" />
         <button class="btn btn-sm btn-danger" onclick="removePair(${i})">刪除</button>
       </div>
-      <div style="display:flex; align-items:center; gap:8px;">
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
         <label style="font-size:13px; color:#555; white-space:nowrap;">簡報時間</label>
-        <input type="text" placeholder="例：2026/05/08 07:30" value="${p.presentationTime || ''}" id="time_${i}" style="flex:1; padding:6px 10px; border:1px solid #ddd; border-radius:6px; font-size:13px; outline:none;" />
+        <div style="position:relative; flex:1;">
+          <button type="button" onclick="toggleDatePicker(${i})" id="timeBtn_${i}"
+            style="width:100%; text-align:left; padding:6px 10px; border:1px solid #ddd; border-radius:6px; font-size:13px; background:white; cursor:pointer; color:${p.presentationTime ? '#333' : '#bbb'};">
+            ${p.presentationTime || '選擇日期'}
+          </button>
+          <div id="datePicker_${i}" style="display:none; position:absolute; top:34px; left:0; background:white; border:1px solid #ddd; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1); z-index:100; padding:8px; min-width:160px;">
+            ${getUpcomingFridays(10).map(d => `
+              <div onclick="selectDate(${i},'${d}')"
+                style="padding:8px 12px; border-radius:6px; cursor:pointer; font-size:13px; color:#333;"
+                onmouseover="this.style.background='#fdf0f0'" onmouseout="this.style.background='white'">
+                ${d}
+              </div>`).join('')}
+            <div onclick="selectDate(${i},'')"
+              style="padding:8px 12px; border-radius:6px; cursor:pointer; font-size:13px; color:#aaa; border-top:1px solid #f0f0f0; margin-top:4px;"
+              onmouseover="this.style.background='#fdf0f0'" onmouseout="this.style.background='white'">
+              清除
+            </div>
+          </div>
+        </div>
+        <input type="hidden" id="time_${i}" value="${p.presentationTime || ''}" />
       </div>
     </div>`).join('');
 
@@ -549,6 +568,47 @@ async function saveSettings() {
   showToast('✅ 設定已儲存！');
   setTimeout(() => renderApp(), 800);
 }
+
+function getUpcomingFridays(count) {
+  const dates = [];
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  // 找下一個週五（5 = Friday）
+  const day = d.getDay();
+  const daysUntilFriday = (5 - day + 7) % 7 || 7;
+  d.setDate(d.getDate() + daysUntilFriday);
+  for (let i = 0; i < count; i++) {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    dates.push(`${yyyy}/${mm}/${dd}`);
+    d.setDate(d.getDate() + 7);
+  }
+  return dates;
+}
+
+function toggleDatePicker(i) {
+  document.querySelectorAll('[id^="datePicker_"]').forEach(el => {
+    if (el.id !== `datePicker_${i}`) el.style.display = 'none';
+  });
+  const picker = document.getElementById(`datePicker_${i}`);
+  picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
+}
+
+function selectDate(i, date) {
+  document.getElementById(`time_${i}`).value = date;
+  const btn = document.getElementById(`timeBtn_${i}`);
+  btn.textContent = date || '選擇日期';
+  btn.style.color = date ? '#333' : '#bbb';
+  document.getElementById(`datePicker_${i}`).style.display = 'none';
+}
+
+// 點擊外部關閉日期選單
+document.addEventListener('click', e => {
+  if (!e.target.closest('[id^="datePicker_"]') && !e.target.closest('[id^="timeBtn_"]')) {
+    document.querySelectorAll('[id^="datePicker_"]').forEach(el => el.style.display = 'none');
+  }
+});
 
 function showToast(msg) {
   const t = document.getElementById('toast');
