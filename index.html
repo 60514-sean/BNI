@@ -173,19 +173,46 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbzBdCa_GQlxwxXa4LHsYSlh
 
 let cache = {};
 
+// 頁面載入時立即 prefetch，讓登入時不需等待冷啟動
+let _prefetchPromise = fetch(API_URL).then(r => r.json()).catch(() => null);
+
 async function apiFetchAll() {
-  const res = await fetch(API_URL);
-  const json = await res.json();
+  let json = await _prefetchPromise;
+  _prefetchPromise = null;
+  if (!json) {
+    // prefetch 失敗時才重新 fetch
+    const res = await fetch(API_URL);
+    json = await res.json();
+  }
   cache = json.data || {};
 }
 
+// 儲存佇列：Map 以 key 去重複，只保留最新值
+const _saveQueue = new Map();
+let _saveRunning = false;
+
+async function _drainSaveQueue() {
+  if (_saveRunning || _saveQueue.size === 0) return;
+  _saveRunning = true;
+  const [[key, data]] = _saveQueue;
+  _saveQueue.delete(key);
+  try {
+    await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ key, data })
+    });
+  } catch {
+    showToast('⚠️ 儲存失敗，請重試');
+  }
+  _saveRunning = false;
+  _drainSaveQueue();
+}
+
 async function apiSave(key, data) {
-  cache[key] = data;
-  await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ key, data })
-  });
+  cache[key] = data;          // 立即更新 cache，UI 不需等待
+  _saveQueue.set(key, data);  // 加入佇列（同 key 只保留最新）
+  _drainSaveQueue();          // 背景排隊送出
 }
 
 // ===== WEEKS DATA =====
@@ -754,7 +781,7 @@ async function toggleTask(ck, speaker, wi, ti, cb) {
   const txt = document.querySelector('.overall-pct-text');
   if (fill) fill.style.width = pct + '%';
   if (txt) txt.textContent = pct + '%';
-  await saveData(ck, speaker, data);
+  saveData(ck, speaker, data);
 }
 
 async function saveAll(ck, speaker) {
@@ -767,16 +794,14 @@ async function saveAll(ck, speaker) {
       if (note) data[noteKey(wi, ti)] = note.value;
     });
   });
-  showLoader(true, '儲存中...');
-  await saveData(ck, speaker, data);
-  showLoader(false);
+  saveData(ck, speaker, data);
   showToast('✅ 已儲存！');
 }
 
 async function saveNote(ck, speaker, wi, ti, val) {
   const data = getData(ck, speaker);
   data[noteKey(wi, ti)] = val;
-  await saveData(ck, speaker, data);
+  saveData(ck, speaker, data);
 }
 
 async function toggleTaskSimple(ck, speaker, ti, cb) {
@@ -790,13 +815,13 @@ async function toggleTaskSimple(ck, speaker, ti, cb) {
   const txt = document.querySelector('.overall-pct-text');
   if (fill) fill.style.width = pct + '%';
   if (txt) txt.textContent = pct + '%';
-  await saveData(ck, speaker, data);
+  saveData(ck, speaker, data);
 }
 
 async function saveNoteSimple(ck, speaker, ti, val) {
   const data = getData(ck, speaker);
   data[simpleNoteKey(ti)] = val;
-  await saveData(ck, speaker, data);
+  saveData(ck, speaker, data);
 }
 
 async function saveAllSimple(ck, speaker) {
@@ -807,9 +832,7 @@ async function saveAllSimple(ck, speaker) {
     if (cb) data[simpleTaskKey(ti)] = cb.checked;
     if (note) data[simpleNoteKey(ti)] = note.value;
   });
-  showLoader(true, '儲存中...');
-  await saveData(ck, speaker, data);
-  showLoader(false);
+  saveData(ck, speaker, data);
   showToast('✅ 已儲存！');
 }
 
@@ -1070,9 +1093,7 @@ function removePair(i) {
 async function saveSettings() {
   const cfg = readFormIntoCfg();
   cfg.pairs = cfg.pairs.filter(p => p.consultant || p.speaker);
-  showLoader(true, '儲存中...');
-  await saveConfig(cfg);
-  showLoader(false);
+  saveConfig(cfg);
   showToast('✅ 設定已儲存！');
   setTimeout(() => renderApp(), 800);
 }
