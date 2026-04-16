@@ -170,21 +170,38 @@
 <script>
 // ===== API =====
 const API_URL = 'https://script.google.com/macros/s/AKfycbzBdCa_GQlxwxXa4LHsYSlhDlEXI6xoJQfRgJXL3uepbgcz4V-R9Oxrx7dAQvDJ4wiZ/exec';
+const LS_KEY = 'bni_cache_v1';
 
 let cache = {};
 
-// 頁面載入時立即 prefetch，讓登入時不需等待冷啟動
-let _prefetchPromise = fetch(API_URL).then(r => r.json()).catch(() => null);
+// 從 localStorage 還原 cache（毫秒級，讓登入可立即驗證）
+try { const s = localStorage.getItem(LS_KEY); if (s) cache = JSON.parse(s); } catch {}
+
+function _lsSave() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(cache)); } catch {}
+}
+
+// 背景 prefetch：取得最新資料並更新 cache & localStorage
+let _prefetchPromise = fetch(API_URL).then(r => r.json()).then(json => {
+  if (json?.data) { cache = json.data; _lsSave(); }
+  return json;
+}).catch(() => null);
 
 async function apiFetchAll() {
-  let json = await _prefetchPromise;
+  // 若 cache 已有資料（來自 localStorage），直接用；背景 prefetch 會在完成後自動更新
+  if (Object.keys(cache).length > 0) {
+    _prefetchPromise.then(() => {}); // 確保 prefetch 繼續跑
+    return;
+  }
+  // 第一次使用（localStorage 為空），等待 prefetch 完成
+  const json = await _prefetchPromise;
   _prefetchPromise = null;
   if (!json) {
-    // prefetch 失敗時才重新 fetch
     const res = await fetch(API_URL);
-    json = await res.json();
+    const j = await res.json();
+    cache = j.data || {};
+    _lsSave();
   }
-  cache = json.data || {};
 }
 
 // 儲存佇列：Map 以 key 去重複，只保留最新值
@@ -210,7 +227,8 @@ async function _drainSaveQueue() {
 }
 
 async function apiSave(key, data) {
-  cache[key] = data;          // 立即更新 cache，UI 不需等待
+  cache[key] = data;          // 立即更新 cache
+  _lsSave();                  // 更新 localStorage
   _saveQueue.set(key, data);  // 加入佇列（同 key 只保留最新）
   _drainSaveQueue();          // 背景排隊送出
 }
@@ -381,15 +399,19 @@ async function doLogin() {
   const name = document.getElementById('nameInput').value.trim();
   if (!name) return;
 
-  showLoader(true, '連線中...');
-  try {
-    await apiFetchAll();
-  } catch {
-    document.getElementById('loginError').textContent = '無法連線，請檢查網路後重試';
+  // 有 localStorage cache → 直接驗證，不等網路
+  const hasCached = Object.keys(cache).length > 0;
+  if (!hasCached) {
+    showLoader(true, '連線中...');
+    try {
+      await apiFetchAll();
+    } catch {
+      document.getElementById('loginError').textContent = '無法連線，請檢查網路後重試';
+      showLoader(false);
+      return;
+    }
     showLoader(false);
-    return;
   }
-  showLoader(false);
 
   const users = buildUserMap();
   if (!users[name]) {
@@ -406,6 +428,11 @@ async function doLogin() {
   document.getElementById('userBadge').textContent = name;
   document.getElementById('settingsBtn').style.display = currentRole === 'admin' ? 'block' : 'none';
   renderApp();
+
+  // 背景刷新最新資料（不阻塞畫面）
+  fetch(API_URL).then(r => r.json()).then(json => {
+    if (json?.data) { cache = json.data; _lsSave(); }
+  }).catch(() => {});
 }
 
 function doLogout() {
