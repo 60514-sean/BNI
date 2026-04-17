@@ -105,7 +105,7 @@
   .add-pair-btn { display: flex; align-items: center; gap: 6px; background: none; border: 2px dashed #c0392b; color: #c0392b; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; margin-top: 4px; }
   .add-pair-btn:hover { background: #fdf0f0; }
   .hint { font-size: 13px; color: #888; margin-top: 6px; }
-  .success-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #27ae60; color: white; padding: 12px 24px; border-radius: 8px; font-size: 15px; z-index: 9999; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+  .success-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #c0392b; color: white; padding: 12px 24px; border-radius: 8px; font-size: 15px; z-index: 9999; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 
   /* ADMIN PASSWORD */
   .admin-pw-row { display: flex; gap: 8px; align-items: center; }
@@ -207,7 +207,7 @@ async function _drainSaveQueue() {
       body: JSON.stringify({ key, data })
     });
   } catch {
-    showToast('⚠️ 儲存失敗，請重試');
+    showToast('儲存失敗，請重試');
   }
   _saveRunning = false;
   _drainSaveQueue();
@@ -808,7 +808,7 @@ async function saveAll(ck, speaker) {
     });
   });
   saveData(ck, speaker, data);
-  showToast('✅ 已儲存！');
+  showToast('已儲存！');
 }
 
 async function saveNote(ck, speaker, wi, ti, val) {
@@ -846,7 +846,7 @@ async function saveAllSimple(ck, speaker) {
     if (note) data[simpleNoteKey(ti)] = note.value;
   });
   saveData(ck, speaker, data);
-  showToast('✅ 已儲存！');
+  showToast('已儲存！');
 }
 
 // ===== DATE PICKER HELPER =====
@@ -1107,7 +1107,7 @@ async function saveSettings() {
   const cfg = readFormIntoCfg();
   cfg.pairs = cfg.pairs.filter(p => p.consultant || p.speaker);
   saveConfig(cfg);
-  showToast('✅ 設定已儲存！');
+  showToast('設定已儲存！');
   setTimeout(() => renderApp(), 800);
 }
 
