@@ -325,6 +325,12 @@ function activityBadge(type) {
 
 function isSimpleType(type) { return type && type !== '主題簡報'; }
 
+function countBadge(pair) {
+  if (isSimpleType(pair.activityType)) return '';
+  if (!pair.presentationCount) return '';
+  return `<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;border:1px solid #c0392b40;color:#c0392b;margin-left:6px;">${pair.presentationCount}</span>`;
+}
+
 // ===== CONFIG =====
 function getConfig() {
   const data = cache['__config__'];
@@ -484,7 +490,7 @@ function renderAdmin() {
     html += `
       <div class="pair-card" ${pct === 100 ? `style="border:2px solid ${DONE_COLOR};background:white;"` : ''}>
         <div class="pair-header">
-          <span class="pair-title">顧問 ${p.consultant||'—'} ↔ ${p.speaker||'—'}${activityBadge(act)}</span>
+          <span class="pair-title">顧問 ${p.consultant||'—'} ↔ ${p.speaker||'—'}${activityBadge(act)}${countBadge(p)}</span>
           <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%;background:${dispColor}"></div></div>
           <span class="progress-pct" style="color:${dispColor}">${pct}%</span>
         </div>
@@ -574,7 +580,7 @@ function renderConsultantOverview(ck) {
     html += `
       <div class="pair-card" style="cursor:pointer;${pct === 100 ? `border:2px solid ${DONE_COLOR};background:white;` : ''}" onclick="renderConsultant('${ck}','${p.speaker}',true)">
         <div class="pair-header">
-          <span class="pair-title">${p.speaker||'—'}${activityBadge(act)}</span>
+          <span class="pair-title">${p.speaker||'—'}${activityBadge(act)}${countBadge(p)}</span>
           <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%;background:${dispColor2}"></div></div>
           <span class="progress-pct" style="color:${dispColor2}">${pct}%</span>
         </div>
@@ -625,7 +631,7 @@ function renderConsultant(ck, speaker, canEdit) {
     <div id="tabProgress">`;
   }
   html += `<div class="speaker-info">
-    <p>輔導講者：<strong>${speaker}</strong>${activityBadge(act)}</p>
+    <p>輔導講者：<strong>${speaker}</strong>${activityBadge(act)}${countBadge(pair)}</p>
     ${dates.length ? `<p style="font-size:13px;color:#888;margin-top:6px;">${dates.join('　')}</p>` : ''}
     ${countdownHtml(pair.presentationTime, act, color)}
   </div>`;
