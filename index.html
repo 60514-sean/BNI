@@ -310,7 +310,7 @@ const WEEK_HINTS = [
 // ===== ACTIVITY TYPES =====
 const ACTIVITY_TYPES = ['主題簡報', '主題日', '共識會議', 'BOD'];
 const ACTIVITY_COLORS = { '主題簡報': '#c0392b', '主題日': '#e67e22', '共識會議': '#2980b9', 'BOD': '#8e44ad' };
-const DONE_COLOR = '#27ae60';
+const DONE_COLOR = '#c0392b';
 const SIMPLE_TASKS = ['主題名稱確認', '一般引薦確認', '理想引薦確認', '夢幻引薦確認', '簡報繳交', 'RE稿完成'];
 const DATE_LABELS = ['繳交簡報', '線上RE稿', '簡報時間'];
 
@@ -480,7 +480,7 @@ function renderAdmin() {
     ].filter(Boolean).join('　');
     const detail = isSimpleType(act) ? renderSimpleReadonly(p.consultant, p.speaker) : renderWeeksReadonly(p.consultant, p.speaker);
     html += `
-      <div class="pair-card" ${pct === 100 ? `style="border:2px solid ${DONE_COLOR};background:#f0faf4;"` : ''}>
+      <div class="pair-card" ${pct === 100 ? `style="border:2px solid ${DONE_COLOR};background:#fdf0f0;"` : ''}>
         <div class="pair-header">
           <span class="pair-title">顧問 ${p.consultant||'—'} ↔ ${p.speaker||'—'}${activityBadge(act)}</span>
           <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%;background:${dispColor}"></div></div>
@@ -570,7 +570,7 @@ function renderConsultantOverview(ck) {
       p.presentationTime ? `${DATE_LABELS[2]}：${p.presentationTime}` : '',
     ].filter(Boolean).join('　');
     html += `
-      <div class="pair-card" style="cursor:pointer;${pct === 100 ? `border:2px solid ${DONE_COLOR};background:#f0faf4;` : ''}" onclick="renderConsultant('${ck}','${p.speaker}',true)">
+      <div class="pair-card" style="cursor:pointer;${pct === 100 ? `border:2px solid ${DONE_COLOR};background:#fdf0f0;` : ''}" onclick="renderConsultant('${ck}','${p.speaker}',true)">
         <div class="pair-header">
           <span class="pair-title">${p.speaker||'—'}${activityBadge(act)}</span>
           <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%;background:${dispColor2}"></div></div>
