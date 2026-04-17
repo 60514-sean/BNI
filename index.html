@@ -470,7 +470,7 @@ function renderAdmin() {
       done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
     }
     const pct = total ? Math.round(done / total * 100) : 0;
-    const dispColor = pct === 100 ? DONE_COLOR : (ACTIVITY_COLORS[act]||'#c0392b');
+    const dispColor = ACTIVITY_COLORS[act]||'#c0392b';
     const weekDots = isSimpleType(act)
       ? SIMPLE_TASKS.map((t, ti) => {
           const cls = data[simpleTaskKey(ti)] ? 'done' : '';
@@ -488,7 +488,7 @@ function renderAdmin() {
     ].filter(Boolean).join('　');
     const detail = isSimpleType(act) ? renderSimpleReadonly(p.consultant, p.speaker) : renderWeeksReadonly(p.consultant, p.speaker);
     html += `
-      <div class="pair-card" ${pct === 100 ? `style="border:2px solid ${DONE_COLOR};background:white;"` : ''}>
+      <div class="pair-card" ${pct === 100 ? `style="border:2px solid ${dispColor};background:white;"` : ''}>
         <div class="pair-header">
           <span class="pair-title">顧問 ${p.consultant||'—'} ↔ ${p.speaker||'—'}${activityBadge(act)}${countBadge(p)}</span>
           <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%;background:${dispColor}"></div></div>
@@ -571,14 +571,14 @@ function renderConsultantOverview(ck) {
       done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
     }
     const pct = total ? Math.round(done / total * 100) : 0;
-    const dispColor2 = pct === 100 ? DONE_COLOR : color;
+    const dispColor2 = color;
     const dates = [
       isSimpleType(act) && p.submitDate1 ? `${DATE_LABELS[0]}：${p.submitDate1}` : '',
       isSimpleType(act) && p.submitDate2 ? `${DATE_LABELS[1]}：${p.submitDate2}` : '',
       p.presentationTime ? `${DATE_LABELS[2]}：${p.presentationTime}` : '',
     ].filter(Boolean).join('　');
     html += `
-      <div class="pair-card" style="cursor:pointer;${pct === 100 ? `border:2px solid ${DONE_COLOR};background:white;` : ''}" onclick="renderConsultant('${ck}','${p.speaker}',true)">
+      <div class="pair-card" style="cursor:pointer;${pct === 100 ? `border:2px solid ${dispColor2};background:white;` : ''}" onclick="renderConsultant('${ck}','${p.speaker}',true)">
         <div class="pair-header">
           <span class="pair-title">${p.speaker||'—'}${activityBadge(act)}${countBadge(p)}</span>
           <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%;background:${dispColor2}"></div></div>
@@ -610,7 +610,7 @@ function renderConsultant(ck, speaker, canEdit) {
     done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
   }
   const pct = total ? Math.round(done / total * 100) : 0;
-  const progressColor = pct === 100 ? DONE_COLOR : color;
+  const progressColor = color;
 
   const dates = [
     isSimpleType(act) && pair.submitDate1 ? `${DATE_LABELS[0]}：${pair.submitDate1}` : '',
@@ -826,7 +826,7 @@ async function toggleTask(ck, speaker, wi, ti, cb) {
   const cfg2 = getConfig();
   const pair2 = cfg2.pairs.find(p => p.consultant === ck && p.speaker === speaker) || {};
   const baseColor = ACTIVITY_COLORS[pair2.activityType||'主題簡報'] || '#c0392b';
-  const dynColor = pct === 100 ? DONE_COLOR : baseColor;
+  const dynColor = baseColor;
   if (fill) { fill.style.width = pct + '%'; fill.style.background = dynColor; }
   if (txt) { txt.textContent = pct + '%'; txt.style.color = dynColor; }
   const weekDone = WEEKS[wi].tasks.filter((_, ti2) => data[taskKey(wi, ti2)]).length;
