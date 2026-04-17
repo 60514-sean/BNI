@@ -454,7 +454,10 @@ function renderApp() {
 }
 
 // ===== ADMIN OVERVIEW =====
+function resetHeaderColor() { document.querySelector('.header').style.background = '#c0392b'; }
+
 function renderAdmin() {
+  resetHeaderColor();
   const cfg = getConfig();
   let html = '';
   cfg.pairs.forEach((p, pi) => {
@@ -548,6 +551,7 @@ function renderWeeksReadonly(ck, speaker) {
 
 // ===== CONSULTANT OVERVIEW =====
 function renderConsultantOverview(ck) {
+  resetHeaderColor();
   const cfg = getConfig();
   const myPairs = cfg.pairs.filter(p => p.consultant === ck && (p.consultant || p.speaker));
   if (myPairs.length === 0) {
@@ -612,6 +616,8 @@ function renderConsultant(ck, speaker, canEdit) {
   const pct = total ? Math.round(done / total * 100) : 0;
   const progressColor = pct === 100 ? DONE_COLOR : color;
 
+  document.querySelector('.header').style.background = color;
+
   const dates = [
     isSimpleType(act) && pair.submitDate1 ? `${DATE_LABELS[0]}：${pair.submitDate1}` : '',
     isSimpleType(act) && pair.submitDate2 ? `${DATE_LABELS[1]}：${pair.submitDate2}` : '',
@@ -665,11 +671,12 @@ function renderConsultant(ck, speaker, canEdit) {
       const cls = data[simpleTaskKey(ti)] ? 'checked' : '';
       const dis = canEdit ? '' : 'disabled';
       return `<div class="task-item">
-        <input type="checkbox" class="task-check" id="scb_${ti}" ${checked} ${dis} onchange="toggleTaskSimple('${ck}','${speaker}',${ti},this)">
+        <input type="checkbox" class="task-check" id="scb_${ti}" ${checked} ${dis} style="accent-color:${color}" onchange="toggleTaskSimple('${ck}','${speaker}',${ti},this)">
         <div class="task-content">
           <div class="task-label ${cls}" id="slbl_${ti}">${t}</div>
           <textarea class="task-note" id="snote_${ti}" placeholder=""
-            onchange="saveNoteSimple('${ck}','${speaker}',${ti},this.value)">${note}</textarea>
+            onchange="saveNoteSimple('${ck}','${speaker}',${ti},this.value)"
+            onfocus="this.style.borderColor='${color}'" onblur="this.style.borderColor=''">${note}</textarea>
         </div>
       </div>`;
     }).join('');
@@ -690,11 +697,12 @@ function renderConsultant(ck, speaker, canEdit) {
         const cls = data[taskKey(wi, ti)] ? 'checked' : '';
         const dis = canEdit ? '' : 'disabled';
         return `<div class="task-item">
-          <input type="checkbox" class="task-check" id="cb_${wi}_${ti}" ${checked} ${dis} onchange="toggleTask('${ck}','${speaker}',${wi},${ti},this)">
+          <input type="checkbox" class="task-check" id="cb_${wi}_${ti}" ${checked} ${dis} style="accent-color:${color}" onchange="toggleTask('${ck}','${speaker}',${wi},${ti},this)">
           <div class="task-content">
             <div class="task-label ${cls}" id="lbl_${wi}_${ti}">${t}</div>
             <textarea class="task-note" id="note_${wi}_${ti}" placeholder="${WEEK_HINTS[wi]?.[ti] || ''}"
-              onchange="saveNote('${ck}','${speaker}',${wi},${ti},this.value)">${note}</textarea>
+              onchange="saveNote('${ck}','${speaker}',${wi},${ti},this.value)"
+              onfocus="this.style.borderColor='${color}'" onblur="this.style.borderColor=''">${note}</textarea>
           </div>
         </div>`;
       }).join('');
@@ -1079,6 +1087,7 @@ function removeConsultant(i) {
 }
 
 function showSettings() {
+  resetHeaderColor();
   document.getElementById('headerTitle').textContent = '系統設定';
   const cfg = getConfig();
   const consultants = cfg.consultants || [];
