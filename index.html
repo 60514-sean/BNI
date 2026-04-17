@@ -309,6 +309,7 @@ const WEEK_HINTS = [
 
 // ===== ACTIVITY TYPES =====
 const ACTIVITY_TYPES = ['主題簡報', '主題日', '共識會議', 'BOD'];
+const PRESENTATION_COUNTS = ['第1次', '第2次', '第2次以上'];
 const ACTIVITY_COLORS = { '主題簡報': '#c0392b', '主題日': '#e67e22', '共識會議': '#2980b9', 'BOD': '#8e44ad' };
 const DONE_COLOR = '#c0392b';
 const SIMPLE_TASKS = ['主題名稱確認', '一般引薦確認', '理想引薦確認', '夢幻引薦確認', '簡報繳交', 'RE稿完成'];
@@ -1017,6 +1018,8 @@ function onActivityChange(i) {
   });
   const row3 = document.getElementById(`dateRow_${i}_3`);
   if (row3) row3.style.display = 'block';
+  const cntSel = document.getElementById(`cnt_${i}`);
+  if (cntSel) cntSel.style.display = act === '主題簡報' ? '' : 'none';
 }
 
 // ===== SETTINGS PAGE =====
@@ -1060,7 +1063,9 @@ function showSettings() {
         const myPairs = cfg.pairs.filter(p => p.consultant === c && p.speaker);
         const speakerTags = myPairs.map(p => {
           const color = ACTIVITY_COLORS[p.activityType||'主題簡報'] || '#c0392b';
-          return `<span style="padding:3px 10px;border-radius:12px;font-size:12px;background:${color}18;color:${color};border:1px solid ${color}40;">${p.speaker}</span>`;
+          const cntBadge = (p.activityType === '主題簡報' || !p.activityType) && p.presentationCount
+            ? `<span style="font-size:11px;opacity:0.75;margin-left:4px;">${p.presentationCount}</span>` : '';
+          return `<span style="padding:3px 10px;border-radius:12px;font-size:12px;background:${color}18;color:${color};border:1px solid ${color}40;">${p.speaker}${cntBadge}</span>`;
         }).join('');
         return `<div style="border:1px solid #eee;border-radius:8px;padding:12px;margin-bottom:8px;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:${myPairs.length?'8px':'0'};">
@@ -1089,6 +1094,11 @@ function showSettings() {
     const conSelectOpts = `<option value="">選擇顧問</option>${conOptions}` +
       (p.consultant && !consultants.includes(p.consultant) ? `<option value="${p.consultant}" selected>${p.consultant}</option>` : '');
     const conSelectHtml = `<select id="con_${i}" style="flex:1;min-width:90px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;cursor:pointer;">${conSelectOpts}</select>`;
+    const cnt = p.presentationCount || '';
+    const cntSelectHtml = `<select id="cnt_${i}" style="min-width:90px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;cursor:pointer;display:${act==='主題簡報'?'':'none'};">
+      <option value="">選擇次數</option>
+      ${PRESENTATION_COUNTS.map(c => `<option value="${c}" ${cnt===c?'selected':''}>${c}</option>`).join('')}
+    </select>`;
     return `
     <div style="border:${isDone?'2px solid #c0392b':'1px solid #eee'};border-radius:8px;padding:12px;margin-bottom:10px;" id="pairRow_${i}">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
@@ -1097,6 +1107,7 @@ function showSettings() {
         </select>
         ${conSelectHtml}
         <span style="color:#c0392b;font-weight:bold;">↔</span>
+        ${cntSelectHtml}
         <input type="text" placeholder="講者姓名" value="${p.speaker||''}" id="spk_${i}" style="flex:1;min-width:90px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;" />
         <button class="btn btn-sm btn-danger" onclick="removePair(${i})">刪除</button>
       </div>
@@ -1182,6 +1193,7 @@ function readFormIntoCfg() {
       submitDate1: simple ? (document.getElementById(`time1_${i}`)?.value.trim() || '') : '',
       submitDate2: simple ? (document.getElementById(`time2_${i}`)?.value.trim() || '') : '',
       presentationTime: document.getElementById(`time3_${i}`)?.value.trim() || '',
+      presentationCount: document.getElementById(`cnt_${i}`)?.value || '',
     };
   });
   return cfg;
