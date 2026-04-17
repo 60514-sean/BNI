@@ -678,7 +678,7 @@ function renderConsultant(ck, speaker, canEdit) {
             <h3>${w.label}${isCurWeek ? ` <span style="font-size:11px;background:white;color:${color};border:1px solid ${color};border-radius:8px;padding:1px 7px;vertical-align:middle;">本週</span>` : ''}</h3>
             <div class="week-sub">${w.theme}</div>
           </div>
-          <span>${wD}/${wT}</span>
+          <span id="wcount_${wi}">${wD}/${wT}</span>
         </div>
         <div class="week-body" id="wb_${wi}">${tasks}</div>
       </div>`;
@@ -791,6 +791,9 @@ async function toggleTask(ck, speaker, wi, ti, cb) {
   const txt = document.querySelector('.overall-pct-text');
   if (fill) fill.style.width = pct + '%';
   if (txt) txt.textContent = pct + '%';
+  const weekDone = WEEKS[wi].tasks.filter((_, ti2) => data[taskKey(wi, ti2)]).length;
+  const wcount = document.getElementById(`wcount_${wi}`);
+  if (wcount) wcount.textContent = `${weekDone}/${WEEKS[wi].tasks.length}`;
   saveData(ck, speaker, data);
 }
 
