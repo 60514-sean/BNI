@@ -799,7 +799,9 @@ function renderGuide(act, color, pair) {
   const body3 = (!cnt || cnt === '第1次')
     ? gCard('攻略三-1', '333 架構（第 1 次簡報）', body31)
     : gCard('攻略三-2', '主題簡報架構（第 2+ 次）', body32);
-  return body3;
+  return gCard('攻略一', '主題設定參考', body1) +
+    gCard('攻略二', '引薦對象', body2) +
+    body3;
 }
 
 async function toggleTask(ck, speaker, wi, ti, cb) {
