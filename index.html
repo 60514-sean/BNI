@@ -1027,8 +1027,14 @@ function showSettings() {
     const act = p.activityType || '主題簡報';
     const color = ACTIVITY_COLORS[act] || '#c0392b';
     const simple = isSimpleType(act);
+    const pData = getData(p.consultant, p.speaker);
+    const pTotal = isSimpleType(act) ? SIMPLE_TASKS.length : WEEKS.reduce((s,w)=>s+w.tasks.length,0);
+    const pDone = isSimpleType(act)
+      ? SIMPLE_TASKS.filter((_,ti)=>pData[simpleTaskKey(ti)]).length
+      : WEEKS.reduce((s,w,wi)=>s+w.tasks.filter((_,ti)=>pData[taskKey(wi,ti)]).length,0);
+    const isDone = pTotal > 0 && pDone === pTotal;
     return `
-    <div style="border:1px solid #eee;border-radius:8px;padding:12px;margin-bottom:10px;" id="pairRow_${i}">
+    <div style="border:${isDone?'2px solid #c0392b':'1px solid #eee'};border-radius:8px;padding:12px;margin-bottom:10px;" id="pairRow_${i}">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
         <select id="act_${i}" onchange="onActivityChange(${i})" style="padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;color:${color};font-weight:bold;outline:none;cursor:pointer;">
           ${ACTIVITY_TYPES.map(t => `<option value="${t}" ${act===t?'selected':''}>${t}</option>`).join('')}
