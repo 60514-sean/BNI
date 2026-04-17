@@ -309,7 +309,7 @@ const WEEK_HINTS = [
 
 // ===== ACTIVITY TYPES =====
 const ACTIVITY_TYPES = ['主題簡報', '主題日', '共識會議', 'BOD'];
-const PRESENTATION_COUNTS = ['第1次', '第2次', '第2次以上'];
+const PRESENTATION_COUNTS = ['第1次', '第2次', '第2次+'];
 const ACTIVITY_COLORS = { '主題簡報': '#c0392b', '主題日': '#e67e22', '共識會議': '#2980b9', 'BOD': '#8e44ad' };
 const DONE_COLOR = '#c0392b';
 const SIMPLE_TASKS = ['主題名稱確認', '一般引薦確認', '理想引薦確認', '夢幻引薦確認', '簡報繳交', 'RE稿完成'];
@@ -804,7 +804,7 @@ function renderGuide(act, color, pair) {
     gGrid('總結','要求引薦 CTA','記憶口號');
 
   const body32 =
-    `<div style="font-size:12px;color:#888;margin-bottom:6px;">第 2+ 次簡報使用，呼應 DanceCard</div>` +
+    `<div style="font-size:12px;color:#888;margin-bottom:6px;">第2次+簡報使用，呼應 DanceCard</div>` +
     gGrid('封面','自我介紹 /<br>我在做什麼','獨特銷售主張<br><small style="color:#888">針對目標客群</small>') +
     gGrid('最佳 LCD<br><small style="color:#888">描述 + 案例 + 總結</small>','如何開啟交易對話<br><small style="color:#888">聽到xxx，告訴他ooo</small>','如何掌握引薦流程<br><small style="color:#888">常見 QA 2~3 個</small>') +
     gGrid('整體總結','要求引薦 CTA','記憶口號') +
@@ -813,7 +813,7 @@ function renderGuide(act, color, pair) {
   const cnt = pair ? pair.presentationCount : '';
   const body3 = (!cnt || cnt === '第1次')
     ? gCard('攻略三-1', '333 架構（第 1 次簡報）', body31)
-    : gCard('攻略三-2', '主題簡報架構（第 2+ 次）', body32);
+    : gCard('攻略三-2', '主題簡報架構（第2次+）', body32);
   return gCard('攻略一', '主題設定參考', body1) +
     gCard('攻略二', '引薦對象', body2) +
     body3;
@@ -1307,7 +1307,7 @@ function renderSlidesTab(ck, speaker, pair, canWrite) {
   } else {
     const cnt = pair.presentationCount || '第1次';
     slides = cnt === '第1次' ? SLIDES_V1 : SLIDES_V2;
-    archName = cnt === '第1次' ? '333 架構（第1次）' : '主題簡報架構（第2+次）';
+    archName = cnt === '第1次' ? '333 架構（第1次）' : '主題簡報架構（第2次+）';
   }
   const data = getSlidesData(ck, speaker);
   const color = ACTIVITY_COLORS[pair.activityType||'主題簡報'] || '#c0392b';
