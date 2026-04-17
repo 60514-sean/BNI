@@ -488,11 +488,17 @@ function renderAdmin() {
       isSimpleType(act) && p.submitDate2 ? `${DATE_LABELS[1]}：${p.submitDate2}` : '',
       p.presentationTime ? `${DATE_LABELS[2]}：${p.presentationTime}` : '',
     ].filter(Boolean).join('　');
-    const detail = isSimpleType(act) ? renderSimpleReadonly(p.consultant, p.speaker) : renderWeeksReadonly(p.consultant, p.speaker);
-    const slidesSection = hasSlides(act) ? `<div style="margin-top:16px;border-top:1px solid #f0f0f0;padding-top:14px;">
-        <div style="font-size:13px;font-weight:bold;color:${dispColor};margin-bottom:10px;">我的簡報內容</div>
-        ${renderSlidesTab(p.consultant, p.speaker, p, false)}
-      </div>` : '';
+    const detail = isSimpleType(act) ? renderSimpleReadonly(p.consultant, p.speaker, dispColor) : renderWeeksReadonly(p.consultant, p.speaker, dispColor);
+    const detailInner = hasSlides(act)
+      ? `<div style="display:flex;gap:0;border-bottom:2px solid #f0f0f0;margin-bottom:12px;">
+           <button id="adt_${pi}_p" onclick="adminTab(${pi},'p','${dispColor}')"
+             style="padding:7px 16px;border:none;background:none;font-size:13px;cursor:pointer;font-weight:bold;color:${dispColor};border-bottom:2px solid ${dispColor};margin-bottom:-2px;">進度</button>
+           <button id="adt_${pi}_s" onclick="adminTab(${pi},'s','${dispColor}')"
+             style="padding:7px 16px;border:none;background:none;font-size:13px;cursor:pointer;color:#aaa;">簡報內容</button>
+         </div>
+         <div id="adp_${pi}_p">${detail}</div>
+         <div id="adp_${pi}_s" style="display:none;">${renderSlidesTab(p.consultant, p.speaker, p, false)}</div>`
+      : detail;
     html += `
       <div class="pair-card" ${pct === 100 ? `style="border:2px solid ${dispColor};background:white;"` : ''}>
         <div class="pair-header">
@@ -504,7 +510,7 @@ function renderAdmin() {
         ${countdownHtml(p.presentationTime, act, ACTIVITY_COLORS[act])}
         <div class="week-dots" style="margin-top:6px;">${weekDots}</div>
         <button class="expand-btn" onclick="toggleDetail('ad_${pi}',this)">查看詳細 ▼</button>
-        <div id="ad_${pi}" style="display:none;margin-top:12px;">${detail}${slidesSection}</div>
+        <div id="ad_${pi}" style="display:none;margin-top:12px;">${detailInner}</div>
       </div>`;
   });
   document.getElementById('mainContent').innerHTML = html || '<div class="card"><p style="color:#888;">尚未設定任何配對，請至設定頁面新增。</p></div>';
@@ -516,39 +522,63 @@ function toggleDetail(id, btn) {
   btn.textContent = el.style.display === 'none' ? '查看詳細 ▼' : '收起 ▲';
 }
 
-function renderSimpleReadonly(ck, speaker) {
+function adminTab(pi, tab, color) {
+  ['p','s'].forEach(t => {
+    const panel = document.getElementById(`adp_${pi}_${t}`);
+    const btn = document.getElementById(`adt_${pi}_${t}`);
+    if (!panel || !btn) return;
+    const active = t === tab;
+    panel.style.display = active ? '' : 'none';
+    btn.style.color = active ? color : '#aaa';
+    btn.style.fontWeight = active ? 'bold' : 'normal';
+    btn.style.borderBottom = active ? `2px solid ${color}` : '2px solid transparent';
+    btn.style.marginBottom = '-2px';
+  });
+}
+
+function renderSimpleReadonly(ck, speaker, color) {
+  const c = color || '#c0392b';
   const data = getData(ck, speaker);
-  const tasks = SIMPLE_TASKS.map((t, ti) => {
-    const checked = data[simpleTaskKey(ti)] ? 'checked' : '';
+  const rows = SIMPLE_TASKS.map((t, ti) => {
+    const checked = !!data[simpleTaskKey(ti)];
     const note = data[simpleNoteKey(ti)] || '';
-    const cls = data[simpleTaskKey(ti)] ? 'checked' : '';
-    return `<div class="task-item">
-      <input type="checkbox" class="task-check" ${checked} disabled>
-      <div class="task-content">
-        <div class="task-label ${cls}">${t}</div>
-        ${note ? `<div style="font-size:13px;color:#555;margin-top:6px;padding:6px 10px;background:#fff8f0;border-left:3px solid #c0392b;border-radius:4px;">備註：${note}</div>` : ''}
+    return `<div style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px solid #f5f5f5;">
+      <input type="checkbox" disabled ${checked?'checked':''} style="accent-color:${c};margin-top:3px;flex-shrink:0;">
+      <div>
+        <span style="font-size:13px;${checked?'color:#aaa;text-decoration:line-through;':'color:#333;'}">${t}</span>
+        ${note?`<div style="font-size:11px;color:#888;margin-top:2px;padding-left:2px;">${note}</div>`:''}
       </div>
     </div>`;
   }).join('');
-  return `<div style="margin-bottom:8px;">${tasks}</div>`;
+  return `<div>${rows}</div>`;
 }
 
-function renderWeeksReadonly(ck, speaker) {
+function renderWeeksReadonly(ck, speaker, color) {
+  const c = color || '#c0392b';
   const data = getData(ck, speaker);
+  const uid = ck + '_' + speaker;
   return WEEKS.map((w, wi) => {
-    const tasks = w.tasks.map((t, ti) => {
-      const checked = data[taskKey(wi, ti)] ? 'checked' : '';
-      const note = data[noteKey(wi, ti)] || '';
-      const cls = data[taskKey(wi, ti)] ? 'checked' : '';
-      return `<div class="task-item">
-        <input type="checkbox" class="task-check" ${checked} disabled>
-        <div class="task-content">
-          <div class="task-label ${cls}">${t}</div>
-          ${note ? `<div style="font-size:13px;color:#555;margin-top:6px;padding:6px 10px;background:#fff8f0;border-left:3px solid #c0392b;border-radius:4px;">備註：${note}</div>` : ''}
+    const wD = w.tasks.filter((_,ti) => data[taskKey(wi,ti)]).length;
+    const allDone = wD === w.tasks.length;
+    const rows = w.tasks.map((t, ti) => {
+      const checked = !!data[taskKey(wi,ti)];
+      const note = data[noteKey(wi,ti)] || '';
+      return `<div style="display:flex;gap:8px;align-items:flex-start;padding:4px 0;border-bottom:1px solid #f5f5f5;">
+        <input type="checkbox" disabled ${checked?'checked':''} style="accent-color:${c};margin-top:3px;flex-shrink:0;">
+        <div>
+          <span style="font-size:13px;${checked?'color:#aaa;text-decoration:line-through;':'color:#333;'}">${t}</span>
+          ${note?`<div style="font-size:11px;color:#888;margin-top:1px;">${note}</div>`:''}
         </div>
       </div>`;
     }).join('');
-    return `<div style="margin-bottom:12px;"><strong style="color:#c0392b;">${w.label}｜${w.theme}</strong>${tasks}</div>`;
+    return `<div style="margin-bottom:6px;border:1px solid #f0f0f0;border-radius:8px;overflow:hidden;">
+      <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'':'none'"
+        style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;cursor:pointer;background:${allDone?c+'18':'#fafafa'};">
+        <span style="font-size:13px;font-weight:bold;color:${allDone?c:'#555'};">${w.label}｜${w.theme}</span>
+        <span style="font-size:12px;padding:2px 8px;border-radius:10px;background:${allDone?c:'#eee'};color:${allDone?'white':'#888'};">${wD}/${w.tasks.length}</span>
+      </div>
+      <div style="display:none;padding:6px 12px 8px;">${rows}</div>
+    </div>`;
   }).join('');
 }
 
