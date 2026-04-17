@@ -489,6 +489,10 @@ function renderAdmin() {
       p.presentationTime ? `${DATE_LABELS[2]}：${p.presentationTime}` : '',
     ].filter(Boolean).join('　');
     const detail = isSimpleType(act) ? renderSimpleReadonly(p.consultant, p.speaker) : renderWeeksReadonly(p.consultant, p.speaker);
+    const slidesSection = hasSlides(act) ? `<div style="margin-top:16px;border-top:1px solid #f0f0f0;padding-top:14px;">
+        <div style="font-size:13px;font-weight:bold;color:${dispColor};margin-bottom:10px;">我的簡報內容</div>
+        ${renderSlidesTab(p.consultant, p.speaker, p, false)}
+      </div>` : '';
     html += `
       <div class="pair-card" ${pct === 100 ? `style="border:2px solid ${dispColor};background:white;"` : ''}>
         <div class="pair-header">
@@ -500,7 +504,7 @@ function renderAdmin() {
         ${countdownHtml(p.presentationTime, act, ACTIVITY_COLORS[act])}
         <div class="week-dots" style="margin-top:6px;">${weekDots}</div>
         <button class="expand-btn" onclick="toggleDetail('ad_${pi}',this)">查看詳細 ▼</button>
-        <div id="ad_${pi}" style="display:none;margin-top:12px;">${detail}</div>
+        <div id="ad_${pi}" style="display:none;margin-top:12px;">${detail}${slidesSection}</div>
       </div>`;
   });
   document.getElementById('mainContent').innerHTML = html || '<div class="card"><p style="color:#888;">尚未設定任何配對，請至設定頁面新增。</p></div>';
