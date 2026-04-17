@@ -473,13 +473,15 @@ function renderAdmin() {
     const dispColor = ACTIVITY_COLORS[act]||'#c0392b';
     const weekDots = isSimpleType(act)
       ? SIMPLE_TASKS.map((t, ti) => {
-          const cls = data[simpleTaskKey(ti)] ? 'done' : '';
-          return `<span class="week-dot ${cls}" style="font-size:11px;">${t}</span>`;
+          const isDone = !!data[simpleTaskKey(ti)];
+          const dotStyle = isDone ? `background:${dispColor};color:white;` : '';
+          return `<span class="week-dot ${isDone?'done':''}" style="font-size:11px;${dotStyle}">${t}</span>`;
         }).join('')
       : WEEKS.map((w, wi) => {
           const wD = w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length;
           const cls = wD === w.tasks.length ? 'done' : wD > 0 ? 'partial' : '';
-          return `<span class="week-dot ${cls}">${w.label}</span>`;
+          const dotStyle = cls==='done' ? `background:${dispColor};color:white;` : cls==='partial' ? `background:${dispColor}80;color:white;` : '';
+          return `<span class="week-dot ${cls}" style="${dotStyle}">${w.label}</span>`;
         }).join('');
     const dates = [
       isSimpleType(act) && p.submitDate1 ? `${DATE_LABELS[0]}：${p.submitDate1}` : '',
@@ -917,7 +919,7 @@ function countdownHtml(presentationTime, act, color) {
     cdStyle = `background:${c}15;color:${c};border:1px solid ${c}40;`;
   } else if (countdown === 0) {
     cdText = '就是今天！';
-    cdStyle = `background:#c0392b;color:white;border:1px solid #c0392b;`;
+    cdStyle = `background:${c};color:white;border:1px solid ${c};`;
   } else {
     cdText = `已過 ${Math.abs(countdown)} 天`;
     cdStyle = `background:#f5f5f5;color:#999;border:1px solid #ddd;`;
