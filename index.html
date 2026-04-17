@@ -628,7 +628,7 @@ function renderConsultant(ck, speaker, canEdit) {
       ${hasSlides(act) ? `<button id="tabBtn_slides" class="speaker-tab-btn" onclick="switchSpeakerTab('slides')">我的簡報</button>` : ''}
       <button id="tabBtn_guide" class="speaker-tab-btn" onclick="switchSpeakerTab('guide')">簡報攻略</button>
     </div>
-    <div id="tabGuide" style="display:none;">${renderGuide(act, color)}</div>
+    <div id="tabGuide" style="display:none;">${renderGuide(act, color, pair)}</div>
     ${hasSlides(act) ? `<div id="tabSlides" style="display:none;">${renderSlidesTab(ck, speaker, pair, true)}</div>` : ''}
     <div id="tabProgress">`;
   }
@@ -731,7 +731,7 @@ function switchSpeakerTab(tab) {
   });
 }
 
-function renderGuide(act, color) {
+function renderGuide(act, color, pair) {
   const c = color || '#c0392b';
 
   function gCard(title, sub, body) {
@@ -795,10 +795,11 @@ function renderGuide(act, color) {
     gGrid('整體總結','要求引薦 CTA','記憶口號') +
     `<div class="guide-tip" style="background:#f5f5f5;color:#888;">LCD 科普：產品與服務項目 / 目標市場 / 客戶特定利潤 / 公司傲人事蹟 / 成功案例</div>`;
 
-  return gCard('攻略一', '主題設定參考', body1) +
-    gCard('攻略二', '引薦對象', body2) +
-    gCard('攻略三-1', '333 架構（第 1 次簡報）', body31) +
-    gCard('攻略三-2', '主題簡報架構（第 2+ 次）', body32);
+  const cnt = pair ? pair.presentationCount : '';
+  const body3 = (!cnt || cnt === '第1次')
+    ? gCard('攻略三-1', '333 架構（第 1 次簡報）', body31)
+    : gCard('攻略三-2', '主題簡報架構（第 2+ 次）', body32);
+  return body3;
 }
 
 async function toggleTask(ck, speaker, wi, ti, cb) {
