@@ -651,7 +651,7 @@ function renderConsultant(ck, speaker, canEdit) {
   }
   if (!canEdit) html += `
     <div class="overall-progress">
-      <h3>整體完成進度</h3>
+      <h3 style="color:${color}">整體完成進度</h3>
       <div class="overall-bar-wrap"><div class="overall-bar-fill" style="width:${pct}%;background:${progressColor}"></div></div>
       <div class="overall-pct-text" style="color:${progressColor}">${pct}%</div>
     </div>`;
@@ -667,7 +667,7 @@ function renderConsultant(ck, speaker, canEdit) {
       return `<div class="task-item">
         <input type="checkbox" class="task-check" id="scb_${ti}" ${checked} ${dis} style="accent-color:${color}" onchange="toggleTaskSimple('${ck}','${speaker}',${ti},this)">
         <div class="task-content">
-          <div class="task-label ${cls}" id="slbl_${ti}">${t}</div>
+          <div class="task-label ${cls}" id="slbl_${ti}" style="${cls ? `text-decoration-color:${color}` : ''}">${t}</div>
           <textarea class="task-note" id="snote_${ti}" placeholder=""
             onchange="saveNoteSimple('${ck}','${speaker}',${ti},this.value)"
             onfocus="this.style.borderColor='${color}'" onblur="this.style.borderColor=''">${note}</textarea>
@@ -693,7 +693,7 @@ function renderConsultant(ck, speaker, canEdit) {
         return `<div class="task-item">
           <input type="checkbox" class="task-check" id="cb_${wi}_${ti}" ${checked} ${dis} style="accent-color:${color}" onchange="toggleTask('${ck}','${speaker}',${wi},${ti},this)">
           <div class="task-content">
-            <div class="task-label ${cls}" id="lbl_${wi}_${ti}">${t}</div>
+            <div class="task-label ${cls}" id="lbl_${wi}_${ti}" style="${cls ? `text-decoration-color:${color}` : ''}">${t}</div>
             <textarea class="task-note" id="note_${wi}_${ti}" placeholder="${WEEK_HINTS[wi]?.[ti] || ''}"
               onchange="saveNote('${ck}','${speaker}',${wi},${ti},this.value)"
               onfocus="this.style.borderColor='${color}'" onblur="this.style.borderColor=''">${note}</textarea>
@@ -701,7 +701,7 @@ function renderConsultant(ck, speaker, canEdit) {
         </div>`;
       }).join('');
       html += `<div class="week-card" ${isCurWeek ? `style="border:2px solid ${color};"` : ''}>
-        <div class="week-header" onclick="toggleWeek('wb_${wi}')">
+        <div class="week-header" style="background:${color}" onclick="toggleWeek('wb_${wi}')">
           <div>
             <h3>${w.label}${isCurWeek ? ` <span style="font-size:11px;background:white;color:${color};border:1px solid ${color};border-radius:8px;padding:1px 7px;vertical-align:middle;">本週</span>` : ''}</h3>
             <div class="week-sub">${w.theme}</div>
@@ -817,7 +817,7 @@ async function toggleTask(ck, speaker, wi, ti, cb) {
   const data = getData(ck, speaker);
   data[taskKey(wi, ti)] = cb.checked;
   const lbl = document.getElementById(`lbl_${wi}_${ti}`);
-  if (lbl) lbl.className = 'task-label' + (cb.checked ? ' checked' : '');
+  if (lbl) { lbl.className = 'task-label' + (cb.checked ? ' checked' : ''); lbl.style.textDecorationColor = cb.checked ? dynColor : ''; }
   const total = WEEKS.reduce((s, w) => s + w.tasks.length, 0);
   const done = WEEKS.reduce((s, w, wi2) => s + w.tasks.filter((_, ti2) => data[taskKey(wi2, ti2)]).length, 0);
   const pct = total ? Math.round(done / total * 100) : 0;
@@ -858,8 +858,10 @@ async function saveNote(ck, speaker, wi, ti, val) {
 async function toggleTaskSimple(ck, speaker, ti, cb) {
   const data = getData(ck, speaker);
   data[simpleTaskKey(ti)] = cb.checked;
+  const _pair = getConfig().pairs.find(p => p.consultant === ck && p.speaker === speaker) || {};
+  const _color = ACTIVITY_COLORS[_pair.activityType||'主題簡報'] || '#c0392b';
   const lbl = document.getElementById(`slbl_${ti}`);
-  if (lbl) lbl.className = 'task-label' + (cb.checked ? ' checked' : '');
+  if (lbl) { lbl.className = 'task-label' + (cb.checked ? ' checked' : ''); lbl.style.textDecorationColor = cb.checked ? _color : ''; }
   const done = SIMPLE_TASKS.filter((_, i) => data[simpleTaskKey(i)]).length;
   const pct = Math.round(done / SIMPLE_TASKS.length * 100);
   const fill = document.querySelector('.overall-bar-fill');
