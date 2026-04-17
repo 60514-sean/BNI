@@ -310,6 +310,7 @@ const WEEK_HINTS = [
 // ===== ACTIVITY TYPES =====
 const ACTIVITY_TYPES = ['主題簡報', '主題日', '共識會議', 'BOD'];
 const ACTIVITY_COLORS = { '主題簡報': '#c0392b', '主題日': '#e67e22', '共識會議': '#2980b9', 'BOD': '#8e44ad' };
+const DONE_COLOR = '#27ae60';
 const SIMPLE_TASKS = ['主題名稱確認', '一般引薦確認', '理想引薦確認', '夢幻引薦確認', '簡報繳交', 'RE稿完成'];
 const DATE_LABELS = ['繳交簡報', '線上RE稿', '簡報時間'];
 
@@ -461,6 +462,7 @@ function renderAdmin() {
       done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
     }
     const pct = total ? Math.round(done / total * 100) : 0;
+    const dispColor = pct === 100 ? DONE_COLOR : (ACTIVITY_COLORS[act]||'#c0392b');
     const weekDots = isSimpleType(act)
       ? SIMPLE_TASKS.map((t, ti) => {
           const cls = data[simpleTaskKey(ti)] ? 'done' : '';
@@ -478,11 +480,11 @@ function renderAdmin() {
     ].filter(Boolean).join('　');
     const detail = isSimpleType(act) ? renderSimpleReadonly(p.consultant, p.speaker) : renderWeeksReadonly(p.consultant, p.speaker);
     html += `
-      <div class="pair-card">
+      <div class="pair-card" ${pct === 100 ? `style="border:2px solid ${DONE_COLOR};background:#f0faf4;"` : ''}>
         <div class="pair-header">
           <span class="pair-title">顧問 ${p.consultant||'—'} ↔ ${p.speaker||'—'}${activityBadge(act)}</span>
-          <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%;background:${ACTIVITY_COLORS[act]||'#c0392b'}"></div></div>
-          <span class="progress-pct" style="color:${ACTIVITY_COLORS[act]||'#c0392b'}">${pct}%</span>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%;background:${dispColor}"></div></div>
+          <span class="progress-pct" style="color:${dispColor}">${pct}%</span>
         </div>
         ${dates ? `<div style="font-size:12px;color:#888;margin-bottom:4px;">${dates}</div>` : ''}
         ${countdownHtml(p.presentationTime, act, ACTIVITY_COLORS[act])}
@@ -561,21 +563,22 @@ function renderConsultantOverview(ck) {
       done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
     }
     const pct = total ? Math.round(done / total * 100) : 0;
+    const dispColor2 = pct === 100 ? DONE_COLOR : color;
     const dates = [
       isSimpleType(act) && p.submitDate1 ? `${DATE_LABELS[0]}：${p.submitDate1}` : '',
       isSimpleType(act) && p.submitDate2 ? `${DATE_LABELS[1]}：${p.submitDate2}` : '',
       p.presentationTime ? `${DATE_LABELS[2]}：${p.presentationTime}` : '',
     ].filter(Boolean).join('　');
     html += `
-      <div class="pair-card" style="cursor:pointer;" onclick="renderConsultant('${ck}','${p.speaker}',true)">
+      <div class="pair-card" style="cursor:pointer;${pct === 100 ? `border:2px solid ${DONE_COLOR};background:#f0faf4;` : ''}" onclick="renderConsultant('${ck}','${p.speaker}',true)">
         <div class="pair-header">
           <span class="pair-title">${p.speaker||'—'}${activityBadge(act)}</span>
-          <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%;background:${color}"></div></div>
-          <span class="progress-pct" style="color:${color}">${pct}%</span>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%;background:${dispColor2}"></div></div>
+          <span class="progress-pct" style="color:${dispColor2}">${pct}%</span>
         </div>
         ${dates ? `<div style="font-size:12px;color:#888;margin-top:6px;">${dates}</div>` : ''}
         ${countdownHtml(p.presentationTime, act, color)}
-        <div style="font-size:13px;color:${color};margin-top:8px;">點擊查看詳細進度 →</div>
+        <div style="font-size:13px;color:${dispColor2};margin-top:8px;">點擊查看詳細進度 →</div>
       </div>`;
   });
   html += '</div>';
@@ -599,6 +602,7 @@ function renderConsultant(ck, speaker, canEdit) {
     done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
   }
   const pct = total ? Math.round(done / total * 100) : 0;
+  const progressColor = pct === 100 ? DONE_COLOR : color;
 
   const dates = [
     isSimpleType(act) && pair.submitDate1 ? `${DATE_LABELS[0]}：${pair.submitDate1}` : '',
@@ -626,8 +630,8 @@ function renderConsultant(ck, speaker, canEdit) {
   html += `
     <div class="overall-progress">
       <h3>整體完成進度</h3>
-      <div class="overall-bar-wrap"><div class="overall-bar-fill" style="width:${pct}%;background:${color}"></div></div>
-      <div class="overall-pct-text" style="color:${color}">${pct}%</div>
+      <div class="overall-bar-wrap"><div class="overall-bar-fill" style="width:${pct}%;background:${progressColor}"></div></div>
+      <div class="overall-pct-text" style="color:${progressColor}">${pct}%</div>
     </div>`;
 
   if (isSimpleType(act)) {
@@ -789,8 +793,12 @@ async function toggleTask(ck, speaker, wi, ti, cb) {
   const pct = total ? Math.round(done / total * 100) : 0;
   const fill = document.querySelector('.overall-bar-fill');
   const txt = document.querySelector('.overall-pct-text');
-  if (fill) fill.style.width = pct + '%';
-  if (txt) txt.textContent = pct + '%';
+  const cfg2 = getConfig();
+  const pair2 = cfg2.pairs.find(p => p.consultant === ck && p.speaker === speaker) || {};
+  const baseColor = ACTIVITY_COLORS[pair2.activityType||'主題簡報'] || '#c0392b';
+  const dynColor = pct === 100 ? DONE_COLOR : baseColor;
+  if (fill) { fill.style.width = pct + '%'; fill.style.background = dynColor; }
+  if (txt) { txt.textContent = pct + '%'; txt.style.color = dynColor; }
   const weekDone = WEEKS[wi].tasks.filter((_, ti2) => data[taskKey(wi, ti2)]).length;
   const wcount = document.getElementById(`wcount_${wi}`);
   if (wcount) wcount.textContent = `${weekDone}/${WEEKS[wi].tasks.length}`;
