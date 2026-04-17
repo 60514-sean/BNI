@@ -454,10 +454,7 @@ function renderApp() {
 }
 
 // ===== ADMIN OVERVIEW =====
-function resetHeaderColor() { document.querySelector('.header').style.background = '#c0392b'; }
-
 function renderAdmin() {
-  resetHeaderColor();
   const cfg = getConfig();
   let html = '';
   cfg.pairs.forEach((p, pi) => {
@@ -551,7 +548,6 @@ function renderWeeksReadonly(ck, speaker) {
 
 // ===== CONSULTANT OVERVIEW =====
 function renderConsultantOverview(ck) {
-  resetHeaderColor();
   const cfg = getConfig();
   const myPairs = cfg.pairs.filter(p => p.consultant === ck && (p.consultant || p.speaker));
   if (myPairs.length === 0) {
@@ -615,8 +611,6 @@ function renderConsultant(ck, speaker, canEdit) {
   }
   const pct = total ? Math.round(done / total * 100) : 0;
   const progressColor = pct === 100 ? DONE_COLOR : color;
-
-  document.querySelector('.header').style.background = color;
 
   const dates = [
     isSimpleType(act) && pair.submitDate1 ? `${DATE_LABELS[0]}：${pair.submitDate1}` : '',
@@ -1087,7 +1081,6 @@ function removeConsultant(i) {
 }
 
 function showSettings() {
-  resetHeaderColor();
   document.getElementById('headerTitle').textContent = '系統設定';
   const cfg = getConfig();
   const consultants = cfg.consultants || [];
