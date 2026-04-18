@@ -1026,32 +1026,41 @@ function closeCaseModal() {
 function showCasesSettings() {
   const cases = getCases();
   const CASE_TYPES = ['第1次', '第2次+', '主題日'];
-  const listHtml = cases.length
-    ? cases.map((cs, i) => {
-        const imgCount = caseImgList(cs).length;
-        return `
-        <div style="border:1px solid #eee;border-radius:8px;padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;">
-          <div style="flex:1;">
-            <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap;">
-              <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#fdecea;color:#c0392b;font-weight:600;">${cs.type}</span>
-              <span style="font-size:13px;font-weight:600;">${cs.topic || '（未填主題）'}</span>
-              <span style="font-size:12px;color:#aaa;">${cs.speaker || ''}</span>
-              ${imgCount ? `<span style="font-size:11px;color:#1a73e8;">${imgCount} 張圖</span>` : ''}
+
+  const groupHtml = CASE_TYPES.map(type => {
+    const group = cases.map((cs, i) => ({ cs, i })).filter(({ cs }) => cs.type === type);
+    const itemsHtml = group.length
+      ? group.map(({ cs, i }) => {
+          const imgCount = caseImgList(cs).length;
+          return `
+          <div style="border:1px solid #eee;border-radius:8px;padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;">
+            <div style="flex:1;">
+              <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap;">
+                <span style="font-size:13px;font-weight:600;">${cs.topic || '（未填主題）'}</span>
+                <span style="font-size:12px;color:#aaa;">${cs.speaker || ''}</span>
+                ${imgCount ? `<span style="font-size:11px;color:#1a73e8;">${imgCount} 張圖</span>` : ''}
+              </div>
+              ${cs.note ? `<div style="font-size:12px;color:#777;line-height:1.5;">${cs.note}</div>` : ''}
+              <div style="display:flex;gap:6px;margin-top:8px;">
+                <input id="refreshFolder_${i}" type="text" placeholder="貼上資料夾連結以重新整理圖片" style="flex:1;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;outline:none;font-family:monospace;" />
+                <button class="btn btn-sm" style="background:#1a73e8;color:white;white-space:nowrap;" onclick="refreshCaseImages(${i})">重新整理</button>
+              </div>
             </div>
-            ${cs.note ? `<div style="font-size:12px;color:#777;line-height:1.5;">${cs.note}</div>` : ''}
-            <div style="display:flex;gap:6px;margin-top:8px;">
-              <input id="refreshFolder_${i}" type="text" placeholder="貼上資料夾連結以重新整理圖片" style="flex:1;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;outline:none;font-family:monospace;" />
-              <button class="btn btn-sm" style="background:#1a73e8;color:white;white-space:nowrap;" onclick="refreshCaseImages(${i})">重新整理</button>
-            </div>
-          </div>
-          <button class="btn btn-sm btn-danger" onclick="removeCase(${i})" style="flex-shrink:0;">刪除</button>
-        </div>`;
-      }).join('')
-    : '<div style="color:#bbb;font-size:13px;margin-bottom:8px;">尚未新增任何案例</div>';
+            <button class="btn btn-sm btn-danger" onclick="removeCase(${i})" style="flex-shrink:0;">刪除</button>
+          </div>`;
+        }).join('')
+      : `<div style="color:#bbb;font-size:13px;padding:8px 0;">尚無案例</div>`;
+
+    return `
+      <div style="margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:#c0392b;padding:6px 10px;background:#fdecea;border-radius:6px;margin-bottom:8px;">${type}</div>
+        ${itemsHtml}
+      </div>`;
+  }).join('');
 
   const typeOpts = CASE_TYPES.map(t => `<option value="${t}">${t}</option>`).join('');
   return `
-    <div style="margin-bottom:12px;">${listHtml}</div>
+    <div style="margin-bottom:12px;">${groupHtml}</div>
     <div style="border:1px dashed #c0392b;border-radius:8px;padding:14px;">
       <div style="font-size:13px;font-weight:600;color:#c0392b;margin-bottom:10px;">新增案例</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
