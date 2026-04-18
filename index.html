@@ -934,15 +934,17 @@ function renderCarousel(images, uid) {
   const total = images.length;
   const src = driveImgUrl(images[0]);
   return `
-    <div style="position:relative;background:#111;border-radius:10px;overflow:hidden;margin-top:10px;">
-      <img id="carImg_${uid}" src="${src}" alt="投影片"
-        style="width:100%;max-height:320px;object-fit:contain;display:block;transition:opacity 0.15s;"
-        onerror="this.style.minHeight='120px';" />
+    <div style="margin-top:10px;">
+      <div style="background:#111;border-radius:10px;overflow:hidden;">
+        <img id="carImg_${uid}" src="${src}" alt="投影片"
+          style="width:100%;max-height:340px;object-fit:contain;display:block;transition:opacity 0.15s;"
+          onerror="this.style.minHeight='120px';" />
+      </div>
       ${total > 1 ? `
-      <div style="position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.55);padding:8px 14px;">
-        <button onclick="carouselNav('${uid}',-1)" style="background:rgba(255,255,255,0.18);border:none;color:white;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:18px;line-height:1;">‹</button>
-        <span id="carCount_${uid}" style="color:white;font-size:12px;font-weight:500;">1 / ${total}</span>
-        <button onclick="carouselNav('${uid}',1)" style="background:rgba(255,255,255,0.18);border:none;color:white;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:18px;line-height:1;">›</button>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px 0;">
+        <button onclick="carouselNav('${uid}',-1)" style="background:#eee;border:none;color:#333;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:20px;line-height:1;">‹</button>
+        <span id="carCount_${uid}" style="color:#888;font-size:13px;font-weight:500;">1 / ${total}</span>
+        <button onclick="carouselNav('${uid}',1)" style="background:#eee;border:none;color:#333;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:20px;line-height:1;">›</button>
       </div>` : ''}
     </div>`;
 }
