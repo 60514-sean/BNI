@@ -1540,43 +1540,89 @@ function buildReminderText(p) {
   return lines.join('\n');
 }
 
-function showReminders() {
-  const pairs = _adminPairs.filter(p => p.consultant && p.speaker);
-  if (pairs.length === 0) {
-    showToast('尚未設定配對');
-    return;
+function buildGroupReminderText(consultant, pairs) {
+  const givenName = consultant && consultant.length > 1 ? consultant.slice(1) : consultant;
+  const lines = [];
+  lines.push(`☀️ ${givenName} 早安~`);
+  if (pairs.length === 1) {
+    lines.push(`這週幫你整理一下 ${pairs[0].speaker} 的進度`);
+  } else {
+    lines.push(`這週幫你整理一下輔導的進度`);
   }
-  let html = '';
-  pairs.forEach((p, i) => {
+  lines.push('');
+
+  pairs.forEach((p, idx) => {
     const act = p.activityType || '主題簡報';
     const data = getData(p.consultant, p.speaker);
+    const { currentWeekIdx } = getPresentationInfo(p.presentationTime);
     const total = isSimpleType(act) ? SIMPLE_TASKS.length : WEEKS.reduce((s, w) => s + w.tasks.length, 0);
     const done = isSimpleType(act)
       ? SIMPLE_TASKS.filter((_, ti) => data[simpleTaskKey(ti)]).length
       : WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
     const pct = total ? Math.round(done / total * 100) : 0;
-    const dispColor = ACTIVITY_COLORS[act] || '#c0392b';
-    const text = buildReminderText(p);
+
+    if (pairs.length > 1) lines.push(`【講者${idx + 1}】${p.speaker}`);
+
+    if (pct === 100) {
+      lines.push(`目前已全部完成 100%，做得很棒！`);
+    } else {
+      lines.push(`目前完成 ${pct}%了，不過還有一些項目需要處理，我幫你都整理好了，提供給你方便追蹤~`);
+      if (isSimpleType(act)) {
+        const cnt = SIMPLE_TASKS.filter((_, ti) => !data[simpleTaskKey(ti)]).length;
+        if (cnt > 0) lines.push(`${act} → 還差 ${cnt} 項`);
+      } else {
+        const limit = currentWeekIdx >= 0 ? currentWeekIdx : WEEKS.length;
+        WEEKS.forEach((w, wi) => {
+          if (wi >= limit) return;
+          const cnt = w.tasks.filter((_, ti) => !data[taskKey(wi, ti)]).length;
+          if (cnt === 0) return;
+          lines.push(`${w.label}｜${w.theme} → 還差 ${cnt} 項`);
+        });
+      }
+    }
+    if (idx < pairs.length - 1) lines.push('');
+  });
+
+  lines.push('');
+  lines.push('祝~今天順心優~❤️');
+  return lines.join('\n');
+}
+
+function showReminders() {
+  const pairs = _adminPairs.filter(p => p.consultant && p.speaker);
+  if (pairs.length === 0) { showToast('尚未設定配對'); return; }
+
+  // 依顧問分組
+  const groups = {};
+  const order = [];
+  pairs.forEach(p => {
+    if (!groups[p.consultant]) { groups[p.consultant] = []; order.push(p.consultant); }
+    groups[p.consultant].push(p);
+  });
+
+  let html = '';
+  order.forEach((consultant, gi) => {
+    const gPairs = groups[consultant];
+    const text = buildGroupReminderText(consultant, gPairs);
+    const speakerLabels = gPairs.map(p => p.speaker).join('、');
     html += `
       <div style="border:1px solid #f0f0f0;border-radius:10px;padding:14px;margin-bottom:14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <div>
-            <span style="font-size:14px;font-weight:700;color:#222;">${p.speaker}</span>
-            <span style="font-size:12px;color:#aaa;margin-left:6px;">顧問 ${p.consultant}</span>
-            ${pct === 100 ? `<span style="font-size:11px;background:${dispColor};color:white;padding:1px 8px;border-radius:10px;margin-left:6px;">已完成</span>` : `<span style="font-size:12px;color:${dispColor};font-weight:700;margin-left:6px;">${pct}%</span>`}
+            <span style="font-size:14px;font-weight:700;color:#222;">顧問 ${consultant}</span>
+            <span style="font-size:12px;color:#aaa;margin-left:6px;">${speakerLabels}</span>
           </div>
-          <button onclick="copyReminder(${i},this)"
+          <button onclick="copyReminder(${gi},this)"
             style="padding:5px 14px;border:1px solid #c0392b;border-radius:6px;font-size:12px;cursor:pointer;background:white;color:#c0392b;font-weight:600;white-space:nowrap;">
             複製
           </button>
         </div>
-        <pre id="reminderText_${i}" style="font-family:inherit;font-size:12px;color:#444;background:#f8f8f8;border-radius:6px;padding:10px;white-space:pre-wrap;word-break:break-word;margin:0;">${text}</pre>
+        <pre id="reminderText_${gi}" style="font-family:inherit;font-size:12px;color:#444;background:#f8f8f8;border-radius:6px;padding:10px;white-space:pre-wrap;word-break:break-word;margin:0;">${text}</pre>
       </div>`;
   });
   document.getElementById('reminderModalBody').innerHTML = html;
   document.getElementById('reminderModal').classList.add('open');
   document.body.style.overflow = 'hidden';
-  window._reminderPairs = pairs;
 }
 
 function copyReminder(i, btn) {
