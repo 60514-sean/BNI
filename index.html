@@ -1579,9 +1579,9 @@ function showSettings() {
 
     <div class="card">
       <div class="card-title" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="toggleSection('consultantSection')">
-        <span>簡報顧問名單</span><span id="consultantSectionArrow">▲</span>
+        <span>簡報顧問名單</span><span id="consultantSectionArrow">▼</span>
       </div>
-      <div id="consultantSection">
+      <div id="consultantSection" style="display:none;">
         <div class="settings-section">
           ${consultantListHtml}
           <div style="display:flex;gap:8px;margin-top:8px;">
@@ -1597,9 +1597,9 @@ function showSettings() {
 
     <div class="card">
       <div class="card-title" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="toggleSection('pairsSection')">
-        <span>顧問與講者配對</span><span id="pairsSectionArrow">▲</span>
+        <span>顧問與講者配對</span><span id="pairsSectionArrow">▼</span>
       </div>
-      <div id="pairsSection">
+      <div id="pairsSection" style="display:none;">
         <div class="settings-section">
           <p class="hint" style="margin-bottom:12px;">左側選擇顧問，右側輸入講者姓名，姓名即為登入密碼</p>
           <div id="pairsContainer">${pairsHtml}</div>
