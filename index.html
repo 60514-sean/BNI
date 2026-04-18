@@ -1576,7 +1576,7 @@ function buildGroupReminderText(consultant, pairs) {
           if (wi >= limit) return;
           const cnt = w.tasks.filter((_, ti) => !data[taskKey(wi, ti)]).length;
           if (cnt === 0) return;
-          lines.push(`${w.label}｜${w.theme} → 還差 ${cnt} 項`);
+          lines.push(`${w.label} → 還差 ${cnt} 項`);
         });
       }
     }
