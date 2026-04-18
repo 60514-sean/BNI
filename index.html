@@ -957,6 +957,12 @@ function carouselNav(uid, dir) {
   if (cnt) cnt.textContent = `${d.idx + 1} / ${d.images.length}`;
 }
 
+function caseImgList(cs) {
+  if (!cs.images) return [];
+  if (Array.isArray(cs.images)) return cs.images;
+  return cs.images.split('\n').map(u => u.trim()).filter(Boolean);
+}
+
 function renderCasesTab(act, pair, color) {
   const c = color || '#c0392b';
   const caseType = getCaseType(act, pair.presentationCount);
@@ -966,7 +972,7 @@ function renderCasesTab(act, pair, color) {
   }
   return cases.map((cs, i) => {
     const uid = `case_${caseType}_${i}`;
-    const imgList = cs.images ? cs.images.split('\n').map(u => u.trim()).filter(Boolean) : [];
+    const imgList = caseImgList(cs);
     return `
       <div style="border:1px solid #f0f0f0;border-radius:10px;padding:16px;margin-bottom:14px;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
@@ -984,7 +990,7 @@ function showCasesSettings() {
   const CASE_TYPES = ['第1次', '第2次+', '主題日'];
   const listHtml = cases.length
     ? cases.map((cs, i) => {
-        const imgCount = cs.images ? cs.images.split('\n').filter(u => u.trim()).length : 0;
+        const imgCount = caseImgList(cs).length;
         return `
         <div style="border:1px solid #eee;border-radius:8px;padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;">
           <div style="flex:1;">
@@ -1012,23 +1018,40 @@ function showCasesSettings() {
         <input type="text" id="newCaseTopic" placeholder="簡報主題" style="flex:2;min-width:140px;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;" />
       </div>
       <textarea id="newCaseNote" placeholder="案例說明（可留空）" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;resize:vertical;min-height:50px;font-family:inherit;margin-bottom:8px;"></textarea>
-      <textarea id="newCaseImages" placeholder="投影片圖片連結（每行一個 Google Drive 連結）" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;outline:none;resize:vertical;min-height:80px;font-family:monospace;"></textarea>
+      <input type="text" id="newCaseFolderLink" placeholder="Google Drive 資料夾連結" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;font-family:monospace;" />
       <button class="btn btn-sm btn-green" style="margin-top:8px;" onclick="addCase()">新增</button>
     </div>`;
 }
 
-function addCase() {
+function extractFolderId(url) {
+  const m = url.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+}
+
+async function addCase() {
   const type = document.getElementById('newCaseType')?.value;
   const speaker = document.getElementById('newCaseSpeaker')?.value.trim();
   const topic = document.getElementById('newCaseTopic')?.value.trim();
   const note = document.getElementById('newCaseNote')?.value.trim();
-  const images = document.getElementById('newCaseImages')?.value.trim();
+  const folderLink = document.getElementById('newCaseFolderLink')?.value.trim();
   if (!topic) { showToast('請填寫簡報主題'); return; }
+  let images = [];
+  if (folderLink) {
+    const folderId = extractFolderId(folderLink);
+    if (!folderId) { showToast('資料夾連結格式不正確'); return; }
+    showToast('正在讀取資料夾圖片...');
+    try {
+      const res = await fetch(`${API_URL}?action=listFolder&folderId=${folderId}`);
+      const data = await res.json();
+      if (data.error) { showToast('讀取失敗：' + data.error); return; }
+      images = (data.files || []).map(f => f.id);
+    } catch(e) { showToast('讀取失敗，請確認資料夾已公開'); return; }
+  }
   const cases = getCases();
   cases.push({ type, speaker, topic, note, images });
   cache['__cases__'] = cases;
   saveCases(cases);
-  showToast('案例已新增！');
+  showToast(`案例已新增！共 ${images.length} 張圖`);
   const el = document.getElementById('casesSection');
   if (el) el.innerHTML = showCasesSettings();
 }
