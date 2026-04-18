@@ -1051,10 +1051,16 @@ function showCasesSettings() {
         }).join('')
       : `<div style="color:#bbb;font-size:13px;padding:8px 0;">尚無案例</div>`;
 
+    const gid = 'caseGroup_' + type.replace(/[^a-z0-9]/gi,'');
     return `
-      <div style="margin-bottom:16px;">
-        <div style="font-size:13px;font-weight:700;color:#c0392b;padding:6px 10px;background:#fdecea;border-radius:6px;margin-bottom:8px;">${type}</div>
-        ${itemsHtml}
+      <div style="margin-bottom:12px;border:1px solid #f0d0d0;border-radius:8px;overflow:hidden;">
+        <div onclick="toggleCaseGroup('${gid}')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#fdecea;">
+          <span style="font-size:13px;font-weight:700;color:#c0392b;">${type}</span>
+          <span id="${gid}_arrow" style="color:#c0392b;font-size:12px;">▲</span>
+        </div>
+        <div id="${gid}" style="padding:10px 10px 2px;">
+          ${itemsHtml}
+        </div>
       </div>`;
   }).join('');
 
@@ -1072,6 +1078,15 @@ function showCasesSettings() {
       <input type="text" id="newCaseFolderLink" placeholder="Google Drive 資料夾連結" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;font-family:monospace;" />
       <button class="btn btn-sm btn-green" style="margin-top:8px;" onclick="addCase()">新增</button>
     </div>`;
+}
+
+function toggleCaseGroup(id) {
+  const el = document.getElementById(id);
+  const arrow = document.getElementById(id + '_arrow');
+  if (!el) return;
+  const collapsed = el.style.display === 'none';
+  el.style.display = collapsed ? '' : 'none';
+  if (arrow) arrow.textContent = collapsed ? '▲' : '▼';
 }
 
 function extractFolderId(url) {
