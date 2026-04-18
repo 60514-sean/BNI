@@ -961,8 +961,15 @@ function carouselNav(uid, dir) {
 
 function caseImgList(cs) {
   if (!cs.images) return [];
-  if (Array.isArray(cs.images)) return cs.images;
-  return cs.images.split('\n').map(u => u.trim()).filter(Boolean);
+  if (!Array.isArray(cs.images)) return cs.images.split('\n').map(u => u.trim()).filter(Boolean);
+  // 支援 {id, name} 物件或純字串 id
+  const list = cs.images.map(img => typeof img === 'object' ? img : { id: img, name: '' });
+  list.sort((a, b) => {
+    const na = parseInt((a.name.match(/\d+/) || [0])[0]);
+    const nb = parseInt((b.name.match(/\d+/) || [0])[0]);
+    return na - nb;
+  });
+  return list.map(img => img.id);
 }
 
 function renderCasesTab(act, pair, color) {
@@ -1077,7 +1084,7 @@ async function addCase() {
       let data;
       try { data = JSON.parse(text); } catch(pe) { showToast('回應格式錯誤：' + text.slice(0,80)); return; }
       if (data.error) { showToast('GAS錯誤：' + data.error); return; }
-      images = (data.files || []).map(f => f.id);
+      images = (data.files || []).map(f => ({ id: f.id, name: f.name }));
     } catch(e) { showToast('網路失敗：' + e.message); return; }
   }
   const cases = getCases();
