@@ -965,8 +965,8 @@ function caseImgList(cs) {
   // 支援 {id, name} 物件或純字串 id
   const list = cs.images.map(img => typeof img === 'object' ? img : { id: img, name: '' });
   list.sort((a, b) => {
-    const na = parseInt((a.name.match(/\d+/) || [0])[0]);
-    const nb = parseInt((b.name.match(/\d+/) || [0])[0]);
+    const na = parseInt((a.name.match(/(\d+)(?=\D*$)/) || [0])[0]);
+    const nb = parseInt((b.name.match(/(\d+)(?=\D*$)/) || [0])[0]);
     return na - nb;
   });
   return list.map(img => img.id);
