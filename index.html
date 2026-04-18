@@ -1497,40 +1497,46 @@ async function saveAllSlides(ck, speaker, count) {
 function buildReminderText(p) {
   const act = p.activityType || '主題簡報';
   const data = getData(p.consultant, p.speaker);
-  const { countdown, currentWeekIdx } = getPresentationInfo(p.presentationTime);
+  const { currentWeekIdx } = getPresentationInfo(p.presentationTime);
+
+  // 去掉姓（第一個字），保留名
+  const givenName = p.consultant && p.consultant.length > 1 ? p.consultant.slice(1) : p.consultant;
+
+  const total = isSimpleType(act)
+    ? SIMPLE_TASKS.length
+    : WEEKS.reduce((s, w) => s + w.tasks.length, 0);
+  const done = isSimpleType(act)
+    ? SIMPLE_TASKS.filter((_, ti) => data[simpleTaskKey(ti)]).length
+    : WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
+  const pct = total ? Math.round(done / total * 100) : 0;
+
   const lines = [];
+  lines.push(`☀️ ${givenName} 早安~`);
+  lines.push(`這週幫你整理一下 ${p.speaker} 的進度`);
+  lines.push('');
 
-  lines.push(`【進度提醒】${p.speaker}`);
-  lines.push(`顧問：${p.consultant}　活動：${act}${p.presentationCount ? '（' + p.presentationCount + '）' : ''}`);
-  if (p.presentationTime) {
-    const cdStr = countdown !== null
-      ? countdown > 0 ? `倒數 ${countdown} 天`
-        : countdown === 0 ? '就是今天！'
-        : `已過 ${Math.abs(countdown)} 天`
-      : '';
-    lines.push(`簡報時間：${p.presentationTime}${cdStr ? '　' + cdStr : ''}`);
-  }
-
-  if (isSimpleType(act)) {
-    const incomplete = SIMPLE_TASKS.filter((_, ti) => !data[simpleTaskKey(ti)]);
-    if (incomplete.length === 0) {
-      lines.push(''); lines.push('所有項目已完成！');
-    } else {
-      lines.push(''); lines.push('尚未完成項目：');
-      incomplete.forEach(t => lines.push(`□ ${t}`));
-    }
+  if (pct === 100) {
+    lines.push(`目前已全部完成 100%，${p.speaker} 做得很棒！`);
   } else {
-    let hasAny = false;
-    WEEKS.forEach((w, wi) => {
-      const incomplete = w.tasks.filter((_, ti) => !data[taskKey(wi, ti)]);
-      if (incomplete.length === 0) return;
-      if (!hasAny) { lines.push(''); lines.push('尚未完成項目：'); hasAny = true; }
-      const isCur = wi === currentWeekIdx;
-      lines.push(`\n▸ ${w.label}｜${w.theme}${isCur ? '（本週）' : ''}`);
-      incomplete.forEach(t => lines.push(`□ ${t}`));
-    });
-    if (!hasAny) { lines.push(''); lines.push('所有項目已完成！'); }
+    lines.push(`目前完成 ${pct}%了，不過還有一些項目需要處理，我幫你都整理好了，提供給你方便追蹤~`);
+    lines.push('');
+    if (isSimpleType(act)) {
+      SIMPLE_TASKS.forEach((t, ti) => {
+        if (!data[simpleTaskKey(ti)]) lines.push(`□ ${t}`);
+      });
+    } else {
+      WEEKS.forEach((w, wi) => {
+        const incomplete = w.tasks.filter((_, ti) => !data[taskKey(wi, ti)]);
+        if (incomplete.length === 0) return;
+        const isCur = wi === currentWeekIdx;
+        lines.push(`【${w.label}】${w.theme}${isCur ? '（本週）' : ''}`);
+        incomplete.forEach(t => lines.push(`□ ${t}`));
+        lines.push('');
+      });
+    }
   }
+
+  lines.push('祝~今天順心優~❤️');
   return lines.join('\n');
 }
 
