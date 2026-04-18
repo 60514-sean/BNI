@@ -978,6 +978,41 @@ function caseImgList(cs) {
   return list.map(img => img.id);
 }
 
+function makeCaseCard(cs, key, c) {
+  const imgList = caseImgList(cs);
+  const thumb = imgList.length > 0 ? driveImgUrl(imgList[0]) : '';
+  window['_caseData_' + key] = { cs, imgList, c, key };
+  return `
+    <div onclick="openCaseModal('${key}')" style="cursor:pointer;border-radius:10px;overflow:hidden;background:#f5f5f5;position:relative;aspect-ratio:1/1;box-shadow:0 1px 6px rgba(0,0,0,0.08);">
+      ${thumb ? `<img src="${thumb}" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display='none'" />` : '<div style="width:100%;height:100%;background:#eee;"></div>'}
+      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.65));padding:10px 8px 8px;">
+        <div style="color:white;font-size:12px;font-weight:700;line-height:1.5;">${(cs.speaker || cs.topic || '（未填）').replace(/\//g, '<br>')}</div>
+      </div>
+      ${imgList.length > 1 ? `<div style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.5);color:white;font-size:10px;padding:2px 6px;border-radius:10px;">${imgList.length}張</div>` : ''}
+    </div>`;
+}
+
+function makeSplitCard(cs1, key1, cs2, key2, label, c) {
+  const img1 = caseImgList(cs1); const img2 = caseImgList(cs2);
+  const t1 = img1.length > 0 ? driveImgUrl(img1[0]) : '';
+  const t2 = img2.length > 0 ? driveImgUrl(img2[0]) : '';
+  window['_caseData_' + key1] = { cs: cs1, imgList: img1, c, key: key1 };
+  window['_caseData_' + key2] = { cs: cs2, imgList: img2, c, key: key2 };
+  return `
+    <div style="border-radius:10px;overflow:hidden;background:#f5f5f5;position:relative;aspect-ratio:1/1;box-shadow:0 1px 6px rgba(0,0,0,0.08);">
+      <div onclick="openCaseModal('${key1}')" style="cursor:pointer;position:absolute;left:0;top:0;width:50%;height:100%;overflow:hidden;">
+        ${t1 ? `<img src="${t1}" style="width:200%;height:100%;object-fit:cover;display:block;" />` : '<div style="width:100%;height:100%;background:#ddd;"></div>'}
+      </div>
+      <div onclick="openCaseModal('${key2}')" style="cursor:pointer;position:absolute;right:0;top:0;width:50%;height:100%;overflow:hidden;">
+        ${t2 ? `<img src="${t2}" style="width:200%;height:100%;object-fit:cover;display:block;margin-left:-100%;" />` : '<div style="width:100%;height:100%;background:#ccc;"></div>'}
+      </div>
+      <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.6);pointer-events:none;"></div>
+      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.65));padding:8px 8px 6px;pointer-events:none;">
+        <div style="color:white;font-size:11px;font-weight:700;line-height:1.4;">${label || ''}</div>
+      </div>
+    </div>`;
+}
+
 function renderCasesTab(act, pair, color) {
   const c = color || '#c0392b';
   const caseType = getCaseType(act, pair.presentationCount);
@@ -985,20 +1020,33 @@ function renderCasesTab(act, pair, color) {
   if (cases.length === 0) {
     return `<div style="padding:40px 20px;text-align:center;color:#bbb;font-size:14px;">尚無「${caseType}」的簡報案例</div>`;
   }
-  const cards = cases.map((cs, i) => {
-    const imgList = caseImgList(cs);
-    const thumb = imgList.length > 0 ? driveImgUrl(imgList[0]) : '';
-    const key = `caseModal_${caseType}_${i}`;
-    window['_caseData_' + key] = { cs, imgList, c, key };
-    return `
-      <div onclick="openCaseModal('${key}')" style="cursor:pointer;border-radius:10px;overflow:hidden;background:#f5f5f5;position:relative;aspect-ratio:1/1;display:flex;flex-direction:column;box-shadow:0 1px 6px rgba(0,0,0,0.08);">
-        ${thumb ? `<img src="${thumb}" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display='none'" />` : '<div style="flex:1;background:#eee;"></div>'}
-        <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.65));padding:10px 8px 8px;">
-          <div style="color:white;font-size:12px;font-weight:700;line-height:1.5;">${(cs.speaker || cs.topic || '（未填）').replace(/\//g, '<br>')}</div>
-        </div>
-        ${imgList.length > 1 ? `<div style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.5);color:white;font-size:10px;padding:2px 6px;border-radius:10px;">${imgList.length}張</div>` : ''}
-      </div>`;
-  }).join('');
+
+  let cards = '';
+  if (caseType === '主題日') {
+    const grouped = {}, singles = [];
+    cases.forEach((cs, i) => {
+      const name = (cs.themeDayName || '').trim();
+      if (name) {
+        if (!grouped[name]) grouped[name] = [];
+        grouped[name].push({ cs, i });
+      } else {
+        singles.push({ cs, i });
+      }
+    });
+    Object.entries(grouped).forEach(([name, items]) => {
+      if (items.length >= 2) {
+        const k1 = `caseModal_主題日_${items[0].i}`, k2 = `caseModal_主題日_${items[1].i}`;
+        cards += makeSplitCard(items[0].cs, k1, items[1].cs, k2, name, c);
+        items.slice(2).forEach(({ cs, i }) => { cards += makeCaseCard(cs, `caseModal_主題日_${i}`, c); });
+      } else {
+        cards += makeCaseCard(items[0].cs, `caseModal_主題日_${items[0].i}`, c);
+      }
+    });
+    singles.forEach(({ cs, i }) => { cards += makeCaseCard(cs, `caseModal_主題日_${i}`, c); });
+  } else {
+    cards = cases.map((cs, i) => makeCaseCard(cs, `caseModal_${caseType}_${i}`, c)).join('');
+  }
+
   return `
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:4px 0;">${cards}</div>
     <div id="caseModalOverlay" onclick="closeCaseModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:3000;align-items:center;justify-content:center;">
@@ -1042,7 +1090,8 @@ function showCasesSettings() {
             <div style="display:flex;gap:8px;margin-bottom:8px;">
               <div style="flex:1;min-width:0;">
                 <input id="editTopic_${i}" value="${(cs.topic||'').replace(/"/g,'&quot;')}" placeholder="簡報主題" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-weight:600;outline:none;margin-bottom:4px;" />
-                <input id="editSpeaker_${i}" value="${(cs.speaker||'').replace(/"/g,'&quot;')}" placeholder="講者姓名" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;color:#888;outline:none;" />
+                <input id="editSpeaker_${i}" value="${(cs.speaker||'').replace(/"/g,'&quot;')}" placeholder="講者姓名" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;color:#888;outline:none;margin-bottom:4px;" />
+                ${type === '主題日' ? `<input id="editThemeDayName_${i}" value="${(cs.themeDayName||'').replace(/"/g,'&quot;')}" placeholder="主題日名稱（群組用）" style="width:100%;padding:6px 8px;border:1px solid #e0a0a0;border-radius:6px;font-size:12px;color:#c0392b;outline:none;" />` : ''}
               </div>
               <button class="btn btn-sm btn-danger" onclick="removeCase(${i})" style="flex-shrink:0;align-self:flex-start;">刪除</button>
             </div>
@@ -1074,9 +1123,12 @@ function showCasesSettings() {
     <div style="border:1px dashed #c0392b;border-radius:8px;padding:14px;">
       <div style="font-size:13px;font-weight:600;color:#c0392b;margin-bottom:10px;">新增案例</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-        <select id="newCaseType" style="padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;">${typeOpts}</select>
+        <select id="newCaseType" onchange="document.getElementById('themeDayNameRow').style.display=this.value==='主題日'?'':'none'" style="padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;">${typeOpts}</select>
         <input type="text" id="newCaseSpeaker" placeholder="講者姓名" style="flex:1;min-width:100px;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;" />
         <input type="text" id="newCaseTopic" placeholder="簡報主題" style="flex:2;min-width:140px;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;" />
+      </div>
+      <div id="themeDayNameRow" style="display:none;margin-bottom:8px;">
+        <input type="text" id="newCaseThemeDayName" placeholder="主題日名稱（相同名稱的兩位講者會合併為群組）" style="width:100%;padding:7px 10px;border:1px solid #e0a0a0;border-radius:6px;font-size:13px;outline:none;" />
       </div>
       <textarea id="newCaseNote" placeholder="案例說明（可留空）" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;resize:vertical;min-height:50px;font-family:inherit;margin-bottom:8px;"></textarea>
       <input type="text" id="newCaseFolderLink" placeholder="Google Drive 資料夾連結" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;font-family:monospace;" />
@@ -1090,8 +1142,10 @@ async function saveCaseEdit(i) {
   const folderLink = document.getElementById(`refreshFolder_${i}`)?.value.trim();
   const cases = getCases();
   if (!cases[i]) return;
+  const themeDayName = document.getElementById(`editThemeDayName_${i}`)?.value.trim() || '';
   cases[i].topic = topic;
   cases[i].speaker = speaker;
+  if (cases[i].type === '主題日') cases[i].themeDayName = themeDayName;
   if (folderLink) {
     const folderId = extractFolderId(folderLink);
     if (!folderId) { showToast('資料夾連結格式不正確'); return; }
@@ -1146,6 +1200,7 @@ async function addCase() {
   const speaker = document.getElementById('newCaseSpeaker')?.value.trim();
   const topic = document.getElementById('newCaseTopic')?.value.trim();
   const note = document.getElementById('newCaseNote')?.value.trim();
+  const themeDayName = document.getElementById('newCaseThemeDayName')?.value.trim() || '';
   const folderLink = document.getElementById('newCaseFolderLink')?.value.trim();
   if (!topic) { showToast('請填寫簡報主題'); return; }
   let images = [];
@@ -1163,7 +1218,7 @@ async function addCase() {
     } catch(e) { showToast('網路失敗：' + e.message); return; }
   }
   const cases = getCases();
-  cases.push({ type, speaker, topic, note, images });
+  cases.push({ type, speaker, topic, note, themeDayName, images });
   cache['__cases__'] = cases;
   saveCases(cases);
   showToast(`案例已新增！共 ${images.length} 張圖`);
