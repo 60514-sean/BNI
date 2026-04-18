@@ -911,6 +911,46 @@ function getCaseType(act, count) {
   return '第2次+';
 }
 
+// 將 Drive 分享連結轉為可嵌入圖片 URL
+function driveImgUrl(url) {
+  url = url.trim();
+  const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (m) return `https://lh3.googleusercontent.com/d/${m[1]}`;
+  if (/^[a-zA-Z0-9_-]{25,}$/.test(url)) return `https://lh3.googleusercontent.com/d/${url}`;
+  return url;
+}
+
+const _carouselData = {};
+
+function renderCarousel(images, uid) {
+  if (!images || images.length === 0) return '';
+  _carouselData[uid] = { images, idx: 0 };
+  const total = images.length;
+  const src = driveImgUrl(images[0]);
+  return `
+    <div style="position:relative;background:#111;border-radius:10px;overflow:hidden;margin-top:10px;">
+      <img id="carImg_${uid}" src="${src}" alt="投影片"
+        style="width:100%;max-height:320px;object-fit:contain;display:block;"
+        onerror="this.src='';this.style.minHeight='120px';" />
+      ${total > 1 ? `
+      <div style="position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.55);padding:8px 14px;">
+        <button onclick="carouselNav('${uid}',-1)" style="background:rgba(255,255,255,0.18);border:none;color:white;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:18px;line-height:1;">‹</button>
+        <span id="carCount_${uid}" style="color:white;font-size:12px;font-weight:500;">1 / ${total}</span>
+        <button onclick="carouselNav('${uid}',1)" style="background:rgba(255,255,255,0.18);border:none;color:white;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:18px;line-height:1;">›</button>
+      </div>` : ''}
+    </div>`;
+}
+
+function carouselNav(uid, dir) {
+  const d = _carouselData[uid];
+  if (!d) return;
+  d.idx = (d.idx + dir + d.images.length) % d.images.length;
+  const img = document.getElementById(`carImg_${uid}`);
+  const cnt = document.getElementById(`carCount_${uid}`);
+  if (img) img.src = driveImgUrl(d.images[d.idx]);
+  if (cnt) cnt.textContent = `${d.idx + 1} / ${d.images.length}`;
+}
+
 function renderCasesTab(act, pair, color) {
   const c = color || '#c0392b';
   const caseType = getCaseType(act, pair.presentationCount);
@@ -918,35 +958,41 @@ function renderCasesTab(act, pair, color) {
   if (cases.length === 0) {
     return `<div style="padding:40px 20px;text-align:center;color:#bbb;font-size:14px;">尚無「${caseType}」的簡報案例</div>`;
   }
-  return cases.map(cs => `
-    <div style="border:1px solid #f0f0f0;border-radius:10px;padding:16px;margin-bottom:12px;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-        <span style="font-size:14px;font-weight:700;color:${c};">${cs.topic || '（未填主題）'}</span>
-        <span style="font-size:11px;color:#aaa;">${cs.speaker || ''}</span>
-      </div>
-      ${cs.note ? `<div style="font-size:13px;color:#555;line-height:1.7;white-space:pre-wrap;margin-bottom:8px;">${cs.note}</div>` : ''}
-      ${cs.driveLink ? `<a href="${cs.driveLink}" target="_blank" style="font-size:12px;color:#1a73e8;text-decoration:none;display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border:1px solid #1a73e820;border-radius:6px;background:#f0f6ff;">查看簡報檔案</a>` : ''}
-    </div>
-  `).join('');
+  return cases.map((cs, i) => {
+    const uid = `case_${caseType}_${i}`;
+    const imgList = cs.images ? cs.images.split('\n').map(u => u.trim()).filter(Boolean) : [];
+    return `
+      <div style="border:1px solid #f0f0f0;border-radius:10px;padding:16px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <span style="font-size:14px;font-weight:700;color:${c};">${cs.topic || '（未填主題）'}</span>
+          <span style="font-size:11px;color:#aaa;">${cs.speaker || ''}</span>
+        </div>
+        ${cs.note ? `<div style="font-size:13px;color:#555;line-height:1.7;white-space:pre-wrap;margin-bottom:6px;">${cs.note}</div>` : ''}
+        ${imgList.length > 0 ? renderCarousel(imgList, uid) : ''}
+      </div>`;
+  }).join('');
 }
 
 function showCasesSettings() {
   const cases = getCases();
   const CASE_TYPES = ['第1次', '第2次+', '主題日'];
   const listHtml = cases.length
-    ? cases.map((cs, i) => `
+    ? cases.map((cs, i) => {
+        const imgCount = cs.images ? cs.images.split('\n').filter(u => u.trim()).length : 0;
+        return `
         <div style="border:1px solid #eee;border-radius:8px;padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;">
           <div style="flex:1;">
             <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap;">
               <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#fdecea;color:#c0392b;font-weight:600;">${cs.type}</span>
               <span style="font-size:13px;font-weight:600;">${cs.topic || '（未填主題）'}</span>
               <span style="font-size:12px;color:#aaa;">${cs.speaker || ''}</span>
+              ${imgCount ? `<span style="font-size:11px;color:#1a73e8;">${imgCount} 張圖</span>` : ''}
             </div>
-            ${cs.note ? `<div style="font-size:12px;color:#777;line-height:1.5;white-space:pre-wrap;">${cs.note}</div>` : ''}
-            ${cs.driveLink ? `<a href="${cs.driveLink}" target="_blank" style="font-size:11px;color:#1a73e8;">Drive 連結</a>` : ''}
+            ${cs.note ? `<div style="font-size:12px;color:#777;line-height:1.5;">${cs.note}</div>` : ''}
           </div>
           <button class="btn btn-sm btn-danger" onclick="removeCase(${i})" style="flex-shrink:0;">刪除</button>
-        </div>`).join('')
+        </div>`;
+      }).join('')
     : '<div style="color:#bbb;font-size:13px;margin-bottom:8px;">尚未新增任何案例</div>';
 
   const typeOpts = CASE_TYPES.map(t => `<option value="${t}">${t}</option>`).join('');
@@ -959,8 +1005,8 @@ function showCasesSettings() {
         <input type="text" id="newCaseSpeaker" placeholder="講者姓名" style="flex:1;min-width:100px;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;" />
         <input type="text" id="newCaseTopic" placeholder="簡報主題" style="flex:2;min-width:140px;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;" />
       </div>
-      <textarea id="newCaseNote" placeholder="案例說明（可留空）" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;resize:vertical;min-height:60px;font-family:inherit;margin-bottom:8px;"></textarea>
-      <input type="text" id="newCaseDrive" placeholder="Google Drive 連結（可留空）" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;" />
+      <textarea id="newCaseNote" placeholder="案例說明（可留空）" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;resize:vertical;min-height:50px;font-family:inherit;margin-bottom:8px;"></textarea>
+      <textarea id="newCaseImages" placeholder="投影片圖片連結（每行一個 Google Drive 連結）" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;outline:none;resize:vertical;min-height:80px;font-family:monospace;"></textarea>
       <button class="btn btn-sm btn-green" style="margin-top:8px;" onclick="addCase()">新增</button>
     </div>`;
 }
@@ -970,14 +1016,13 @@ function addCase() {
   const speaker = document.getElementById('newCaseSpeaker')?.value.trim();
   const topic = document.getElementById('newCaseTopic')?.value.trim();
   const note = document.getElementById('newCaseNote')?.value.trim();
-  const driveLink = document.getElementById('newCaseDrive')?.value.trim();
+  const images = document.getElementById('newCaseImages')?.value.trim();
   if (!topic) { showToast('請填寫簡報主題'); return; }
   const cases = getCases();
-  cases.push({ type, speaker, topic, note, driveLink });
+  cases.push({ type, speaker, topic, note, images });
   cache['__cases__'] = cases;
   saveCases(cases);
   showToast('案例已新增！');
-  // 重新渲染設定頁中的案例區塊
   const el = document.getElementById('casesSection');
   if (el) el.innerHTML = showCasesSettings();
 }
