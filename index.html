@@ -1541,7 +1541,7 @@ function buildReminderText(p) {
 }
 
 function speakerGivenName(name) {
-  return name && name.length > 1 ? name.slice(1) : name;
+  return name && name.length >= 2 ? name.slice(-2) : name;
 }
 
 function getPct(p) {
@@ -1555,7 +1555,7 @@ function getPct(p) {
 }
 
 function buildGroupReminderText(consultant, pairs) {
-  const givenName = consultant && consultant.length > 1 ? consultant.slice(1) : consultant;
+  const givenName = consultant && consultant.length >= 2 ? consultant.slice(-2) : consultant;
   const lines = [];
   lines.push(`☀️ ${givenName} 早安~`);
   if (pairs.length === 1) {
