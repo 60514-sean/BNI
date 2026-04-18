@@ -1015,7 +1015,7 @@ function openCaseModal(key) {
   const { cs, imgList, c } = d;
   const uid = 'cm_' + key;
   document.getElementById('caseModalContent').innerHTML = `
-    <div style="font-size:15px;font-weight:700;color:${c};margin-bottom:4px;">${cs.topic || '（未填主題）'}</div>
+    <div style="font-size:15px;font-weight:700;color:${c};margin-bottom:4px;line-height:1.6;">${(cs.topic || '（未填主題）').replace(/[,，]/g, '<br>')}</div>
     ${cs.speaker ? `<div style="font-size:12px;color:#aaa;margin-bottom:8px;">${cs.speaker}</div>` : ''}
     ${cs.note ? `<div style="font-size:13px;color:#555;line-height:1.7;white-space:pre-wrap;margin-bottom:10px;">${cs.note}</div>` : ''}
     ${imgList.length > 0 ? renderCarousel(imgList, uid) : ''}`;
