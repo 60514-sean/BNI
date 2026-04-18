@@ -204,6 +204,17 @@
 
 <div class="success-toast" id="toast"></div>
 
+<!-- REMINDER MODAL -->
+<div class="detail-modal" id="reminderModal" onclick="if(event.target===this)closeReminderModal()">
+  <div class="detail-modal-box">
+    <div class="detail-modal-head" style="background:#c0392b;">
+      <span style="font-size:16px;font-weight:700;color:white;">本週提醒文字</span>
+      <button class="modal-close-btn" onclick="closeReminderModal()" style="background:rgba(255,255,255,0.25);color:white;">✕</button>
+    </div>
+    <div class="detail-modal-body" id="reminderModalBody"></div>
+  </div>
+</div>
+
 <!-- ADMIN DETAIL MODAL -->
 <div class="detail-modal" id="adminDetailModal" onclick="if(event.target===this)closeAdminModal()">
   <div class="detail-modal-box">
@@ -565,7 +576,10 @@ function renderAdmin() {
       </div>`;
   });
   html += '</div>';
-  document.getElementById('mainContent').innerHTML = html;
+  document.getElementById('mainContent').innerHTML =
+    `<div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+       <button class="btn btn-sm" onclick="showReminders()">產生提醒文字</button>
+     </div>` + html;
 }
 
 function openAdminModal(pi) {
@@ -1477,6 +1491,103 @@ async function saveAllSlides(ck, speaker, count) {
   }
   saveSlidesData(ck, speaker, data);
   showToast('簡報內容已儲存！');
+}
+
+// ===== REMINDERS =====
+function buildReminderText(p) {
+  const act = p.activityType || '主題簡報';
+  const data = getData(p.consultant, p.speaker);
+  const { countdown, currentWeekIdx } = getPresentationInfo(p.presentationTime);
+  const lines = [];
+
+  lines.push(`【進度提醒】${p.speaker}`);
+  lines.push(`顧問：${p.consultant}　活動：${act}${p.presentationCount ? '（' + p.presentationCount + '）' : ''}`);
+  if (p.presentationTime) {
+    const cdStr = countdown !== null
+      ? countdown > 0 ? `倒數 ${countdown} 天`
+        : countdown === 0 ? '就是今天！'
+        : `已過 ${Math.abs(countdown)} 天`
+      : '';
+    lines.push(`簡報時間：${p.presentationTime}${cdStr ? '　' + cdStr : ''}`);
+  }
+
+  if (isSimpleType(act)) {
+    const incomplete = SIMPLE_TASKS.filter((_, ti) => !data[simpleTaskKey(ti)]);
+    if (incomplete.length === 0) {
+      lines.push(''); lines.push('所有項目已完成！');
+    } else {
+      lines.push(''); lines.push('尚未完成項目：');
+      incomplete.forEach(t => lines.push(`□ ${t}`));
+    }
+  } else {
+    let hasAny = false;
+    WEEKS.forEach((w, wi) => {
+      const incomplete = w.tasks.filter((_, ti) => !data[taskKey(wi, ti)]);
+      if (incomplete.length === 0) return;
+      if (!hasAny) { lines.push(''); lines.push('尚未完成項目：'); hasAny = true; }
+      const isCur = wi === currentWeekIdx;
+      lines.push(`\n▸ ${w.label}｜${w.theme}${isCur ? '（本週）' : ''}`);
+      incomplete.forEach(t => lines.push(`□ ${t}`));
+    });
+    if (!hasAny) { lines.push(''); lines.push('所有項目已完成！'); }
+  }
+  return lines.join('\n');
+}
+
+function showReminders() {
+  const pairs = _adminPairs.filter(p => p.consultant && p.speaker);
+  if (pairs.length === 0) {
+    showToast('尚未設定配對');
+    return;
+  }
+  let html = '';
+  pairs.forEach((p, i) => {
+    const act = p.activityType || '主題簡報';
+    const data = getData(p.consultant, p.speaker);
+    const total = isSimpleType(act) ? SIMPLE_TASKS.length : WEEKS.reduce((s, w) => s + w.tasks.length, 0);
+    const done = isSimpleType(act)
+      ? SIMPLE_TASKS.filter((_, ti) => data[simpleTaskKey(ti)]).length
+      : WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
+    const pct = total ? Math.round(done / total * 100) : 0;
+    const dispColor = ACTIVITY_COLORS[act] || '#c0392b';
+    const text = buildReminderText(p);
+    html += `
+      <div style="border:1px solid #f0f0f0;border-radius:10px;padding:14px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div>
+            <span style="font-size:14px;font-weight:700;color:#222;">${p.speaker}</span>
+            <span style="font-size:12px;color:#aaa;margin-left:6px;">顧問 ${p.consultant}</span>
+            ${pct === 100 ? `<span style="font-size:11px;background:${dispColor};color:white;padding:1px 8px;border-radius:10px;margin-left:6px;">已完成</span>` : `<span style="font-size:12px;color:${dispColor};font-weight:700;margin-left:6px;">${pct}%</span>`}
+          </div>
+          <button onclick="copyReminder(${i},this)"
+            style="padding:5px 14px;border:1px solid #c0392b;border-radius:6px;font-size:12px;cursor:pointer;background:white;color:#c0392b;font-weight:600;white-space:nowrap;">
+            複製
+          </button>
+        </div>
+        <pre id="reminderText_${i}" style="font-family:inherit;font-size:12px;color:#444;background:#f8f8f8;border-radius:6px;padding:10px;white-space:pre-wrap;word-break:break-word;margin:0;">${text}</pre>
+      </div>`;
+  });
+  document.getElementById('reminderModalBody').innerHTML = html;
+  document.getElementById('reminderModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  window._reminderPairs = pairs;
+}
+
+function copyReminder(i, btn) {
+  const el = document.getElementById(`reminderText_${i}`);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '已複製！';
+    btn.style.background = '#c0392b';
+    btn.style.color = 'white';
+    setTimeout(() => { btn.textContent = orig; btn.style.background = 'white'; btn.style.color = '#c0392b'; }, 1800);
+  });
+}
+
+function closeReminderModal() {
+  document.getElementById('reminderModal').classList.remove('open');
+  document.body.style.overflow = '';
 }
 
 function showToast(msg) {
