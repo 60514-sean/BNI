@@ -1587,12 +1587,15 @@ function buildGroupReminderText(consultant, pairs) {
           if (cnt > 0) lines.push(`${act} → 還差 ${cnt} 項`);
         } else {
           const limit = currentWeekIdx >= 0 ? currentWeekIdx : WEEKS.length;
+          let hasWeekLines = false;
           WEEKS.forEach((w, wi) => {
             if (wi >= limit) return;
             const cnt = w.tasks.filter((_, ti) => !data[taskKey(wi, ti)]).length;
             if (cnt === 0) return;
             lines.push(`${w.label} → 還差 ${cnt} 項`);
+            hasWeekLines = true;
           });
+          if (!hasWeekLines) lines.push(`本周的進度麻煩您了~`);
         }
       }
       if (idx < pairs.length - 1) lines.push('');
