@@ -999,6 +999,7 @@ function driveImgUrl(url) {
 
 const _carouselData = {};
 const _driveUrlCache = {};
+const _caseDataMap = new Map();
 
 function driveUrlMemo(id) {
   if (!_driveUrlCache[id]) _driveUrlCache[id] = `https://lh3.googleusercontent.com/d/${id}=w1200`;
@@ -1034,10 +1035,13 @@ function renderCarousel(images, uid) {
     </div>`;
 }
 
+const _carouselSetup = new Set();
 function setupCarouselSwipe(uid) {
+  if (_carouselSetup.has(uid)) return;
   const wrap = document.getElementById('carWrap_' + uid);
   if (!wrap) return;
-  let startX = 0, dragging = false;
+  _carouselSetup.add(uid);
+  let startX = 0;
   wrap.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, { passive: true });
   wrap.addEventListener('touchend', e => {
     const dx = e.changedTouches[0].clientX - startX;
@@ -1045,8 +1049,7 @@ function setupCarouselSwipe(uid) {
   }, { passive: true });
   wrap.addEventListener('click', e => {
     const rect = wrap.getBoundingClientRect();
-    const mid = rect.left + rect.width / 2;
-    carouselNav(uid, e.clientX >= mid ? 1 : -1);
+    carouselNav(uid, e.clientX >= rect.left + rect.width / 2 ? 1 : -1);
   });
   wrap.style.cursor = 'pointer';
 }
@@ -1078,7 +1081,7 @@ function caseImgList(cs) {
 function makeCaseCard(cs, key, c) {
   const imgList = caseImgList(cs);
   const thumb = imgList.length > 0 ? driveUrlMemo(imgList[0]) : '';
-  window['_caseData_' + key] = { cs, imgList, c, key };
+  _caseDataMap.set(key, { cs, imgList, c, key });
   return `
     <div onclick="openCaseModal('${key}')" style="cursor:pointer;border-radius:10px;overflow:hidden;background:#f5f5f5;position:relative;aspect-ratio:16/9;box-shadow:0 1px 6px rgba(0,0,0,0.08);">
       ${thumb ? `<img src="${thumb}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display='none'" />` : '<div style="width:100%;height:100%;background:#eee;"></div>'}
@@ -1093,8 +1096,8 @@ function makeSplitCard(cs1, key1, cs2, key2, label, c) {
   const img1 = caseImgList(cs1); const img2 = caseImgList(cs2);
   const t1 = img1.length > 0 ? driveUrlMemo(img1[0]) : '';
   const t2 = img2.length > 0 ? driveUrlMemo(img2[0]) : '';
-  window['_caseData_' + key1] = { cs: cs1, imgList: img1, c, key: key1 };
-  window['_caseData_' + key2] = { cs: cs2, imgList: img2, c, key: key2 };
+  _caseDataMap.set(key1, { cs: cs1, imgList: img1, c, key: key1 });
+  _caseDataMap.set(key2, { cs: cs2, imgList: img2, c, key: key2 });
   return `
     <div style="border-radius:10px;overflow:hidden;background:#f5f5f5;position:relative;aspect-ratio:16/9;box-shadow:0 1px 6px rgba(0,0,0,0.08);">
       <div onclick="openCaseModal('${key1}')" style="cursor:pointer;position:absolute;left:0;top:0;width:50%;height:100%;overflow:hidden;">
@@ -1155,7 +1158,7 @@ function renderCasesTab(act, pair, color) {
 }
 
 function openCaseModal(key) {
-  const d = window['_caseData_' + key];
+  const d = _caseDataMap.get(key);
   if (!d) return;
   const { cs, imgList, c } = d;
   const uid = 'cm_' + key;
@@ -1170,7 +1173,7 @@ function openCaseModal(key) {
 
 function closeCaseModal() {
   const ov = document.getElementById('caseModalOverlay');
-  if (ov) ov.style.display = 'none';
+  if (ov) { ov.style.display = 'none'; document.getElementById('caseModalContent').innerHTML = ''; }
 }
 
 function showCasesSettings() {
@@ -1433,20 +1436,19 @@ function renderGuide(act, color, pair) {
     body3;
 }
 
+const _TOTAL_TASKS = WEEKS.reduce((s, w) => s + w.tasks.length, 0);
+
 async function toggleTask(ck, speaker, wi, ti, cb) {
   const data = getData(ck, speaker);
   data[taskKey(wi, ti)] = cb.checked;
+  const pair2 = getConfig().pairs.find(p => p.consultant === ck && p.speaker === speaker) || {};
+  const dynColor = ACTIVITY_COLORS[pair2.activityType || '主題簡報'] || '#c0392b';
   const lbl = document.getElementById(`lbl_${wi}_${ti}`);
   if (lbl) { lbl.className = 'task-label' + (cb.checked ? ' checked' : ''); lbl.style.textDecorationColor = cb.checked ? dynColor : ''; }
-  const total = WEEKS.reduce((s, w) => s + w.tasks.length, 0);
   const done = WEEKS.reduce((s, w, wi2) => s + w.tasks.filter((_, ti2) => data[taskKey(wi2, ti2)]).length, 0);
-  const pct = total ? Math.round(done / total * 100) : 0;
+  const pct = Math.round(done / _TOTAL_TASKS * 100);
   const fill = document.querySelector('.overall-bar-fill');
   const txt = document.querySelector('.overall-pct-text');
-  const cfg2 = getConfig();
-  const pair2 = cfg2.pairs.find(p => p.consultant === ck && p.speaker === speaker) || {};
-  const baseColor = ACTIVITY_COLORS[pair2.activityType||'主題簡報'] || '#c0392b';
-  const dynColor = baseColor;
   if (fill) { fill.style.width = pct + '%'; fill.style.background = dynColor; }
   if (txt) { txt.textContent = pct + '%'; txt.style.color = dynColor; }
   const weekDone = WEEKS[wi].tasks.filter((_, ti2) => data[taskKey(wi, ti2)]).length;
