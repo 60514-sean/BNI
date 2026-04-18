@@ -994,7 +994,7 @@ function renderCasesTab(act, pair, color) {
       <div onclick="openCaseModal('${key}')" style="cursor:pointer;border-radius:10px;overflow:hidden;background:#f5f5f5;position:relative;aspect-ratio:1/1;display:flex;flex-direction:column;box-shadow:0 1px 6px rgba(0,0,0,0.08);">
         ${thumb ? `<img src="${thumb}" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display='none'" />` : '<div style="flex:1;background:#eee;"></div>'}
         <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.65));padding:10px 8px 8px;">
-          <div style="color:white;font-size:12px;font-weight:700;line-height:1.3;">${cs.speaker || cs.topic || '（未填）'}</div>
+          <div style="color:white;font-size:12px;font-weight:700;line-height:1.5;">${(cs.speaker || cs.topic || '（未填）').replace(/\//g, '<br>')}</div>
         </div>
         ${imgList.length > 1 ? `<div style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.5);color:white;font-size:10px;padding:2px 6px;border-radius:10px;">${imgList.length}張</div>` : ''}
       </div>`;
