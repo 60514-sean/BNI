@@ -911,27 +911,33 @@ function getCaseType(act, count) {
   return '第2次+';
 }
 
-// 將 Drive 分享連結轉為可嵌入圖片 URL
+// 將 Drive 分享連結轉為可嵌入圖片 URL（加 =w1200 限制寬度，加速載入）
 function driveImgUrl(url) {
   url = url.trim();
   const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-  if (m) return `https://lh3.googleusercontent.com/d/${m[1]}`;
-  if (/^[a-zA-Z0-9_-]{25,}$/.test(url)) return `https://lh3.googleusercontent.com/d/${url}`;
+  if (m) return `https://lh3.googleusercontent.com/d/${m[1]}=w1200`;
+  if (/^[a-zA-Z0-9_-]{25,}$/.test(url)) return `https://lh3.googleusercontent.com/d/${url}=w1200`;
   return url;
 }
 
 const _carouselData = {};
 
+function preloadCarousel(images) {
+  images.forEach(url => { const i = new Image(); i.src = driveImgUrl(url); });
+}
+
 function renderCarousel(images, uid) {
   if (!images || images.length === 0) return '';
   _carouselData[uid] = { images, idx: 0 };
+  // 預載所有圖片
+  setTimeout(() => preloadCarousel(images), 100);
   const total = images.length;
   const src = driveImgUrl(images[0]);
   return `
     <div style="position:relative;background:#111;border-radius:10px;overflow:hidden;margin-top:10px;">
       <img id="carImg_${uid}" src="${src}" alt="投影片"
-        style="width:100%;max-height:320px;object-fit:contain;display:block;"
-        onerror="this.src='';this.style.minHeight='120px';" />
+        style="width:100%;max-height:320px;object-fit:contain;display:block;transition:opacity 0.15s;"
+        onerror="this.style.minHeight='120px';" />
       ${total > 1 ? `
       <div style="position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.55);padding:8px 14px;">
         <button onclick="carouselNav('${uid}',-1)" style="background:rgba(255,255,255,0.18);border:none;color:white;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:18px;line-height:1;">‹</button>
@@ -947,7 +953,7 @@ function carouselNav(uid, dir) {
   d.idx = (d.idx + dir + d.images.length) % d.images.length;
   const img = document.getElementById(`carImg_${uid}`);
   const cnt = document.getElementById(`carCount_${uid}`);
-  if (img) img.src = driveImgUrl(d.images[d.idx]);
+  if (img) { img.style.opacity = '0.5'; img.src = driveImgUrl(d.images[d.idx]); img.onload = () => img.style.opacity = '1'; }
   if (cnt) cnt.textContent = `${d.idx + 1} / ${d.images.length}`;
 }
 
