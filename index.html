@@ -968,7 +968,7 @@ function caseImgList(cs) {
 function renderCasesTab(act, pair, color) {
   const c = color || '#c0392b';
   const caseType = getCaseType(act, pair.presentationCount);
-  const cases = getCases().filter(cs => cs.type === caseType);
+  const cases = getCases().filter(cs => cs.type === caseType).sort((a, b) => (a.topic || '').localeCompare(b.topic || '', 'zh-TW'));
   if (cases.length === 0) {
     return `<div style="padding:40px 20px;text-align:center;color:#bbb;font-size:14px;">尚無「${caseType}」的簡報案例</div>`;
   }
