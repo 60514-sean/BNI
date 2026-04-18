@@ -1039,6 +1039,10 @@ function showCasesSettings() {
               ${imgCount ? `<span style="font-size:11px;color:#1a73e8;">${imgCount} 張圖</span>` : ''}
             </div>
             ${cs.note ? `<div style="font-size:12px;color:#777;line-height:1.5;">${cs.note}</div>` : ''}
+            <div style="display:flex;gap:6px;margin-top:8px;">
+              <input id="refreshFolder_${i}" type="text" placeholder="貼上資料夾連結以重新整理圖片" style="flex:1;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;outline:none;font-family:monospace;" />
+              <button class="btn btn-sm" style="background:#1a73e8;color:white;white-space:nowrap;" onclick="refreshCaseImages(${i})">重新整理</button>
+            </div>
           </div>
           <button class="btn btn-sm btn-danger" onclick="removeCase(${i})" style="flex-shrink:0;">刪除</button>
         </div>`;
@@ -1104,6 +1108,28 @@ function removeCase(i) {
   showToast('已刪除');
   const el = document.getElementById('casesSection');
   if (el) el.innerHTML = showCasesSettings();
+}
+
+async function refreshCaseImages(i) {
+  const folderLink = document.getElementById(`refreshFolder_${i}`)?.value.trim();
+  if (!folderLink) { showToast('請貼上資料夾連結'); return; }
+  const folderId = extractFolderId(folderLink);
+  if (!folderId) { showToast('資料夾連結格式不正確'); return; }
+  showToast('正在讀取...');
+  try {
+    const res = await fetch(`${API_URL}?action=listFolder&folderId=${folderId}`);
+    const text = await res.text();
+    const data = JSON.parse(text);
+    if (data.error) { showToast('GAS錯誤：' + data.error); return; }
+    const images = (data.files || []).map(f => ({ id: f.id, name: f.name }));
+    const cases = getCases();
+    cases[i].images = images;
+    cache['__cases__'] = cases;
+    saveCases(cases);
+    showToast(`已更新，共 ${images.length} 張圖`);
+    const el = document.getElementById('casesSection');
+    if (el) el.innerHTML = showCasesSettings();
+  } catch(e) { showToast('讀取失敗：' + e.message); }
 }
 
 function renderGuide(act, color, pair) {
