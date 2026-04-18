@@ -1559,7 +1559,7 @@ function buildGroupReminderText(consultant, pairs) {
   const lines = [];
   lines.push(`☀️ ${givenName} 早安~`);
   if (pairs.length === 1) {
-    lines.push(`這週幫你整理 ${pairs[0].speaker} 的進度，提供給你方便追蹤~`);
+    lines.push(`這週幫你整理 ${speakerGivenName(pairs[0].speaker)} 的進度，提供給你方便追蹤~`);
   } else {
     lines.push(`這週幫你整理講者的進度，提供給你方便追蹤~`);
   }
@@ -1577,7 +1577,7 @@ function buildGroupReminderText(consultant, pairs) {
       const { currentWeekIdx } = getPresentationInfo(p.presentationTime);
       const pct = getPct(p);
 
-      if (pairs.length > 1) lines.push(`【講者${idx + 1}】${p.speaker}`);
+      if (pairs.length > 1) lines.push(`【講者${idx + 1}】${speakerGivenName(p.speaker)}`);
 
       if (pct === 100) {
         lines.push(`感謝你認真輔導，${speakerGivenName(p.speaker)} 有你真好～之前的進度都完成了！`);
