@@ -1107,7 +1107,24 @@ async function saveCaseEdit(i) {
   saveCases(cases);
   showToast('已儲存');
   const el = document.getElementById('casesSection');
-  if (el) el.innerHTML = showCasesSettings();
+  if (el) {
+    const CASE_TYPES = ['第1次', '第2次+', '主題日'];
+    const openGroups = CASE_TYPES.map(t => {
+      const gid = 'caseGroup_' + t.replace(/[^a-z0-9]/gi,'');
+      const g = document.getElementById(gid);
+      return g && g.style.display !== 'none';
+    });
+    el.innerHTML = showCasesSettings();
+    CASE_TYPES.forEach((t, idx) => {
+      if (openGroups[idx]) {
+        const gid = 'caseGroup_' + t.replace(/[^a-z0-9]/gi,'');
+        const g = document.getElementById(gid);
+        const arrow = document.getElementById(gid + '_arrow');
+        if (g) g.style.display = '';
+        if (arrow) arrow.textContent = '▲';
+      }
+    });
+  }
 }
 
 function toggleCaseGroup(id) {
