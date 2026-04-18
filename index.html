@@ -1564,7 +1564,8 @@ function buildGroupReminderText(consultant, pairs) {
     if (pairs.length > 1) lines.push(`【講者${idx + 1}】${p.speaker}`);
 
     if (pct === 100) {
-      lines.push(`目前已全部完成 100%，做得很棒！`);
+      lines.push(`感謝你認真輔導，${p.speaker} 有你真好～`);
+      lines.push(`之前的進度都完成了！`);
     } else {
       lines.push(`目前完成 ${pct}%了，不過還有一些項目需要處理：`);
       if (isSimpleType(act)) {
