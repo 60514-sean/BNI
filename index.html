@@ -1545,9 +1545,9 @@ function buildGroupReminderText(consultant, pairs) {
   const lines = [];
   lines.push(`☀️ ${givenName} 早安~`);
   if (pairs.length === 1) {
-    lines.push(`這週幫你整理一下 ${pairs[0].speaker} 的進度`);
+    lines.push(`這週幫你整理 ${pairs[0].speaker} 的進度，提供給你方便追蹤~`);
   } else {
-    lines.push(`這週幫你整理一下輔導的進度`);
+    lines.push(`這週幫你整理講者的進度，提供給你方便追蹤~`);
   }
   lines.push('');
 
@@ -1566,7 +1566,7 @@ function buildGroupReminderText(consultant, pairs) {
     if (pct === 100) {
       lines.push(`目前已全部完成 100%，做得很棒！`);
     } else {
-      lines.push(`目前完成 ${pct}%了，不過還有一些項目需要處理，我幫你都整理好了，提供給你方便追蹤~`);
+      lines.push(`目前完成 ${pct}%了，不過還有一些項目需要處理：`);
       if (isSimpleType(act)) {
         const cnt = SIMPLE_TASKS.filter((_, ti) => !data[simpleTaskKey(ti)]).length;
         if (cnt > 0) lines.push(`${act} → 還差 ${cnt} 項`);
