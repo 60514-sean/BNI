@@ -784,8 +784,10 @@ function renderConsultant(ck, speaker, canEdit) {
       <button id="tabBtn_progress" class="speaker-tab-btn active" onclick="switchSpeakerTab('progress')">我的進度</button>
       ${hasSlides(act) ? `<button id="tabBtn_slides" class="speaker-tab-btn" onclick="switchSpeakerTab('slides')">我的簡報</button>` : ''}
       <button id="tabBtn_guide" class="speaker-tab-btn" onclick="switchSpeakerTab('guide')">簡報攻略</button>
+      <button id="tabBtn_cases" class="speaker-tab-btn" onclick="switchSpeakerTab('cases')">簡報案例</button>
     </div>
     <div id="tabGuide" style="display:none;">${renderGuide(act, color, pair)}</div>
+    <div id="tabCases" style="display:none;">${renderCasesTab(act, pair, color)}</div>
     ${hasSlides(act) ? `<div id="tabSlides" style="display:none;">${renderSlidesTab(ck, speaker, pair, true)}</div>` : ''}
     <div id="tabProgress">`;
   }
@@ -892,9 +894,98 @@ function switchSpeakerTab(tab) {
   if (tg) tg.style.display = tab === 'guide' ? '' : 'none';
   const ts = document.getElementById('tabSlides');
   if (ts) ts.style.display = tab === 'slides' ? '' : 'none';
+  const tc = document.getElementById('tabCases');
+  if (tc) tc.style.display = tab === 'cases' ? '' : 'none';
   document.querySelectorAll('.speaker-tab-btn').forEach(b => {
     b.classList.toggle('active', b.id === 'tabBtn_' + tab);
   });
+}
+
+// ===== CASES =====
+function getCases() { return cache['__cases__'] || []; }
+async function saveCases(list) { await apiSave('__cases__', list); }
+
+function getCaseType(act, count) {
+  if (act === '主題日') return '主題日';
+  if (!count || count === '第1次') return '第1次';
+  return '第2次+';
+}
+
+function renderCasesTab(act, pair, color) {
+  const c = color || '#c0392b';
+  const caseType = getCaseType(act, pair.presentationCount);
+  const cases = getCases().filter(cs => cs.type === caseType);
+  if (cases.length === 0) {
+    return `<div style="padding:40px 20px;text-align:center;color:#bbb;font-size:14px;">尚無「${caseType}」的簡報案例</div>`;
+  }
+  return cases.map(cs => `
+    <div style="border:1px solid #f0f0f0;border-radius:10px;padding:16px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="font-size:14px;font-weight:700;color:${c};">${cs.topic || '（未填主題）'}</span>
+        <span style="font-size:11px;color:#aaa;">${cs.speaker || ''}</span>
+      </div>
+      ${cs.note ? `<div style="font-size:13px;color:#555;line-height:1.7;white-space:pre-wrap;">${cs.note}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+function showCasesSettings() {
+  const cases = getCases();
+  const CASE_TYPES = ['第1次', '第2次+', '主題日'];
+  const listHtml = cases.length
+    ? cases.map((cs, i) => `
+        <div style="border:1px solid #eee;border-radius:8px;padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;">
+          <div style="flex:1;">
+            <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap;">
+              <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#fdecea;color:#c0392b;font-weight:600;">${cs.type}</span>
+              <span style="font-size:13px;font-weight:600;">${cs.topic || '（未填主題）'}</span>
+              <span style="font-size:12px;color:#aaa;">${cs.speaker || ''}</span>
+            </div>
+            ${cs.note ? `<div style="font-size:12px;color:#777;line-height:1.5;white-space:pre-wrap;">${cs.note}</div>` : ''}
+          </div>
+          <button class="btn btn-sm btn-danger" onclick="removeCase(${i})" style="flex-shrink:0;">刪除</button>
+        </div>`).join('')
+    : '<div style="color:#bbb;font-size:13px;margin-bottom:8px;">尚未新增任何案例</div>';
+
+  const typeOpts = CASE_TYPES.map(t => `<option value="${t}">${t}</option>`).join('');
+  return `
+    <div style="margin-bottom:12px;">${listHtml}</div>
+    <div style="border:1px dashed #c0392b;border-radius:8px;padding:14px;">
+      <div style="font-size:13px;font-weight:600;color:#c0392b;margin-bottom:10px;">新增案例</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+        <select id="newCaseType" style="padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;">${typeOpts}</select>
+        <input type="text" id="newCaseSpeaker" placeholder="講者姓名" style="flex:1;min-width:100px;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;" />
+        <input type="text" id="newCaseTopic" placeholder="簡報主題" style="flex:2;min-width:140px;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;" />
+      </div>
+      <textarea id="newCaseNote" placeholder="案例說明（可留空）" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;resize:vertical;min-height:60px;font-family:inherit;"></textarea>
+      <button class="btn btn-sm btn-green" style="margin-top:8px;" onclick="addCase()">新增</button>
+    </div>`;
+}
+
+function addCase() {
+  const type = document.getElementById('newCaseType')?.value;
+  const speaker = document.getElementById('newCaseSpeaker')?.value.trim();
+  const topic = document.getElementById('newCaseTopic')?.value.trim();
+  const note = document.getElementById('newCaseNote')?.value.trim();
+  if (!topic) { showToast('請填寫簡報主題'); return; }
+  const cases = getCases();
+  cases.push({ type, speaker, topic, note });
+  cache['__cases__'] = cases;
+  saveCases(cases);
+  showToast('案例已新增！');
+  // 重新渲染設定頁中的案例區塊
+  const el = document.getElementById('casesSection');
+  if (el) el.innerHTML = showCasesSettings();
+}
+
+function removeCase(i) {
+  const cases = getCases();
+  cases.splice(i, 1);
+  cache['__cases__'] = cases;
+  saveCases(cases);
+  showToast('已刪除');
+  const el = document.getElementById('casesSection');
+  if (el) el.innerHTML = showCasesSettings();
 }
 
 function renderGuide(act, color, pair) {
@@ -1349,6 +1440,15 @@ function showSettings() {
         <div style="margin-top:12px;">
           <button class="btn btn-sm" onclick="saveSettings()">儲存設定</button>
         </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="toggleSection('casesSettingSection')">
+        <span>簡報案例管理</span><span id="casesSettingSectionArrow">▼</span>
+      </div>
+      <div id="casesSettingSection" style="display:none;">
+        <div id="casesSection">${showCasesSettings()}</div>
       </div>
     </div>
 
