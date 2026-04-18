@@ -1036,7 +1036,7 @@ function makeSplitCard(cs1, key1, cs2, key2, label, c) {
 function renderCasesTab(act, pair, color) {
   const c = color || '#c0392b';
   const caseType = getCaseType(act, pair.presentationCount);
-  const cases = getCases().filter(cs => cs.type === caseType).sort((a, b) => (a.topic || '').localeCompare(b.topic || '', 'zh-TW'));
+  const cases = getCases().filter(cs => cs.type === caseType).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   if (cases.length === 0) {
     return `<div style="padding:40px 20px;text-align:center;color:#bbb;font-size:14px;">尚無「${caseType}」的簡報案例</div>`;
   }
@@ -1111,6 +1111,7 @@ function showCasesSettings() {
               <div style="flex:1;min-width:0;">
                 <input id="editTopic_${i}" value="${(cs.topic||'').replace(/"/g,'&quot;')}" placeholder="簡報主題" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-weight:600;outline:none;margin-bottom:4px;" />
                 <input id="editSpeaker_${i}" value="${(cs.speaker||'').replace(/"/g,'&quot;')}" placeholder="講者姓名" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;color:#888;outline:none;margin-bottom:4px;" />
+                <input id="editDate_${i}" type="date" value="${cs.date||''}" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;color:#555;outline:none;margin-bottom:4px;" />
                 ${type === '主題日' ? `<input id="editThemeDayName_${i}" value="${(cs.themeDayName||'').replace(/"/g,'&quot;')}" placeholder="主題日名稱（群組用）" style="width:100%;padding:6px 8px;border:1px solid #e0a0a0;border-radius:6px;font-size:12px;color:#c0392b;outline:none;" />` : ''}
               </div>
               <button class="btn btn-sm btn-danger" onclick="removeCase(${i})" style="flex-shrink:0;align-self:flex-start;">刪除</button>
@@ -1150,6 +1151,7 @@ function showCasesSettings() {
       <div id="themeDayNameRow" style="display:none;margin-bottom:8px;">
         <input type="text" id="newCaseThemeDayName" placeholder="主題日名稱（相同名稱的兩位講者會合併為群組）" style="width:100%;padding:7px 10px;border:1px solid #e0a0a0;border-radius:6px;font-size:13px;outline:none;" />
       </div>
+      <input type="date" id="newCaseDate" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;margin-bottom:8px;color:#555;" />
       <textarea id="newCaseNote" placeholder="案例說明（可留空）" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;resize:vertical;min-height:50px;font-family:inherit;margin-bottom:8px;"></textarea>
       <input type="text" id="newCaseFolderLink" placeholder="Google Drive 資料夾連結" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;font-family:monospace;" />
       <button class="btn btn-sm btn-green" style="margin-top:8px;" onclick="addCase()">新增</button>
@@ -1163,8 +1165,10 @@ async function saveCaseEdit(i) {
   const cases = getCases();
   if (!cases[i]) return;
   const themeDayName = document.getElementById(`editThemeDayName_${i}`)?.value.trim() || '';
+  const date = document.getElementById(`editDate_${i}`)?.value || '';
   cases[i].topic = topic;
   cases[i].speaker = speaker;
+  cases[i].date = date;
   if (cases[i].type === '主題日') cases[i].themeDayName = themeDayName;
   if (folderLink) {
     const folderId = extractFolderId(folderLink);
@@ -1221,6 +1225,7 @@ async function addCase() {
   const topic = document.getElementById('newCaseTopic')?.value.trim();
   const note = document.getElementById('newCaseNote')?.value.trim();
   const themeDayName = document.getElementById('newCaseThemeDayName')?.value.trim() || '';
+  const date = document.getElementById('newCaseDate')?.value || '';
   const folderLink = document.getElementById('newCaseFolderLink')?.value.trim();
   if (!topic) { showToast('請填寫簡報主題'); return; }
   let images = [];
@@ -1238,7 +1243,7 @@ async function addCase() {
     } catch(e) { showToast('網路失敗：' + e.message); return; }
   }
   const cases = getCases();
-  cases.push({ type, speaker, topic, note, themeDayName, images });
+  cases.push({ type, speaker, topic, note, themeDayName, date, images });
   cache['__cases__'] = cases;
   saveCases(cases);
   showToast(`案例已新增！共 ${images.length} 張圖`);
