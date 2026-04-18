@@ -924,7 +924,8 @@ function renderCasesTab(act, pair, color) {
         <span style="font-size:14px;font-weight:700;color:${c};">${cs.topic || '（未填主題）'}</span>
         <span style="font-size:11px;color:#aaa;">${cs.speaker || ''}</span>
       </div>
-      ${cs.note ? `<div style="font-size:13px;color:#555;line-height:1.7;white-space:pre-wrap;">${cs.note}</div>` : ''}
+      ${cs.note ? `<div style="font-size:13px;color:#555;line-height:1.7;white-space:pre-wrap;margin-bottom:8px;">${cs.note}</div>` : ''}
+      ${cs.driveLink ? `<a href="${cs.driveLink}" target="_blank" style="font-size:12px;color:#1a73e8;text-decoration:none;display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border:1px solid #1a73e820;border-radius:6px;background:#f0f6ff;">查看簡報檔案</a>` : ''}
     </div>
   `).join('');
 }
@@ -942,6 +943,7 @@ function showCasesSettings() {
               <span style="font-size:12px;color:#aaa;">${cs.speaker || ''}</span>
             </div>
             ${cs.note ? `<div style="font-size:12px;color:#777;line-height:1.5;white-space:pre-wrap;">${cs.note}</div>` : ''}
+            ${cs.driveLink ? `<a href="${cs.driveLink}" target="_blank" style="font-size:11px;color:#1a73e8;">Drive 連結</a>` : ''}
           </div>
           <button class="btn btn-sm btn-danger" onclick="removeCase(${i})" style="flex-shrink:0;">刪除</button>
         </div>`).join('')
@@ -957,7 +959,8 @@ function showCasesSettings() {
         <input type="text" id="newCaseSpeaker" placeholder="講者姓名" style="flex:1;min-width:100px;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;" />
         <input type="text" id="newCaseTopic" placeholder="簡報主題" style="flex:2;min-width:140px;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;" />
       </div>
-      <textarea id="newCaseNote" placeholder="案例說明（可留空）" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;resize:vertical;min-height:60px;font-family:inherit;"></textarea>
+      <textarea id="newCaseNote" placeholder="案例說明（可留空）" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;resize:vertical;min-height:60px;font-family:inherit;margin-bottom:8px;"></textarea>
+      <input type="text" id="newCaseDrive" placeholder="Google Drive 連結（可留空）" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;" />
       <button class="btn btn-sm btn-green" style="margin-top:8px;" onclick="addCase()">新增</button>
     </div>`;
 }
@@ -967,9 +970,10 @@ function addCase() {
   const speaker = document.getElementById('newCaseSpeaker')?.value.trim();
   const topic = document.getElementById('newCaseTopic')?.value.trim();
   const note = document.getElementById('newCaseNote')?.value.trim();
+  const driveLink = document.getElementById('newCaseDrive')?.value.trim();
   if (!topic) { showToast('請填寫簡報主題'); return; }
   const cases = getCases();
-  cases.push({ type, speaker, topic, note });
+  cases.push({ type, speaker, topic, note, driveLink });
   cache['__cases__'] = cases;
   saveCases(cases);
   showToast('案例已新增！');
