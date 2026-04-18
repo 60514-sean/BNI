@@ -921,18 +921,31 @@ function driveImgUrl(url) {
 }
 
 const _carouselData = {};
+const _driveUrlCache = {};
 
-function preloadCarousel(images) {
-  images.forEach(url => { const i = new Image(); i.src = driveImgUrl(url); });
+function driveUrlMemo(id) {
+  if (!_driveUrlCache[id]) _driveUrlCache[id] = `https://lh3.googleusercontent.com/d/${id}=w1200`;
+  return _driveUrlCache[id];
+}
+
+function preloadAdjacent(images, idx) {
+  [-1, 1, 2].forEach(d => {
+    const i = (idx + d + images.length) % images.length;
+    const url = driveUrlMemo(images[i]);
+    if (!_driveUrlCache['_loaded_' + images[i]]) {
+      const img = new Image(); img.src = url;
+      _driveUrlCache['_loaded_' + images[i]] = true;
+    }
+  });
 }
 
 function renderCarousel(images, uid) {
   if (!images || images.length === 0) return '';
   _carouselData[uid] = { images, idx: 0 };
-  setTimeout(() => preloadCarousel(images), 100);
   if (images.length > 1) setTimeout(() => setupCarouselSwipe(uid), 50);
+  setTimeout(() => preloadAdjacent(images, 0), 200);
   const total = images.length;
-  const src = driveImgUrl(images[0]);
+  const src = driveUrlMemo(images[0]);
   return `
     <div style="margin-top:10px;">
       <div id="carWrap_${uid}" style="background:#111;border-radius:10px;overflow:hidden;touch-action:pan-y;">
@@ -967,8 +980,9 @@ function carouselNav(uid, dir) {
   d.idx = (d.idx + dir + d.images.length) % d.images.length;
   const img = document.getElementById(`carImg_${uid}`);
   const cnt = document.getElementById(`carCount_${uid}`);
-  if (img) { img.style.opacity = '0.5'; img.src = driveImgUrl(d.images[d.idx]); img.onload = () => img.style.opacity = '1'; }
+  if (img) { img.style.opacity = '0.5'; img.src = driveUrlMemo(d.images[d.idx]); img.onload = () => img.style.opacity = '1'; }
   if (cnt) cnt.textContent = `${d.idx + 1} / ${d.images.length}`;
+  setTimeout(() => preloadAdjacent(d.images, d.idx), 100);
 }
 
 function caseImgList(cs) {
@@ -986,11 +1000,11 @@ function caseImgList(cs) {
 
 function makeCaseCard(cs, key, c) {
   const imgList = caseImgList(cs);
-  const thumb = imgList.length > 0 ? driveImgUrl(imgList[0]) : '';
+  const thumb = imgList.length > 0 ? driveUrlMemo(imgList[0]) : '';
   window['_caseData_' + key] = { cs, imgList, c, key };
   return `
     <div onclick="openCaseModal('${key}')" style="cursor:pointer;border-radius:10px;overflow:hidden;background:#f5f5f5;position:relative;aspect-ratio:1/1;box-shadow:0 1px 6px rgba(0,0,0,0.08);">
-      ${thumb ? `<img src="${thumb}" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display='none'" />` : '<div style="width:100%;height:100%;background:#eee;"></div>'}
+      ${thumb ? `<img src="${thumb}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display='none'" />` : '<div style="width:100%;height:100%;background:#eee;"></div>'}
       <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.65));padding:10px 8px 8px;">
         <div style="color:white;font-size:12px;font-weight:700;line-height:1.5;">${(cs.speaker || cs.topic || '（未填）').replace(/\//g, '<br>')}</div>
       </div>
@@ -1000,17 +1014,17 @@ function makeCaseCard(cs, key, c) {
 
 function makeSplitCard(cs1, key1, cs2, key2, label, c) {
   const img1 = caseImgList(cs1); const img2 = caseImgList(cs2);
-  const t1 = img1.length > 0 ? driveImgUrl(img1[0]) : '';
-  const t2 = img2.length > 0 ? driveImgUrl(img2[0]) : '';
+  const t1 = img1.length > 0 ? driveUrlMemo(img1[0]) : '';
+  const t2 = img2.length > 0 ? driveUrlMemo(img2[0]) : '';
   window['_caseData_' + key1] = { cs: cs1, imgList: img1, c, key: key1 };
   window['_caseData_' + key2] = { cs: cs2, imgList: img2, c, key: key2 };
   return `
     <div style="border-radius:10px;overflow:hidden;background:#f5f5f5;position:relative;aspect-ratio:1/1;box-shadow:0 1px 6px rgba(0,0,0,0.08);">
       <div onclick="openCaseModal('${key1}')" style="cursor:pointer;position:absolute;left:0;top:0;width:50%;height:100%;overflow:hidden;">
-        ${t1 ? `<img src="${t1}" style="width:200%;height:100%;object-fit:cover;display:block;" />` : '<div style="width:100%;height:100%;background:#ddd;"></div>'}
+        ${t1 ? `<img src="${t1}" loading="lazy" style="width:200%;height:100%;object-fit:cover;display:block;" />` : '<div style="width:100%;height:100%;background:#ddd;"></div>'}
       </div>
       <div onclick="openCaseModal('${key2}')" style="cursor:pointer;position:absolute;right:0;top:0;width:50%;height:100%;overflow:hidden;">
-        ${t2 ? `<img src="${t2}" style="width:200%;height:100%;object-fit:cover;display:block;margin-left:-100%;" />` : '<div style="width:100%;height:100%;background:#ccc;"></div>'}
+        ${t2 ? `<img src="${t2}" loading="lazy" style="width:200%;height:100%;object-fit:cover;display:block;margin-left:-100%;" />` : '<div style="width:100%;height:100%;background:#ccc;"></div>'}
       </div>
       <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.6);pointer-events:none;"></div>
       <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.65));padding:8px 8px 6px;pointer-events:none;">
