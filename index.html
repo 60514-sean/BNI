@@ -1046,13 +1046,10 @@ function showCasesSettings() {
               </div>
               <button class="btn btn-sm btn-danger" onclick="removeCase(${i})" style="flex-shrink:0;align-self:flex-start;">刪除</button>
             </div>
-            <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
+            <div style="display:flex;gap:6px;align-items:center;">
               ${imgCount ? `<span style="font-size:11px;color:#1a73e8;">${imgCount} 張圖</span>` : ''}
-              <button class="btn btn-sm btn-green" onclick="saveCaseEdit(${i})" style="margin-left:auto;">儲存名稱</button>
-            </div>
-            <div style="display:flex;gap:6px;">
-              <input id="refreshFolder_${i}" type="text" placeholder="貼上資料夾連結重新整理圖片" style="flex:1;min-width:0;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;outline:none;" />
-              <button class="btn btn-sm" style="background:#1a73e8;color:white;white-space:nowrap;flex-shrink:0;" onclick="refreshCaseImages(${i})">重新整理</button>
+              <input id="refreshFolder_${i}" type="text" placeholder="資料夾連結（選填，重新整理圖片）" style="flex:1;min-width:0;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;outline:none;" />
+              <button class="btn btn-sm btn-danger" onclick="saveCaseEdit(${i})" style="flex-shrink:0;">儲存</button>
             </div>
           </div>`;
         }).join('')
@@ -1087,13 +1084,25 @@ function showCasesSettings() {
     </div>`;
 }
 
-function saveCaseEdit(i) {
+async function saveCaseEdit(i) {
   const topic = document.getElementById(`editTopic_${i}`)?.value.trim();
   const speaker = document.getElementById(`editSpeaker_${i}`)?.value.trim();
+  const folderLink = document.getElementById(`refreshFolder_${i}`)?.value.trim();
   const cases = getCases();
   if (!cases[i]) return;
   cases[i].topic = topic;
   cases[i].speaker = speaker;
+  if (folderLink) {
+    const folderId = extractFolderId(folderLink);
+    if (!folderId) { showToast('資料夾連結格式不正確'); return; }
+    showToast('正在讀取圖片...');
+    try {
+      const res = await fetch(`${API_URL}?action=listFolder&folderId=${folderId}`);
+      const data = JSON.parse(await res.text());
+      if (data.error) { showToast('GAS錯誤：' + data.error); return; }
+      cases[i].images = (data.files || []).map(f => ({ id: f.id, name: f.name }));
+    } catch(e) { showToast('讀取失敗：' + e.message); return; }
+  }
   cache['__cases__'] = cases;
   saveCases(cases);
   showToast('已儲存');
