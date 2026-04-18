@@ -1608,7 +1608,11 @@ function buildGroupReminderText(consultant, pairs) {
 }
 
 function showReminders() {
-  const pairs = _adminPairs.filter(p => p.consultant && p.speaker);
+  const pairs = _adminPairs.filter(p => {
+    if (!p.consultant || !p.speaker) return false;
+    const { currentWeekIdx } = getPresentationInfo(p.presentationTime);
+    return currentWeekIdx !== -1;
+  });
   if (pairs.length === 0) { showToast('尚未設定配對'); return; }
 
   // 依顧問分組
