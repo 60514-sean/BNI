@@ -1595,7 +1595,9 @@ function buildGroupReminderText(consultant, pairs) {
             lines.push(`${w.label} → 還差 ${cnt} 項`);
             hasWeekLines = true;
           });
-          if (!hasWeekLines) lines.push(`本周的進度再麻煩您了~另外也同步提供追蹤網址給您https://bni-navy.vercel.app/`);
+          if (!hasWeekLines) lines.push(pairs.length === 1
+            ? `本周的進度再麻煩您了~另外也同步提供追蹤網址給您https://bni-navy.vercel.app/`
+            : `本周的進度再麻煩您了~`);
         }
       }
       if (idx < pairs.length - 1) lines.push('');
