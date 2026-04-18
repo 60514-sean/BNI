@@ -789,8 +789,10 @@ function renderConsultant(ck, speaker, canEdit) {
       <button id="tabBtn_progress" class="speaker-tab-btn active" onclick="switchSpeakerTab('progress')">我的進度</button>
       ${hasSlides(act) ? `<button id="tabBtn_slides" class="speaker-tab-btn" onclick="switchSpeakerTab('slides')">我的簡報</button>` : ''}
       <button id="tabBtn_guide" class="speaker-tab-btn" onclick="switchSpeakerTab('guide')">簡報攻略</button>
+      <button id="tabBtn_cases" class="speaker-tab-btn" onclick="switchSpeakerTab('cases')">簡報案例</button>
     </div>
     <div id="tabGuide" style="display:none;">${renderGuide(act, color, pair)}</div>
+    <div id="tabCases" style="display:none;">${renderCasesTab(act, pair, color)}</div>
     ${hasSlides(act) ? `<div id="tabSlides" style="display:none;">${renderSlidesTab(ck, speaker, pair, true)}</div>` : ''}
     <div id="tabProgress">`;
   }
@@ -807,10 +809,8 @@ function renderConsultant(ck, speaker, canEdit) {
     html += `<div class="speaker-tabs" style="--tab-color:${color}">
       <button id="tabBtn_progress" class="speaker-tab-btn active" onclick="switchSpeakerTab('progress')">講者追蹤</button>
       ${hasSlides(act) ? `<button id="tabBtn_slides" class="speaker-tab-btn" onclick="switchSpeakerTab('slides')">簡報內容</button>` : ''}
-      <button id="tabBtn_cases" class="speaker-tab-btn" onclick="switchSpeakerTab('cases')">簡報案例</button>
     </div>
     ${hasSlides(act) ? `<div id="tabSlides" style="display:none;">${renderSlidesTab(ck, speaker, pair, true)}</div>` : ''}
-    <div id="tabCases" style="display:none;">${renderCasesAllTypes(color)}</div>
     <div id="tabProgress">`;
   }
   if (!canEdit) html += `
