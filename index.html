@@ -1499,7 +1499,6 @@ function buildReminderText(p) {
   const data = getData(p.consultant, p.speaker);
   const { currentWeekIdx } = getPresentationInfo(p.presentationTime);
 
-  // 去掉姓（第一個字），保留名
   const givenName = p.consultant && p.consultant.length > 1 ? p.consultant.slice(1) : p.consultant;
 
   const total = isSimpleType(act)
@@ -1520,22 +1519,23 @@ function buildReminderText(p) {
   } else {
     lines.push(`目前完成 ${pct}%了，不過還有一些項目需要處理，我幫你都整理好了，提供給你方便追蹤~`);
     lines.push('');
+
     if (isSimpleType(act)) {
-      SIMPLE_TASKS.forEach((t, ti) => {
-        if (!data[simpleTaskKey(ti)]) lines.push(`□ ${t}`);
-      });
+      const incompleteCount = SIMPLE_TASKS.filter((_, ti) => !data[simpleTaskKey(ti)]).length;
+      if (incompleteCount > 0) lines.push(`${act} → 還差 ${incompleteCount} 項`);
     } else {
+      // 只列當週之前（wi < currentWeekIdx）；未設日期則列全部
+      const limit = currentWeekIdx >= 0 ? currentWeekIdx : WEEKS.length;
       WEEKS.forEach((w, wi) => {
-        const incomplete = w.tasks.filter((_, ti) => !data[taskKey(wi, ti)]);
-        if (incomplete.length === 0) return;
-        const isCur = wi === currentWeekIdx;
-        lines.push(`【${w.label}】${w.theme}${isCur ? '（本週）' : ''}`);
-        incomplete.forEach(t => lines.push(`□ ${t}`));
-        lines.push('');
+        if (wi >= limit) return;
+        const incompleteCount = w.tasks.filter((_, ti) => !data[taskKey(wi, ti)]).length;
+        if (incompleteCount === 0) return;
+        lines.push(`${w.label}｜${w.theme} → 還差 ${incompleteCount} 項`);
       });
     }
   }
 
+  lines.push('');
   lines.push('祝~今天順心優~❤️');
   return lines.join('\n');
 }
