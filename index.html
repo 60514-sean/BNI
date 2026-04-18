@@ -715,7 +715,7 @@ function renderConsultantOverview(ck) {
     renderConsultant(ck, myPairs[0].speaker, true);
     return;
   }
-  let html = '<div class="weeks-container">';
+  let cardsHtml = '<div class="weeks-container">';
   myPairs.forEach(p => {
     const act = p.activityType || '主題簡報';
     const color = ACTIVITY_COLORS[act] || '#c0392b';
@@ -728,26 +728,31 @@ function renderConsultantOverview(ck) {
       done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
     }
     const pct = total ? Math.round(done / total * 100) : 0;
-    const dispColor2 = color;
     const dates = [
       isSimpleType(act) && p.submitDate1 ? `${DATE_LABELS[0]}：${p.submitDate1}` : '',
       isSimpleType(act) && p.submitDate2 ? `${DATE_LABELS[1]}：${p.submitDate2}` : '',
       p.presentationTime ? `${DATE_LABELS[2]}：${p.presentationTime}` : '',
     ].filter(Boolean).join('　');
-    html += `
-      <div class="pair-card" style="cursor:pointer;${pct === 100 ? `border:2px solid ${dispColor2};background:white;` : ''}" onclick="renderConsultant('${ck}','${p.speaker}',true)">
+    cardsHtml += `
+      <div class="pair-card" style="cursor:pointer;${pct === 100 ? `border:2px solid ${color};background:white;` : ''}" onclick="renderConsultant('${ck}','${p.speaker}',true)">
         <div class="pair-header">
           <span class="pair-title">${p.speaker||'—'}${activityBadge(act)}${countBadge(p)}</span>
-          <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%;background:${dispColor2}"></div></div>
-          <span class="progress-pct" style="color:${dispColor2}">${pct}%</span>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+          <span class="progress-pct" style="color:${color}">${pct}%</span>
         </div>
         ${dates ? `<div style="font-size:12px;color:#888;margin-top:6px;">${dates}</div>` : ''}
         ${countdownHtml(p.presentationTime, act, color)}
-        <div style="font-size:13px;color:${dispColor2};margin-top:8px;">點擊查看詳細進度 →</div>
+        <div style="font-size:13px;color:${color};margin-top:8px;">點擊查看詳細進度 →</div>
       </div>`;
   });
-  html += '</div>';
-  document.getElementById('mainContent').innerHTML = html;
+  cardsHtml += '</div>';
+  document.getElementById('mainContent').innerHTML = `
+    <div class="speaker-tabs" style="--tab-color:#c0392b">
+      <button id="tabBtn_tracking" class="speaker-tab-btn active" onclick="switchConsultantTab('tracking')">講者追蹤</button>
+      <button id="tabBtn_cases" class="speaker-tab-btn" onclick="switchConsultantTab('cases')">簡報案例</button>
+    </div>
+    <div id="tabTracking">${cardsHtml}</div>
+    <div id="tabCases" style="display:none;">${renderCasesAllTypes('#c0392b')}</div>`;
 }
 
 // ===== CONSULTANT DETAIL =====
@@ -802,12 +807,12 @@ function renderConsultant(ck, speaker, canEdit) {
   </div>`;
   if (canEdit) {
     html += `<div class="speaker-tabs" style="--tab-color:${color}">
-      <button id="tabBtn_progress" class="speaker-tab-btn active" onclick="switchSpeakerTab('progress')">進度回報</button>
+      <button id="tabBtn_progress" class="speaker-tab-btn active" onclick="switchSpeakerTab('progress')">講者追蹤</button>
       ${hasSlides(act) ? `<button id="tabBtn_slides" class="speaker-tab-btn" onclick="switchSpeakerTab('slides')">簡報內容</button>` : ''}
       <button id="tabBtn_cases" class="speaker-tab-btn" onclick="switchSpeakerTab('cases')">簡報案例</button>
     </div>
     ${hasSlides(act) ? `<div id="tabSlides" style="display:none;">${renderSlidesTab(ck, speaker, pair, true)}</div>` : ''}
-    <div id="tabCases" style="display:none;">${renderCasesTab(act, pair, color)}</div>
+    <div id="tabCases" style="display:none;">${renderCasesAllTypes(color)}</div>
     <div id="tabProgress">`;
   }
   if (!canEdit) html += `
@@ -889,6 +894,78 @@ function renderConsultant(ck, speaker, canEdit) {
 }
 
 function toggleWeek(id) { document.getElementById(id)?.classList.toggle('open'); }
+
+function switchConsultantTab(tab) {
+  const tt = document.getElementById('tabTracking');
+  const tc = document.getElementById('tabCases');
+  if (tt) tt.style.display = tab === 'tracking' ? '' : 'none';
+  if (tc) tc.style.display = tab === 'cases' ? '' : 'none';
+  document.querySelectorAll('.speaker-tab-btn').forEach(b => {
+    b.classList.toggle('active', b.id === 'tabBtn_' + tab);
+  });
+}
+
+function switchCaseType(idx) {
+  const CASE_TYPES = ['第1次', '第2次+', '主題日'];
+  CASE_TYPES.forEach((_, i) => {
+    const panel = document.getElementById('caseTypePanel_' + i);
+    const btn = document.getElementById('caseTypeBtn_' + i);
+    if (panel) panel.style.display = i === idx ? '' : 'none';
+    if (btn) {
+      const active = i === idx;
+      btn.style.background = active ? 'var(--case-color, #c0392b)' : '#eee';
+      btn.style.color = active ? 'white' : '#666';
+    }
+  });
+}
+
+function renderCasesAllTypes(color) {
+  const c = color || '#c0392b';
+  const CASE_TYPES = ['第1次', '第2次+', '主題日'];
+
+  const btnHtml = CASE_TYPES.map((t, i) => `
+    <button id="caseTypeBtn_${i}" onclick="switchCaseType(${i})"
+      style="padding:7px 16px;border:none;border-radius:20px;cursor:pointer;font-size:13px;font-weight:600;transition:background 0.15s;
+        ${i === 0 ? `background:${c};color:white;` : 'background:#eee;color:#666;'}">${t}</button>`
+  ).join('');
+
+  const panelsHtml = CASE_TYPES.map((type, i) => {
+    const cases = getCases().filter(cs => cs.type === type)
+      .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    let cards = '';
+    if (type === '主題日') {
+      const grouped = {}, singles = [];
+      cases.forEach((cs, idx) => {
+        const name = (cs.themeDayName || '').trim();
+        if (name) { if (!grouped[name]) grouped[name] = []; grouped[name].push({ cs, i: idx }); }
+        else singles.push({ cs, i: idx });
+      });
+      Object.entries(grouped).forEach(([name, items]) => {
+        if (items.length >= 2) {
+          cards += makeSplitCard(items[0].cs, `caseAll_主題日_${items[0].i}_a`, items[1].cs, `caseAll_主題日_${items[1].i}_b`, name, c);
+          items.slice(2).forEach(({ cs, i: idx }) => { cards += makeCaseCard(cs, `caseAll_主題日_${idx}`, c); });
+        } else { cards += makeCaseCard(items[0].cs, `caseAll_主題日_${items[0].i}`, c); }
+      });
+      singles.forEach(({ cs, i: idx }) => { cards += makeCaseCard(cs, `caseAll_主題日s_${idx}`, c); });
+    } else {
+      cards = cases.map((cs, idx) => makeCaseCard(cs, `caseAll_${type}_${idx}`, c)).join('');
+    }
+    const content = cases.length
+      ? `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:4px 0;">${cards}</div>`
+      : `<div style="padding:40px 20px;text-align:center;color:#bbb;font-size:14px;">尚無「${type}」的簡報案例</div>`;
+    return `<div id="caseTypePanel_${i}" style="${i > 0 ? 'display:none;' : ''}">${content}</div>`;
+  }).join('');
+
+  return `
+    <div style="--case-color:${c};display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">${btnHtml}</div>
+    ${panelsHtml}
+    <div id="caseModalOverlay" onclick="closeCaseModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:3000;align-items:center;justify-content:center;">
+      <div id="caseModalBox" onclick="event.stopPropagation()" style="background:white;border-radius:14px;width:92%;max-width:480px;max-height:88vh;overflow-y:auto;padding:18px;">
+        <div id="caseModalContent"></div>
+        <button onclick="closeCaseModal()" style="margin-top:12px;width:100%;padding:10px;border:none;border-radius:8px;background:#eee;color:#555;font-size:14px;cursor:pointer;">關閉</button>
+      </div>
+    </div>`;
+}
 
 function switchSpeakerTab(tab) {
   document.getElementById('tabProgress').style.display = tab === 'progress' ? '' : 'none';
