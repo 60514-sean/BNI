@@ -131,6 +131,43 @@
   .guide-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin:8px 0; }
   .guide-cell { background:#f8f8f8; border-radius:6px; padding:8px 6px; font-size:12px; text-align:center; line-height:1.5; }
   .guide-tip { font-size:12px; border-radius:6px; padding:8px 10px; margin-top:8px; }
+
+  /* ADMIN GRID */
+  .admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .admin-sq-card {
+    background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    padding: 16px; cursor: pointer; transition: all 0.18s;
+    aspect-ratio: 1; display: flex; flex-direction: column; justify-content: space-between;
+    border: 1px solid #f0f0f0;
+  }
+  .admin-sq-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.12); transform: translateY(-2px); }
+  .admin-sq-bar { height: 4px; border-radius: 2px; background: #eee; margin-top: 8px; }
+  .admin-sq-bar-fill { height: 4px; border-radius: 2px; transition: width 0.3s; }
+
+  /* DETAIL MODAL */
+  .detail-modal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5); z-index: 9000;
+    padding: 20px; overflow-y: auto;
+  }
+  .detail-modal.open { display: flex; align-items: flex-start; justify-content: center; }
+  .detail-modal-box {
+    background: white; border-radius: 16px;
+    width: 100%; max-width: 680px; margin: auto;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25); overflow: hidden;
+  }
+  .detail-modal-head {
+    padding: 18px 20px; display: flex; align-items: flex-start;
+    justify-content: space-between; gap: 12px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .detail-modal-body { padding: 16px 20px 24px; max-height: 65vh; overflow-y: auto; }
+  .modal-close-btn {
+    background: #f0f0f0; border: none; min-width: 32px; height: 32px;
+    border-radius: 50%; cursor: pointer; font-size: 16px; line-height: 1;
+    flex-shrink: 0;
+  }
+  .modal-close-btn:hover { background: #e0e0e0; }
 </style>
 </head>
 <body>
@@ -166,6 +203,14 @@
 </div>
 
 <div class="success-toast" id="toast"></div>
+
+<!-- ADMIN DETAIL MODAL -->
+<div class="detail-modal" id="adminDetailModal" onclick="if(event.target===this)closeAdminModal()">
+  <div class="detail-modal-box">
+    <div class="detail-modal-head" id="adminModalHead"></div>
+    <div class="detail-modal-body" id="adminModalBody"></div>
+  </div>
+</div>
 
 <script>
 // ===== API =====
@@ -454,11 +499,19 @@ function renderApp() {
 }
 
 // ===== ADMIN OVERVIEW =====
+let _adminPairs = [];
+
 function renderAdmin() {
   const cfg = getConfig();
-  let html = '';
-  cfg.pairs.forEach((p, pi) => {
-    if (!p.consultant && !p.speaker) return;
+  _adminPairs = cfg.pairs.filter(p => p.consultant || p.speaker);
+
+  if (_adminPairs.length === 0) {
+    document.getElementById('mainContent').innerHTML = '<div class="card"><p style="color:#888;">尚未設定任何配對，請至設定頁面新增。</p></div>';
+    return;
+  }
+
+  let html = '<div class="admin-grid">';
+  _adminPairs.forEach((p, pi) => {
     const act = p.activityType || '主題簡報';
     const data = getData(p.consultant, p.speaker);
     let total, done;
@@ -470,56 +523,109 @@ function renderAdmin() {
       done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
     }
     const pct = total ? Math.round(done / total * 100) : 0;
-    const dispColor = ACTIVITY_COLORS[act]||'#c0392b';
+    const dispColor = ACTIVITY_COLORS[act] || '#c0392b';
+    const done100 = pct === 100;
+
     const weekDots = isSimpleType(act)
-      ? SIMPLE_TASKS.map((t, ti) => {
-          const isDone = !!data[simpleTaskKey(ti)];
-          const dotStyle = isDone ? `background:${dispColor};color:white;` : '';
-          return `<span class="week-dot ${isDone?'done':''}" style="font-size:11px;${dotStyle}">${t}</span>`;
-        }).join('')
-      : WEEKS.map((w, wi) => {
-          const wD = w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length;
-          const cls = wD === w.tasks.length ? 'done' : wD > 0 ? 'partial' : '';
-          const dotStyle = cls==='done' ? `background:${dispColor};color:white;` : cls==='partial' ? `background:${dispColor}80;color:white;` : '';
-          return `<span class="week-dot ${cls}" style="${dotStyle}">${w.label}</span>`;
-        }).join('');
-    const dates = [
-      isSimpleType(act) && p.submitDate1 ? `${DATE_LABELS[0]}：${p.submitDate1}` : '',
-      isSimpleType(act) && p.submitDate2 ? `${DATE_LABELS[1]}：${p.submitDate2}` : '',
-      p.presentationTime ? `${DATE_LABELS[2]}：${p.presentationTime}` : '',
-    ].filter(Boolean).join('　');
-    const detail = isSimpleType(act) ? renderSimpleReadonly(p.consultant, p.speaker, dispColor) : renderWeeksReadonly(p.consultant, p.speaker, dispColor);
-    const detailInner = hasSlides(act)
-      ? `<div style="display:flex;gap:0;border-bottom:2px solid #f0f0f0;margin-bottom:12px;">
-           <button id="adt_${pi}_p" onclick="adminTab(${pi},'p','${dispColor}')"
-             style="padding:7px 16px;border:none;background:none;font-size:13px;cursor:pointer;font-weight:bold;color:${dispColor};border-bottom:2px solid ${dispColor};margin-bottom:-2px;">進度</button>
-           <button id="adt_${pi}_s" onclick="adminTab(${pi},'s','${dispColor}')"
-             style="padding:7px 16px;border:none;background:none;font-size:13px;cursor:pointer;color:#aaa;">簡報內容</button>
-         </div>
-         <div id="adp_${pi}_p">${detail}</div>
-         <div id="adp_${pi}_s" style="display:none;">${renderSlidesTab(p.consultant, p.speaker, p, false)}</div>`
-      : detail;
+      ? `<div style="font-size:10px;color:${dispColor};font-weight:600;">${done}/${total} 完成</div>`
+      : `<div style="display:flex;gap:3px;flex-wrap:wrap;">
+          ${WEEKS.map((w, wi) => {
+            const wD = w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length;
+            const full = wD === w.tasks.length;
+            const part = wD > 0 && !full;
+            const bg = full ? dispColor : part ? dispColor + '55' : '#e8e8e8';
+            return `<span style="width:9px;height:9px;border-radius:50%;background:${bg};display:inline-block;" title="${w.label}（${wD}/${w.tasks.length}）"></span>`;
+          }).join('')}
+        </div>`;
+
+    const { countdown } = getPresentationInfo(p.presentationTime);
+    const cdText = countdown !== null
+      ? countdown > 0 ? `${countdown}天後`
+        : countdown === 0 ? '今天！'
+        : `已過${Math.abs(countdown)}天`
+      : '';
+
     html += `
-      <div class="pair-card" ${pct === 100 ? `style="border:2px solid ${dispColor};background:white;"` : ''}>
-        <div class="pair-header">
-          <span class="pair-title">顧問 ${p.consultant||'—'} ↔ ${p.speaker||'—'}${activityBadge(act)}${countBadge(p)}</span>
-          <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%;background:${dispColor}"></div></div>
-          <span class="progress-pct" style="color:${dispColor}">${pct}%</span>
+      <div class="admin-sq-card" onclick="openAdminModal(${pi})"
+        style="${done100 ? `border:2px solid ${dispColor};` : ''}">
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.3px;color:${dispColor};margin-bottom:4px;">${act}${p.presentationCount ? ' · ' + p.presentationCount : ''}</div>
+          <div style="font-size:14px;font-weight:700;color:#222;line-height:1.3;">${p.speaker || '—'}</div>
+          <div style="font-size:11px;color:#aaa;margin-top:2px;">顧問 ${p.consultant || '—'}</div>
         </div>
-        ${dates ? `<div style="font-size:12px;color:#888;margin-bottom:4px;">${dates}</div>` : ''}
-        ${countdownHtml(p.presentationTime, act, ACTIVITY_COLORS[act])}
-        <div class="week-dots" style="margin-top:6px;">${weekDots}</div>
-        <button class="expand-btn" onclick="toggleDetail('ad_${pi}',this)">查看詳細 ▼</button>
-        <div id="ad_${pi}" style="display:none;margin-top:12px;">${detailInner}</div>
+        <div>
+          ${weekDots}
+          <div class="admin-sq-bar" style="margin-top:8px;"><div class="admin-sq-bar-fill" style="width:${pct}%;background:${dispColor};"></div></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;">
+            <div style="font-size:20px;font-weight:900;color:${dispColor};line-height:1;">${pct}%</div>
+            ${cdText ? `<div style="font-size:10px;color:#bbb;">${cdText}</div>` : ''}
+          </div>
+        </div>
       </div>`;
   });
-  document.getElementById('mainContent').innerHTML = html || '<div class="card"><p style="color:#888;">尚未設定任何配對，請至設定頁面新增。</p></div>';
+  html += '</div>';
+  document.getElementById('mainContent').innerHTML = html;
 }
 
-function toggleDetail(id, btn) {
-  const el = document.getElementById(id);
-  el.style.display = el.style.display === 'none' ? 'block' : 'none';
-  btn.textContent = el.style.display === 'none' ? '查看詳細 ▼' : '收起 ▲';
+function openAdminModal(pi) {
+  const p = _adminPairs[pi];
+  if (!p) return;
+  const act = p.activityType || '主題簡報';
+  const dispColor = ACTIVITY_COLORS[act] || '#c0392b';
+  const data = getData(p.consultant, p.speaker);
+  let total, done;
+  if (isSimpleType(act)) {
+    total = SIMPLE_TASKS.length;
+    done = SIMPLE_TASKS.filter((_, ti) => data[simpleTaskKey(ti)]).length;
+  } else {
+    total = WEEKS.reduce((s, w) => s + w.tasks.length, 0);
+    done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
+  }
+  const pct = total ? Math.round(done / total * 100) : 0;
+  const dates = [
+    isSimpleType(act) && p.submitDate1 ? `${DATE_LABELS[0]}：${p.submitDate1}` : '',
+    isSimpleType(act) && p.submitDate2 ? `${DATE_LABELS[1]}：${p.submitDate2}` : '',
+    p.presentationTime ? `${DATE_LABELS[2]}：${p.presentationTime}` : '',
+  ].filter(Boolean).join('　');
+
+  const detail = isSimpleType(act)
+    ? renderSimpleReadonly(p.consultant, p.speaker, dispColor)
+    : renderWeeksReadonly(p.consultant, p.speaker, dispColor);
+  const detailInner = hasSlides(act)
+    ? `<div style="display:flex;gap:0;border-bottom:2px solid #f0f0f0;margin-bottom:14px;">
+         <button id="adt_${pi}_p" onclick="adminTab(${pi},'p','${dispColor}')"
+           style="padding:8px 16px;border:none;background:none;font-size:13px;cursor:pointer;font-weight:bold;color:${dispColor};border-bottom:2px solid ${dispColor};margin-bottom:-2px;">進度</button>
+         <button id="adt_${pi}_s" onclick="adminTab(${pi},'s','${dispColor}')"
+           style="padding:8px 16px;border:none;background:none;font-size:13px;cursor:pointer;color:#aaa;border-bottom:2px solid transparent;margin-bottom:-2px;">簡報內容</button>
+       </div>
+       <div id="adp_${pi}_p">${detail}</div>
+       <div id="adp_${pi}_s" style="display:none;">${renderSlidesTab(p.consultant, p.speaker, p, false)}</div>`
+    : detail;
+
+  document.getElementById('adminModalHead').innerHTML = `
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span style="font-size:17px;font-weight:700;color:#222;">${p.speaker || '—'}</span>
+        ${activityBadge(act)}${countBadge(p)}
+      </div>
+      <div style="font-size:12px;color:#aaa;margin-top:3px;">顧問：${p.consultant || '—'}</div>
+      ${dates ? `<div style="font-size:12px;color:#888;margin-top:4px;">${dates}</div>` : ''}
+      ${countdownHtml(p.presentationTime, act, dispColor)}
+      <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+        <div style="flex:1;background:#eee;border-radius:4px;height:6px;"><div style="width:${pct}%;background:${dispColor};height:6px;border-radius:4px;"></div></div>
+        <span style="font-size:13px;font-weight:700;color:${dispColor};">${pct}%</span>
+      </div>
+    </div>
+    <button class="modal-close-btn" onclick="closeAdminModal()">✕</button>
+  `;
+  document.getElementById('adminModalBody').innerHTML = detailInner;
+  document.getElementById('adminDetailModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeAdminModal() {
+  document.getElementById('adminDetailModal').classList.remove('open');
+  document.body.style.overflow = '';
 }
 
 function adminTab(pi, tab, color) {
