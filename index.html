@@ -1038,20 +1038,22 @@ function showCasesSettings() {
       ? group.map(({ cs, i }) => {
           const imgCount = caseImgList(cs).length;
           return `
-          <div style="border:1px solid #eee;border-radius:8px;padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;">
-            <div style="flex:1;">
-              <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap;">
-                <span style="font-size:13px;font-weight:600;">${cs.topic || '（未填主題）'}</span>
-                <span style="font-size:12px;color:#aaa;">${cs.speaker || ''}</span>
-                ${imgCount ? `<span style="font-size:11px;color:#1a73e8;">${imgCount} 張圖</span>` : ''}
+          <div style="border:1px solid #eee;border-radius:8px;padding:12px;margin-bottom:8px;">
+            <div style="display:flex;gap:8px;margin-bottom:8px;">
+              <div style="flex:1;min-width:0;">
+                <input id="editTopic_${i}" value="${(cs.topic||'').replace(/"/g,'&quot;')}" placeholder="簡報主題" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-weight:600;outline:none;margin-bottom:4px;" />
+                <input id="editSpeaker_${i}" value="${(cs.speaker||'').replace(/"/g,'&quot;')}" placeholder="講者姓名" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;color:#888;outline:none;" />
               </div>
-              ${cs.note ? `<div style="font-size:12px;color:#777;line-height:1.5;">${cs.note}</div>` : ''}
-              <div style="display:flex;gap:6px;margin-top:8px;">
-                <input id="refreshFolder_${i}" type="text" placeholder="貼上資料夾連結以重新整理圖片" style="flex:1;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;outline:none;font-family:monospace;" />
-                <button class="btn btn-sm" style="background:#1a73e8;color:white;white-space:nowrap;" onclick="refreshCaseImages(${i})">重新整理</button>
-              </div>
+              <button class="btn btn-sm btn-danger" onclick="removeCase(${i})" style="flex-shrink:0;align-self:flex-start;">刪除</button>
             </div>
-            <button class="btn btn-sm btn-danger" onclick="removeCase(${i})" style="flex-shrink:0;">刪除</button>
+            <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
+              ${imgCount ? `<span style="font-size:11px;color:#1a73e8;">${imgCount} 張圖</span>` : ''}
+              <button class="btn btn-sm btn-green" onclick="saveCaseEdit(${i})" style="margin-left:auto;">儲存名稱</button>
+            </div>
+            <div style="display:flex;gap:6px;">
+              <input id="refreshFolder_${i}" type="text" placeholder="貼上資料夾連結重新整理圖片" style="flex:1;min-width:0;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;outline:none;" />
+              <button class="btn btn-sm" style="background:#1a73e8;color:white;white-space:nowrap;flex-shrink:0;" onclick="refreshCaseImages(${i})">重新整理</button>
+            </div>
           </div>`;
         }).join('')
       : `<div style="color:#bbb;font-size:13px;padding:8px 0;">尚無案例</div>`;
@@ -1083,6 +1085,20 @@ function showCasesSettings() {
       <input type="text" id="newCaseFolderLink" placeholder="Google Drive 資料夾連結" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;font-family:monospace;" />
       <button class="btn btn-sm btn-green" style="margin-top:8px;" onclick="addCase()">新增</button>
     </div>`;
+}
+
+function saveCaseEdit(i) {
+  const topic = document.getElementById(`editTopic_${i}`)?.value.trim();
+  const speaker = document.getElementById(`editSpeaker_${i}`)?.value.trim();
+  const cases = getCases();
+  if (!cases[i]) return;
+  cases[i].topic = topic;
+  cases[i].speaker = speaker;
+  cache['__cases__'] = cases;
+  saveCases(cases);
+  showToast('已儲存');
+  const el = document.getElementById('casesSection');
+  if (el) el.innerHTML = showCasesSettings();
 }
 
 function toggleCaseGroup(id) {
