@@ -970,19 +970,48 @@ function renderCasesTab(act, pair, color) {
   if (cases.length === 0) {
     return `<div style="padding:40px 20px;text-align:center;color:#bbb;font-size:14px;">尚無「${caseType}」的簡報案例</div>`;
   }
-  return cases.map((cs, i) => {
-    const uid = `case_${caseType}_${i}`;
+  const cards = cases.map((cs, i) => {
     const imgList = caseImgList(cs);
+    const thumb = imgList.length > 0 ? driveImgUrl(imgList[0]) : '';
+    const key = `caseModal_${caseType}_${i}`;
+    window['_caseData_' + key] = { cs, imgList, c, key };
     return `
-      <div style="border:1px solid #f0f0f0;border-radius:10px;padding:16px;margin-bottom:14px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-          <span style="font-size:14px;font-weight:700;color:${c};">${cs.topic || '（未填主題）'}</span>
-          <span style="font-size:11px;color:#aaa;">${cs.speaker || ''}</span>
+      <div onclick="openCaseModal('${key}')" style="cursor:pointer;border-radius:10px;overflow:hidden;background:#f5f5f5;position:relative;aspect-ratio:1/1;display:flex;flex-direction:column;box-shadow:0 1px 6px rgba(0,0,0,0.08);">
+        ${thumb ? `<img src="${thumb}" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display='none'" />` : '<div style="flex:1;background:#eee;"></div>'}
+        <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.65));padding:10px 8px 8px;">
+          <div style="color:white;font-size:12px;font-weight:700;line-height:1.3;">${cs.topic || '（未填主題）'}</div>
+          ${cs.speaker ? `<div style="color:rgba(255,255,255,0.75);font-size:10px;">${cs.speaker}</div>` : ''}
         </div>
-        ${cs.note ? `<div style="font-size:13px;color:#555;line-height:1.7;white-space:pre-wrap;margin-bottom:6px;">${cs.note}</div>` : ''}
-        ${imgList.length > 0 ? renderCarousel(imgList, uid) : ''}
+        ${imgList.length > 1 ? `<div style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.5);color:white;font-size:10px;padding:2px 6px;border-radius:10px;">${imgList.length}張</div>` : ''}
       </div>`;
   }).join('');
+  return `
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:4px 0;">${cards}</div>
+    <div id="caseModalOverlay" onclick="closeCaseModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:3000;align-items:center;justify-content:center;">
+      <div id="caseModalBox" onclick="event.stopPropagation()" style="background:white;border-radius:14px;width:92%;max-width:480px;max-height:88vh;overflow-y:auto;padding:18px;">
+        <div id="caseModalContent"></div>
+        <button onclick="closeCaseModal()" style="margin-top:12px;width:100%;padding:10px;border:none;border-radius:8px;background:#eee;color:#555;font-size:14px;cursor:pointer;">關閉</button>
+      </div>
+    </div>`;
+}
+
+function openCaseModal(key) {
+  const d = window['_caseData_' + key];
+  if (!d) return;
+  const { cs, imgList, c } = d;
+  const uid = 'cm_' + key;
+  document.getElementById('caseModalContent').innerHTML = `
+    <div style="font-size:15px;font-weight:700;color:${c};margin-bottom:4px;">${cs.topic || '（未填主題）'}</div>
+    ${cs.speaker ? `<div style="font-size:12px;color:#aaa;margin-bottom:8px;">${cs.speaker}</div>` : ''}
+    ${cs.note ? `<div style="font-size:13px;color:#555;line-height:1.7;white-space:pre-wrap;margin-bottom:10px;">${cs.note}</div>` : ''}
+    ${imgList.length > 0 ? renderCarousel(imgList, uid) : ''}`;
+  const ov = document.getElementById('caseModalOverlay');
+  ov.style.display = 'flex';
+}
+
+function closeCaseModal() {
+  const ov = document.getElementById('caseModalOverlay');
+  if (ov) ov.style.display = 'none';
 }
 
 function showCasesSettings() {
