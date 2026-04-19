@@ -740,10 +740,7 @@ function renderConsultantOverview(ck) {
         </div>
         ${dates ? `<div style="font-size:12px;color:#888;margin-top:6px;">${dates}</div>` : ''}
         ${countdownHtml(p.presentationTime, act, color)}
-        <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
-          <div style="flex:1;background:#eee;border-radius:10px;height:8px;"><div style="width:${pct}%;background:${color};height:8px;border-radius:10px;transition:width .3s;"></div></div>
-          <span style="font-size:13px;font-weight:bold;color:${color};min-width:36px;">${pct}%</span>
-        </div>
+        ${renderProgressBar(pct, color)}
         <div style="font-size:13px;color:${color};margin-top:8px;">點擊查看詳細進度 →</div>
       </div>`;
   });
@@ -802,10 +799,7 @@ function renderConsultant(ck, speaker, canEdit) {
     <p>輔導講者：<strong>${speaker}</strong>${activityBadge(act)}${countBadge(pair)}</p>
     ${dates.length ? `<p style="font-size:13px;color:#888;margin-top:6px;">${dates.join('　')}</p>` : ''}
     ${countdownHtml(pair.presentationTime, act, color)}
-    <div style="margin-top:10px;display:flex;align-items:center;gap:10px;">
-      <div style="flex:1;background:#eee;border-radius:10px;height:8px;"><div style="width:${pct}%;background:${progressColor};height:8px;border-radius:10px;transition:width .3s;"></div></div>
-      <span style="font-size:13px;font-weight:bold;color:${progressColor};min-width:36px;">${pct}%</span>
-    </div>
+    ${renderProgressBar(pct, progressColor)}
   </div>`;
   if (canEdit) {
     html += `<div class="speaker-tabs" style="--tab-color:${color}">
@@ -1928,24 +1922,31 @@ const SLIDES_V3 = [
   { title: '記憶口號', hint: '' },
 ];
 
+const SLIDE_KEYS = s => s.map((_, i) => i === 0 ? 's0' : `s${i+1}`);
+const SLIDE_KEYS_V1 = SLIDE_KEYS(SLIDES_V1);
+const SLIDE_KEYS_V2 = SLIDE_KEYS(SLIDES_V2);
+const SLIDE_KEYS_V3 = SLIDE_KEYS(SLIDES_V3);
+
 function hasSlides(act) { const a = act || '主題簡報'; return a === '主題簡報' || a === '主題日'; }
+function renderProgressBar(pct, color) {
+  return `<div style="display:flex;align-items:center;gap:10px;margin-top:8px;"><div style="flex:1;background:#eee;border-radius:10px;height:8px;"><div style="width:${pct}%;background:${color};height:8px;border-radius:10px;transition:width .3s;"></div></div><span style="font-size:13px;font-weight:bold;color:${color};min-width:36px;">${pct}%</span></div>`;
+}
 function getSlidesData(ck, speaker) { return cache[`slides_${ck}_${speaker}`] || {}; }
 async function saveSlidesData(ck, speaker, data) { await apiSave(`slides_${ck}_${speaker}`, data); }
 
 function renderSlidesTab(ck, speaker, pair, canWrite) {
   const act = pair.activityType || '主題簡報';
-  let slides, archName;
+  let slides, archName, keys;
   if (act === '主題日') {
-    slides = SLIDES_V3; archName = '攻略三-4（主題日）';
+    slides = SLIDES_V3; archName = '攻略三-4（主題日）'; keys = SLIDE_KEYS_V3;
   } else {
     const cnt = pair.presentationCount || '第1次';
     slides = cnt === '第1次' ? SLIDES_V1 : SLIDES_V2;
     archName = cnt === '第1次' ? '333 架構（第1次）' : '主題簡報架構（第2次+）';
+    keys = cnt === '第1次' ? SLIDE_KEYS_V1 : SLIDE_KEYS_V2;
   }
   const data = getSlidesData(ck, speaker);
   const color = ACTIVITY_COLORS[pair.activityType||'主題簡報'] || '#c0392b';
-  // slide 0 對映 s0（合併舊 s1），slide 1+ 對映 s2, s3...（偏移1）
-  const keys = slides.map((_, i) => i === 0 ? 's0' : `s${i+1}`);
   const fields = slides.map((s, i) => {
     let rawVal;
     if (i === 0) {
@@ -2046,12 +2047,10 @@ function getPct(p) {
   return total ? Math.round(done / total * 100) : 0;
 }
 
-function isPrevWeeksDone(p) {
+function isPrevWeeksDone(p, currentWeekIdx, data) {
   const act = p.activityType || '主題簡報';
   if (isSimpleType(act)) return getPct(p) === 100;
-  const data = getData(p.consultant, p.speaker);
-  const { currentWeekIdx } = getPresentationInfo(p.presentationTime);
-  if (currentWeekIdx === 0) return false; // 第一週無前置週，不視為完成
+  if (currentWeekIdx === 0) return false;
   const limit = currentWeekIdx >= 0 ? currentWeekIdx : WEEKS.length;
   for (let wi = 0; wi < limit; wi++) {
     if (WEEKS[wi].tasks.some((_, ti) => !data[taskKey(wi, ti)])) return false;
@@ -2064,53 +2063,50 @@ function buildGroupReminderText(consultant, pairs) {
   const lines = [];
   lines.push(`☀️${givenName}早安~`);
 
-  // 三組：本週才開始 / 上週進度全完成 / 有未完成
-  const newGroup      = pairs.filter(p => getPresentationInfo(p.presentationTime).currentWeekIdx === 0);
-  const praiseGroup   = pairs.filter(p => getPresentationInfo(p.presentationTime).currentWeekIdx !== 0 && isPrevWeeksDone(p));
-  const incompleteGroup = pairs.filter(p => getPresentationInfo(p.presentationTime).currentWeekIdx !== 0 && !isPrevWeeksDone(p));
+  const enriched = pairs.map(p => ({
+    p,
+    act: p.activityType || '主題簡報',
+    data: getData(p.consultant, p.speaker),
+    weekIdx: getPresentationInfo(p.presentationTime).currentWeekIdx,
+  }));
 
-  // 表揚
+  const newGroup      = enriched.filter(e => e.weekIdx === 0);
+  const praiseGroup   = enriched.filter(e => e.weekIdx !== 0 && isPrevWeeksDone(e.p, e.weekIdx, e.data));
+  const incompleteGroup = enriched.filter(e => e.weekIdx !== 0 && !isPrevWeeksDone(e.p, e.weekIdx, e.data));
+
   if (praiseGroup.length > 0) {
-    const names = praiseGroup.map(p => speakerGivenName(p.speaker)).join('、');
+    const names = praiseGroup.map(e => speakerGivenName(e.p.speaker)).join('、');
     lines.push(`感謝您上周的協助！${names}上週的進度都完成了，這週的進度也再麻煩您`);
   }
 
-  // 未完成
   if (incompleteGroup.length > 0) {
     if (praiseGroup.length > 0) {
       lines.push('');
       lines.push('【講者】上周還有一些內容沒完成，我列出來，方便您追蹤，如下:');
     } else {
-      const introName = incompleteGroup.length === 1 ? speakerGivenName(incompleteGroup[0].speaker) + '的' : '講者的';
+      const introName = incompleteGroup.length === 1 ? speakerGivenName(incompleteGroup[0].p.speaker) + '的' : '講者的';
       lines.push(`感謝您上周的協助！這週幫你整理${introName}進度，提供給你方便追蹤~`);
     }
     lines.push('');
-    incompleteGroup.forEach((p, idx) => {
-      const act = p.activityType || '主題簡報';
-      const data = getData(p.consultant, p.speaker);
-      const { currentWeekIdx } = getPresentationInfo(p.presentationTime);
-
+    incompleteGroup.forEach(({ p, act, data, weekIdx }, idx) => {
       lines.push(`【講者】${speakerGivenName(p.speaker)}`);
-
       if (isSimpleType(act)) {
         const cnt = SIMPLE_TASKS.filter((_, ti) => !data[simpleTaskKey(ti)]).length;
         if (cnt > 0) lines.push(`${act} → 還差 ${cnt} 項`);
       } else {
-        const limit = currentWeekIdx >= 0 ? currentWeekIdx : WEEKS.length;
+        const limit = weekIdx >= 0 ? weekIdx : WEEKS.length;
         WEEKS.forEach((w, wi) => {
           if (wi >= limit) return;
           const cnt = w.tasks.filter((_, ti) => !data[taskKey(wi, ti)]).length;
-          if (cnt === 0) return;
-          lines.push(`${w.label} → 還差 ${cnt} 項`);
+          if (cnt > 0) lines.push(`${w.label} → 還差 ${cnt} 項`);
         });
       }
       if (idx < incompleteGroup.length - 1) lines.push('');
     });
   }
 
-  // 新講者（排在最後）
   if (newGroup.length > 0) {
-    const names = newGroup.map(p => `【${speakerGivenName(p.speaker)}】`).join('');
+    const names = newGroup.map(e => `【${speakerGivenName(e.p.speaker)}】`).join('');
     const hasOthers = praiseGroup.length > 0 || incompleteGroup.length > 0;
     if (hasOthers) {
       lines.push('');
