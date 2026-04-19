@@ -1903,15 +1903,15 @@ async function saveSettings() {
 
 // ===== SLIDES =====
 const SLIDES_V1 = [
-  { title: '封面', hint: '主題名稱（EDM標題）、講者姓名' },
-  { title: '我在做什麼', hint: '' },
-  { title: '我為什麼做這個事業', hint: '' },
-  { title: '成功案例 1', hint: '' },
-  { title: '成功案例 2', hint: '' },
-  { title: '成功案例 3', hint: '' },
-  { title: '總結', hint: '' },
-  { title: '要求引薦 CTA', hint: '' },
-  { title: '記憶口號', hint: '' },
+  { title: '封面', hint: '主題名稱（EDM標題）、講者姓名', placeholder: '參考簡報攻略一' },
+  { title: '我在做什麼', hint: '', placeholder: '介紹自己的服務項目、產品、品牌' },
+  { title: '我為什麼做這個事業', hint: '', placeholder: '怎樣的契機讓你開始從事這份事業' },
+  { title: '成功案例 1', hint: '', placeholder: '秀肌肉時間' },
+  { title: '成功案例 2', hint: '', placeholder: '秀肌肉時間' },
+  { title: '成功案例 3', hint: '', placeholder: '秀肌肉時間（若有時間可放）' },
+  { title: '總結', hint: '', placeholder: '替上述做一個小總結，幫助聽眾收斂' },
+  { title: '要求引薦 CTA', hint: '', placeholder: '列出合作對象、理想引薦、夢幻引薦，各自需要的行業別' },
+  { title: '記憶口號', hint: '', placeholder: '每周簡報結尾的口號' },
 ];
 const SLIDES_V2 = [
   { title: '封面', hint: '主題名稱（EDM標題）、講者姓名' },
@@ -1968,6 +1968,7 @@ function renderSlidesTab(ck, speaker, pair, canWrite) {
     return `<div style="margin-bottom:14px;">
       <div style="font-size:13px;font-weight:600;color:${color};margin-bottom:4px;">${i+1}. ${s.title}<span style="font-weight:400;color:#999;font-size:12px;">${hintText}</span></div>
       <textarea id="slide_${i}" ${canWrite?'':'disabled'} onchange="saveSlide('${ck}','${speaker}','${keys[i]}',this.value)"
+        placeholder="${s.placeholder||''}"
         style="width:100%;border:1px solid #e0e0e0;border-radius:6px;padding:8px 10px;font-size:13px;resize:vertical;min-height:60px;outline:none;font-family:inherit;${canWrite?'':'background:#fafafa;color:#888;'}">${val}</textarea>
     </div>`;
   }).join('');
