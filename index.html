@@ -56,7 +56,7 @@
   .card-title { font-size: 16px; font-weight: bold; color: #c0392b; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid #f0f0f0; }
 
   /* ADMIN OVERVIEW */
-  .pair-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 16px; }
+  .pair-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 16px; position: relative; }
   .pair-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
   .pair-title { font-size: 16px; font-weight: bold; color: #333; }
   .progress-bar-wrap { background: #eee; border-radius: 10px; height: 10px; flex: 1; margin: 0 12px; min-width: 80px; }
@@ -138,8 +138,9 @@
     background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     padding: 16px; cursor: pointer; transition: all 0.18s;
     aspect-ratio: 1; display: flex; flex-direction: column; justify-content: space-between;
-    border: 1px solid #f0f0f0;
+    border: 1px solid #f0f0f0; position: relative;
   }
+  .update-dot { position:absolute;top:8px;right:8px;width:10px;height:10px;border-radius:50%;pointer-events:none; }
   .admin-sq-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.12); transform: translateY(-2px); }
   .admin-sq-bar { height: 4px; border-radius: 2px; background: #eee; margin-top: 8px; }
   .admin-sq-bar-fill { height: 4px; border-radius: 2px; transition: width 0.3s; }
@@ -570,13 +571,25 @@ function doLogout() {
   document.getElementById('loginError').textContent = '';
 }
 
+let _updatedPairs = new Set();
+
 async function doRefresh() {
   showLoader(true, '更新中...');
+  const oldCache = JSON.parse(JSON.stringify(cache));
   _bgRefreshing = false;
   await _bgRefresh();
+  // 比對哪些配對有資料變動
+  _updatedPairs = new Set();
+  const cfg = getConfig();
+  (cfg.pairs || []).forEach(p => {
+    const key = progressKey(p.consultant, p.speaker);
+    if (JSON.stringify(oldCache[key] || {}) !== JSON.stringify(cache[key] || {})) {
+      _updatedPairs.add(`${p.consultant}\t${p.speaker}`);
+    }
+  });
   showLoader(false);
   renderApp();
-  showToast('資料已更新！');
+  showToast(_updatedPairs.size ? `資料已更新（${_updatedPairs.size} 筆有變動）` : '資料已是最新');
 }
 
 document.getElementById('nameInput').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
@@ -635,9 +648,11 @@ function renderAdmin() {
         : `已過${Math.abs(countdown)}天`
       : '';
 
+    const _hasUpd = _updatedPairs.has(`${p.consultant}\t${p.speaker}`);
     html += `
-      <div class="admin-sq-card" onclick="openAdminModal(${pi})"
+      <div class="admin-sq-card" id="sqCard_${pi}" onclick="openAdminModal(${pi})"
         style="${done100 ? `border:2px solid ${dispColor};` : ''}">
+        ${_hasUpd ? `<div class="update-dot" id="updDot_${pi}" style="background:${dispColor};box-shadow:0 0 6px ${dispColor}80;"></div>` : ''}
         <div>
           <div style="font-size:10px;font-weight:700;letter-spacing:0.3px;color:${dispColor};margin-bottom:4px;">${act}${p.presentationCount ? ' · ' + p.presentationCount : ''}</div>
           <div style="font-size:14px;font-weight:700;color:#222;line-height:1.3;">${p.speaker || '—'}</div>
@@ -888,6 +903,12 @@ function closeUsageModal() {
 function openAdminModal(pi) {
   const p = _adminPairs[pi];
   if (!p) return;
+  const pairId = `${p.consultant}\t${p.speaker}`;
+  if (_updatedPairs.has(pairId)) {
+    _updatedPairs.delete(pairId);
+    const dot = document.getElementById(`updDot_${pi}`);
+    if (dot) dot.remove();
+  }
   const act = p.activityType || '主題簡報';
   const dispColor = ACTIVITY_COLORS[act] || '#c0392b';
   const data = getData(p.consultant, p.speaker);
@@ -1019,8 +1040,10 @@ function renderConsultantOverview(ck) {
       isSimpleType(act) && p.submitDate2 ? `${DATE_LABELS[1]}：${p.submitDate2}` : '',
       p.presentationTime ? `${DATE_LABELS[2]}：${p.presentationTime}` : '',
     ].filter(Boolean).join('　');
+    const _hasUpd2 = _updatedPairs.has(`${ck}\t${p.speaker}`);
     cardsHtml += `
       <div class="pair-card" style="cursor:pointer;${pct === 100 ? `border:2px solid ${color};background:white;` : ''}" onclick="renderConsultant('${ck}','${p.speaker}',true)">
+        ${_hasUpd2 ? `<div class="update-dot" style="background:${color};box-shadow:0 0 6px ${color}80;top:12px;right:12px;"></div>` : ''}
         <div class="pair-header">
           <span class="pair-title">${p.speaker||'—'}${activityBadge(act)}${countBadge(p)}</span>
         </div>
@@ -1042,6 +1065,7 @@ function renderConsultantOverview(ck) {
 
 // ===== CONSULTANT DETAIL =====
 function renderConsultant(ck, speaker, canEdit) {
+  _updatedPairs.delete(`${ck}\t${speaker}`);
   const cfg = getConfig();
   const myPairs = cfg.pairs.filter(p => p.consultant === ck);
   const pair = cfg.pairs.find(p => p.consultant === ck && p.speaker === speaker) || {};
