@@ -2073,19 +2073,19 @@ function buildGroupReminderText(consultant, pairs) {
 
       if (pct === 100) {
         lines.push(`感謝你認真輔導，${speakerGivenName(p.speaker)} 有你真好～之前的進度都完成了！`);
+      } else if (currentWeekIdx === 0) {
+        lines.push(`這周 ${speakerGivenName(p.speaker)} 的進度再麻煩妳了~`);
       } else {
         if (isSimpleType(act)) {
           const cnt = SIMPLE_TASKS.filter((_, ti) => !data[simpleTaskKey(ti)]).length;
           if (cnt > 0) lines.push(`${act} → 還差 ${cnt} 項`);
         } else {
           const limit = currentWeekIdx >= 0 ? currentWeekIdx : WEEKS.length;
-          let hasWeekLines = false;
           WEEKS.forEach((w, wi) => {
             if (wi >= limit) return;
             const cnt = w.tasks.filter((_, ti) => !data[taskKey(wi, ti)]).length;
             if (cnt === 0) return;
             lines.push(`${w.label} → 還差 ${cnt} 項`);
-            hasWeekLines = true;
           });
         }
       }
