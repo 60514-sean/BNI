@@ -736,31 +736,58 @@ async function showUsageModal() {
   }
 }
 
-function renderUsageList() {
+let _usageActiveTab = '顧問';
+
+function renderUsageList(tab) {
+  if (tab) _usageActiveTab = tab;
   const body = document.getElementById('usageModalBody');
   const groups = [
     { label: '顧問', items: _usageAllData.filter(d => d.label === '顧問') },
     { label: '講者', items: _usageAllData.filter(d => d.label === '講者') }
   ];
-  body.innerHTML = groups.filter(g => g.items.length).map(g => `
-    <div style="margin-bottom:20px;">
-      <div style="font-size:11px;font-weight:700;color:#aaa;letter-spacing:1px;margin-bottom:8px;">${g.label}</div>
-      ${g.items.map((d, i) => {
-        const avg = Math.round((d.count || 0) / USAGE_WEEKS_N * 10) / 10;
-        const color = usageColor(avg);
-        const last = fmtLastTime(d.lastTime);
-        const idx = _usageAllData.indexOf(d);
-        return `<div onclick="renderUsageDetail(${idx})"
-          style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;background:#fafafa;margin-bottom:8px;cursor:pointer;border:1px solid #f0f0f0;transition:background 0.15s;"
-          onmouseover="this.style.background='#f5f0f0'" onmouseout="this.style.background='#fafafa'">
-          <div style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;"></div>
-          <div style="flex:1;font-size:14px;font-weight:600;color:#333;">${d.name}</div>
-          <div style="font-size:12px;font-weight:700;color:${color};">${usageLabel(avg)}</div>
-          <div style="font-size:11px;color:#aaa;">${last}</div>
-          <div style="font-size:12px;color:#ccc;">›</div>
-        </div>`;
-      }).join('')}
-    </div>`).join('');
+  const activeGroup = groups.find(g => g.label === _usageActiveTab) || groups[0];
+
+  const tabs = groups.map(g => `
+    <button onclick="renderUsageList('${g.label}')"
+      style="flex:1;padding:9px 0;border:none;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.15s;
+        ${_usageActiveTab === g.label
+          ? 'background:white;color:#c0392b;border-bottom:2px solid #c0392b;'
+          : 'background:#f5f5f5;color:#aaa;border-bottom:2px solid transparent;'}">
+      ${g.label}（${g.items.length}）
+    </button>`).join('');
+
+  const cards = (activeGroup?.items || []).map(d => {
+    const avg = Math.round((d.count || 0) / USAGE_WEEKS_N * 10) / 10;
+    const color = usageColor(avg);
+    const last = fmtLastTime(d.lastTime);
+    const idx = _usageAllData.indexOf(d);
+    return `<div onclick="renderUsageDetail(${idx})"
+      style="background:white;border-radius:12px;border:1px solid #f0f0f0;padding:14px 12px;cursor:pointer;
+        box-shadow:0 2px 8px rgba(0,0,0,0.05);transition:all 0.15s;aspect-ratio:1;
+        display:flex;flex-direction:column;justify-content:space-between;"
+      onmouseover="this.style.boxShadow='0 6px 18px rgba(0,0,0,0.12)';this.style.transform='translateY(-2px)'"
+      onmouseout="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.05)';this.style.transform=''">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#222;margin-bottom:4px;">${d.name}</div>
+        <div style="font-size:11px;color:#aaa;">${last}</div>
+      </div>
+      <div>
+        <div style="height:4px;background:#eee;border-radius:2px;margin-bottom:6px;">
+          <div style="height:4px;border-radius:2px;background:${color};width:${Math.min(avg/USAGE_MAX*100,100)}%;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:18px;font-weight:900;color:${color};">${avg}<span style="font-size:10px;font-weight:400;color:#bbb;"> 次/週</span></span>
+          <span style="font-size:11px;font-weight:700;color:${color};">${usageLabel(avg)}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  body.innerHTML = `
+    <div style="display:flex;border-bottom:1px solid #eee;margin:-16px -20px 16px;">${tabs}</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;">
+      ${cards || '<div style="grid-column:1/-1;padding:24px;text-align:center;color:#bbb;">尚無資料</div>'}
+    </div>`;
 }
 
 function renderUsageDetail(idx) {
