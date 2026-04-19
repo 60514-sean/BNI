@@ -299,6 +299,12 @@ async function apiSave(key, data) {
   _drainSaveQueue();
 }
 
+async function apiDelete(keys) {
+  keys.forEach(k => delete cache[k]);
+  _lsSave();
+  fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'delete', keys }) }).catch(() => {});
+}
+
 // ===== WEEKS DATA =====
 const WEEKS = [
   { label: '倒數5週', theme: '定出主題', tasks: [
@@ -1837,6 +1843,11 @@ function addConsultant() {
 function removeConsultant(i) {
   const cfg = readFormIntoCfg();
   if (!cfg.consultants) return;
+  const name = cfg.consultants[i];
+  const keys = (cfg.pairs || [])
+    .filter(p => p.consultant === name && p.speaker)
+    .map(p => progressKey(p.consultant, p.speaker));
+  if (keys.length) apiDelete(keys);
   cfg.consultants.splice(i, 1);
   cache['__config__'] = cfg;
   showSettings();
@@ -2015,6 +2026,10 @@ function addPair() {
 
 function removePair(i) {
   const cfg = readFormIntoCfg();
+  const pair = cfg.pairs[i];
+  if (pair && pair.consultant && pair.speaker) {
+    apiDelete([progressKey(pair.consultant, pair.speaker)]);
+  }
   cfg.pairs.splice(i, 1);
   cache['__config__'] = cfg;
   showSettings();
