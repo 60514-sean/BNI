@@ -614,12 +614,20 @@ async function doRefresh() {
           _updatedPairs.add(pairId);
           if (isSimpleType(act)) {
             _updatedPairs.add(`${pairId}\tsimple`);
+            SIMPLE_TASKS.forEach((_, ti) => {
+              if ((oldProg[simpleNoteKey(ti)]||'') !== (newProg[simpleNoteKey(ti)]||''))
+                _updatedPairs.add(`${pairId}\tsnote_${ti}`);
+            });
           } else {
             WEEKS.forEach((w, wi) => {
               const oldW = w.tasks.map((_, ti) => [oldProg[taskKey(wi,ti)], oldProg[noteKey(wi,ti)]]);
               const newW = w.tasks.map((_, ti) => [newProg[taskKey(wi,ti)], newProg[noteKey(wi,ti)]]);
               if (JSON.stringify(oldW) !== JSON.stringify(newW)) {
                 _updatedPairs.add(`${pairId}\tweek_${wi}`);
+                w.tasks.forEach((_, ti) => {
+                  if ((oldProg[noteKey(wi,ti)]||'') !== (newProg[noteKey(wi,ti)]||''))
+                    _updatedPairs.add(`${pairId}\tnote_${wi}_${ti}`);
+                });
               }
             });
           }
@@ -1053,11 +1061,14 @@ function renderSimpleReadonly(ck, speaker, color) {
   const rows = SIMPLE_TASKS.map((t, ti) => {
     const checked = !!data[simpleTaskKey(ti)];
     const note = data[simpleNoteKey(ti)] || '';
+    const noteUpd = _updatedPairs.has(`${ck}\t${speaker}\tsnote_${ti}`);
+    const noteDotHtml = noteUpd ? `<span id="rsnoteDot_${ti}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${c};margin-left:5px;flex-shrink:0;animation:dotPulse 1.4s ease-in-out infinite;vertical-align:middle;"></span>` : '';
     return `<div style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px solid #f5f5f5;">
       <input type="checkbox" disabled ${checked?'checked':''} style="accent-color:${c};margin-top:3px;flex-shrink:0;">
       <div>
         <span style="font-size:13px;${checked?'color:#aaa;text-decoration:line-through;':'color:#333;'}">${t}</span>
-        ${note?`<div style="font-size:11px;color:#888;margin-top:2px;padding-left:2px;">${note}</div>`:''}
+        ${note?`<div style="font-size:11px;color:#888;margin-top:2px;padding-left:2px;display:flex;align-items:center;${noteUpd?'cursor:pointer;':''}" ${noteUpd?`onclick="ackSimpleNoteDot('${ck}','${speaker}',${ti})"`:''} title="${noteUpd?'點擊標記為已讀':''}">
+          ${note}${noteDotHtml}</div>`:(noteUpd?`<div style="display:flex;align-items:center;gap:3px;margin-top:1px;cursor:pointer;" onclick="ackSimpleNoteDot('${ck}','${speaker}',${ti})"><span style="font-size:10px;color:${c};font-weight:600;">備註已清除</span>${noteDotHtml}</div>`:'')}
       </div>
     </div>`;
   }).join('');
@@ -1080,11 +1091,13 @@ function renderWeeksReadonly(ck, speaker, color) {
     const rows = w.tasks.map((t, ti) => {
       const checked = !!data[taskKey(wi,ti)];
       const note = data[noteKey(wi,ti)] || '';
+      const noteUpd = _updatedPairs.has(`${ck}\t${speaker}\tnote_${wi}_${ti}`);
+      const noteDotHtml = noteUpd ? `<span id="rnoteDot_${wi}_${ti}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${c};margin-left:5px;flex-shrink:0;animation:dotPulse 1.4s ease-in-out infinite;vertical-align:middle;"></span>` : '';
       return `<div style="display:flex;gap:8px;align-items:flex-start;padding:4px 0;border-bottom:1px solid #f5f5f5;">
         <input type="checkbox" disabled ${checked?'checked':''} style="accent-color:${c};margin-top:3px;flex-shrink:0;">
         <div>
           <span style="font-size:13px;${checked?'color:#aaa;text-decoration:line-through;':'color:#333;'}">${t}</span>
-          ${note?`<div style="font-size:11px;color:#888;margin-top:1px;">${note}</div>`:''}
+          ${note?`<div style="font-size:11px;color:#888;margin-top:1px;display:flex;align-items:center;">${note}${noteDotHtml}</div>`:(noteUpd?`<div style="display:flex;align-items:center;gap:3px;margin-top:1px;"><span style="font-size:10px;color:${c};font-weight:600;">備註已清除</span>${noteDotHtml}</div>`:'')}
         </div>
       </div>`;
     }).join('');
@@ -1111,8 +1124,16 @@ function toggleReadonlyWeek(el, ck, speaker, wi) {
       _updatedPairs.delete(dotKey);
       const dot = document.getElementById(`rdotWk_${wi}`);
       if (dot) dot.remove();
-      _clearPairDotIfDone(ck, speaker);
     }
+    // 唯讀：展開時一次清除所有備註 dots
+    if (wi < WEEKS.length) {
+      WEEKS[wi].tasks.forEach((_, ti) => {
+        _updatedPairs.delete(`${ck}\t${speaker}\tnote_${wi}_${ti}`);
+        const nd = document.getElementById(`rnoteDot_${wi}_${ti}`);
+        if (nd) nd.remove();
+      });
+    }
+    _clearPairDotIfDone(ck, speaker);
   }
 }
 
@@ -1232,13 +1253,17 @@ function renderConsultant(ck, speaker, canEdit) {
       const note = data[simpleNoteKey(ti)] || '';
       const cls = data[simpleTaskKey(ti)] ? 'checked' : '';
       const dis = canEdit ? '' : 'disabled';
+      const noteUpd = _updatedPairs.has(`${ck}\t${speaker}\tsnote_${ti}`);
+      const noteDot = noteUpd ? `<span id="snoteDot_${ti}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${color};margin-left:5px;flex-shrink:0;animation:dotPulse 1.4s ease-in-out infinite;vertical-align:middle;"></span>` : '';
+      const noteFocus = noteUpd ? `clearSimpleNoteDot('${ck}','${speaker}',${ti});` : '';
       return `<div class="task-item">
         <input type="checkbox" class="task-check" id="scb_${ti}" ${checked} ${dis} style="accent-color:${color}" onchange="toggleTaskSimple('${ck}','${speaker}',${ti},this)">
         <div class="task-content">
           <div class="task-label ${cls}" id="slbl_${ti}" style="${cls ? `text-decoration-color:${color}` : ''}">${t}</div>
+          ${noteUpd ? `<div style="display:flex;align-items:center;gap:3px;margin-top:2px;"><span style="font-size:10px;color:${color};font-weight:600;">備註更新</span>${noteDot}</div>` : ''}
           <textarea class="task-note" id="snote_${ti}" placeholder=""
             onchange="saveNoteSimple('${ck}','${speaker}',${ti},this.value)"
-            onfocus="this.style.borderColor='${color}'" onblur="this.style.borderColor=''">${note}</textarea>
+            onfocus="${noteFocus}this.style.borderColor='${color}'" onblur="this.style.borderColor=''">${note}</textarea>
         </div>
       </div>`;
     }).join('');
@@ -1258,13 +1283,17 @@ function renderConsultant(ck, speaker, canEdit) {
         const note = data[noteKey(wi, ti)] || '';
         const cls = data[taskKey(wi, ti)] ? 'checked' : '';
         const dis = canEdit ? '' : 'disabled';
+        const noteUpd = _updatedPairs.has(`${ck}\t${speaker}\tnote_${wi}_${ti}`);
+        const noteDot = noteUpd ? `<span id="noteDot_${wi}_${ti}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${color};margin-left:5px;flex-shrink:0;animation:dotPulse 1.4s ease-in-out infinite;vertical-align:middle;"></span>` : '';
+        const noteFocus = noteUpd ? `clearNoteDot('${ck}','${speaker}',${wi},${ti});` : '';
         return `<div class="task-item">
           <input type="checkbox" class="task-check" id="cb_${wi}_${ti}" ${checked} ${dis} style="accent-color:${color}" onchange="toggleTask('${ck}','${speaker}',${wi},${ti},this)">
           <div class="task-content">
             <div class="task-label ${cls}" id="lbl_${wi}_${ti}" style="${cls ? `text-decoration-color:${color}` : ''}">${t}</div>
+            ${noteUpd ? `<div style="display:flex;align-items:center;gap:3px;margin-top:2px;"><span style="font-size:10px;color:${color};font-weight:600;">備註更新</span>${noteDot}</div>` : ''}
             <textarea class="task-note" id="note_${wi}_${ti}" placeholder="${WEEK_HINTS[wi]?.[ti] || ''}"
               onchange="saveNote('${ck}','${speaker}',${wi},${ti},this.value)"
-              onfocus="this.style.borderColor='${color}'" onblur="this.style.borderColor=''">${note}</textarea>
+              onfocus="${noteFocus}this.style.borderColor='${color}'" onblur="this.style.borderColor=''">${note}</textarea>
           </div>
         </div>`;
       }).join('');
@@ -2502,6 +2531,24 @@ function clearSlideDot(ck, speaker, i, keysStr) {
     _updatedPairs.delete(`${ck}\t${speaker}\tslide_${k}`);
   });
   const dot = document.getElementById(`slideDot_${i}`);
+  if (dot) dot.remove();
+  _clearPairDotIfDone(ck, speaker);
+}
+function clearNoteDot(ck, speaker, wi, ti) {
+  _updatedPairs.delete(`${ck}\t${speaker}\tnote_${wi}_${ti}`);
+  const dot = document.getElementById(`noteDot_${wi}_${ti}`);
+  if (dot) dot.remove();
+  _clearPairDotIfDone(ck, speaker);
+}
+function clearSimpleNoteDot(ck, speaker, ti) {
+  _updatedPairs.delete(`${ck}\t${speaker}\tsnote_${ti}`);
+  const dot = document.getElementById(`snoteDot_${ti}`);
+  if (dot) dot.remove();
+  _clearPairDotIfDone(ck, speaker);
+}
+function ackSimpleNoteDot(ck, speaker, ti) {
+  _updatedPairs.delete(`${ck}\t${speaker}\tsnote_${ti}`);
+  const dot = document.getElementById(`rsnoteDot_${ti}`);
   if (dot) dot.remove();
   _clearPairDotIfDone(ck, speaker);
 }
