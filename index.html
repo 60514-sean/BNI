@@ -2096,7 +2096,7 @@ function buildGroupReminderText(consultant, pairs) {
   lines.push('');
   lines.push('追蹤網址：https://bni-navy.vercel.app/');
   lines.push('祝~今天順心優~❤️');
-  return lines.join('\n');
+  return lines.join('\n').replace(/\n{3,}/g, '\n\n');
 }
 
 function showReminders() {
