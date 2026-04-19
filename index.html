@@ -2051,6 +2051,7 @@ function isPrevWeeksDone(p) {
   if (isSimpleType(act)) return getPct(p) === 100;
   const data = getData(p.consultant, p.speaker);
   const { currentWeekIdx } = getPresentationInfo(p.presentationTime);
+  if (currentWeekIdx === 0) return false; // 第一週無前置週，不視為完成
   const limit = currentWeekIdx >= 0 ? currentWeekIdx : WEEKS.length;
   for (let wi = 0; wi < limit; wi++) {
     if (WEEKS[wi].tasks.some((_, ti) => !data[taskKey(wi, ti)])) return false;
@@ -2063,17 +2064,27 @@ function buildGroupReminderText(consultant, pairs) {
   const lines = [];
   lines.push(`☀️${givenName}早安~`);
 
-  // 分組：上週進度全完成 vs 尚有未完成
-  const praiseGroup = pairs.filter(p => isPrevWeeksDone(p));
-  const incompleteGroup = pairs.filter(p => !isPrevWeeksDone(p));
+  // 三組：本週才開始 / 上週進度全完成 / 有未完成
+  const newGroup      = pairs.filter(p => getPresentationInfo(p.presentationTime).currentWeekIdx === 0);
+  const praiseGroup   = pairs.filter(p => getPresentationInfo(p.presentationTime).currentWeekIdx !== 0 && isPrevWeeksDone(p));
+  const incompleteGroup = pairs.filter(p => getPresentationInfo(p.presentationTime).currentWeekIdx !== 0 && !isPrevWeeksDone(p));
 
+  // 新講者
+  if (newGroup.length > 0) {
+    const names = newGroup.map(p => `【${speakerGivenName(p.speaker)}】`).join('');
+    lines.push(`這禮拜有分配新的講者${names}給您，再麻煩您了，這邊也提供追蹤網址，方便您來追蹤~`);
+  }
+
+  // 表揚
   if (praiseGroup.length > 0) {
+    if (newGroup.length > 0) lines.push('');
     const names = praiseGroup.map(p => speakerGivenName(p.speaker)).join('、');
     lines.push(`感謝您上周的協助！${names}上週的進度都完成了！這週的進度也再麻煩您了`);
   }
 
+  // 未完成
   if (incompleteGroup.length > 0) {
-    if (praiseGroup.length > 0) {
+    if (newGroup.length > 0 || praiseGroup.length > 0) {
       lines.push('');
       lines.push('【講者】上周還有一些內容沒完成，我列出來，方便您追蹤，如下:');
     } else {
@@ -2088,9 +2099,7 @@ function buildGroupReminderText(consultant, pairs) {
 
       lines.push(`【講者】${speakerGivenName(p.speaker)}`);
 
-      if (currentWeekIdx === 0) {
-        lines.push(`這周${speakerGivenName(p.speaker)}的進度再麻煩您了~`);
-      } else if (isSimpleType(act)) {
+      if (isSimpleType(act)) {
         const cnt = SIMPLE_TASKS.filter((_, ti) => !data[simpleTaskKey(ti)]).length;
         if (cnt > 0) lines.push(`${act} → 還差 ${cnt} 項`);
       } else {
