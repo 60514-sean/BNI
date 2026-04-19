@@ -572,6 +572,8 @@ function doLogout() {
 }
 
 let _updatedPairs = new Set();
+let _viewingCk = null;
+let _viewingSpeaker = null;
 
 async function doRefresh() {
   showLoader(true, '更新中...');
@@ -584,9 +586,31 @@ async function doRefresh() {
       const newData = json.data;
       const pairs = (oldCache['__config__'] || cache['__config__'] || {}).pairs || [];
       pairs.forEach(p => {
-        const key = progressKey(p.consultant, p.speaker);
-        if (JSON.stringify(oldCache[key] || {}) !== JSON.stringify(newData[key] || {})) {
-          _updatedPairs.add(`${p.consultant}\t${p.speaker}`);
+        const pairId = `${p.consultant}\t${p.speaker}`;
+        const act = p.activityType || '主題簡報';
+        // 進度資料比對
+        const progKey = progressKey(p.consultant, p.speaker);
+        const oldProg = oldCache[progKey] || {};
+        const newProg = newData[progKey] || {};
+        if (JSON.stringify(oldProg) !== JSON.stringify(newProg)) {
+          _updatedPairs.add(pairId);
+          if (isSimpleType(act)) {
+            _updatedPairs.add(`${pairId}\tsimple`);
+          } else {
+            WEEKS.forEach((w, wi) => {
+              const oldW = w.tasks.map((_, ti) => [oldProg[taskKey(wi,ti)], oldProg[noteKey(wi,ti)]]);
+              const newW = w.tasks.map((_, ti) => [newProg[taskKey(wi,ti)], newProg[noteKey(wi,ti)]]);
+              if (JSON.stringify(oldW) !== JSON.stringify(newW)) {
+                _updatedPairs.add(`${pairId}\tweek_${wi}`);
+              }
+            });
+          }
+        }
+        // 簡報內容比對
+        const sldKey = `slides_${p.consultant}_${p.speaker}`;
+        if (JSON.stringify(oldCache[sldKey] || {}) !== JSON.stringify(newData[sldKey] || {})) {
+          _updatedPairs.add(pairId);
+          _updatedPairs.add(`${pairId}\tslides`);
         }
       });
       cache = newData;
@@ -1072,6 +1096,8 @@ function renderConsultantOverview(ck) {
 // ===== CONSULTANT DETAIL =====
 function renderConsultant(ck, speaker, canEdit) {
   _updatedPairs.delete(`${ck}\t${speaker}`);
+  _viewingCk = ck;
+  _viewingSpeaker = speaker;
   const cfg = getConfig();
   const myPairs = cfg.pairs.filter(p => p.consultant === ck);
   const pair = cfg.pairs.find(p => p.consultant === ck && p.speaker === speaker) || {};
@@ -1093,10 +1119,12 @@ function renderConsultant(ck, speaker, canEdit) {
   if (canEdit && myPairs.length > 1) {
     html += `<div style="margin-bottom:16px;"><button class="btn btn-sm btn-outline" onclick="renderConsultantOverview('${ck}')">← 返回</button></div>`;
   }
+  const _slidesUpd = _updatedPairs.has(`${ck}\t${speaker}\tslides`);
+  const _slideDot = `<span id="slidesDot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${color};margin-left:5px;vertical-align:middle;"></span>`;
   if (!canEdit) {
     html += `<div class="speaker-tabs" style="--tab-color:${color}">
       <button id="tabBtn_progress" class="speaker-tab-btn active" onclick="switchSpeakerTab('progress')">我的進度</button>
-      ${hasSlides(act) ? `<button id="tabBtn_slides" class="speaker-tab-btn" onclick="switchSpeakerTab('slides')">我的簡報</button>` : ''}
+      ${hasSlides(act) ? `<button id="tabBtn_slides" class="speaker-tab-btn" onclick="switchSpeakerTab('slides')">我的簡報${_slidesUpd ? _slideDot : ''}</button>` : ''}
       <button id="tabBtn_guide" class="speaker-tab-btn" onclick="switchSpeakerTab('guide')">簡報攻略</button>
       <button id="tabBtn_cases" class="speaker-tab-btn" onclick="switchSpeakerTab('cases')">簡報案例</button>
     </div>
@@ -1123,7 +1151,7 @@ function renderConsultant(ck, speaker, canEdit) {
           <button id="tabBtn_progress" data-color="${color}" onclick="switchSpeakerTab('progress')"
             style="padding:8px 16px;border:none;background:none;font-size:13px;cursor:pointer;font-weight:bold;color:${color};border-bottom:2px solid ${color};margin-bottom:-2px;">進度</button>
           <button id="tabBtn_slides" data-color="${color}" onclick="switchSpeakerTab('slides')"
-            style="padding:8px 16px;border:none;background:none;font-size:13px;cursor:pointer;color:#aaa;border-bottom:2px solid transparent;margin-bottom:-2px;">簡報內容</button>
+            style="padding:8px 16px;border:none;background:none;font-size:13px;cursor:pointer;color:#aaa;border-bottom:2px solid transparent;margin-bottom:-2px;">簡報內容${_slidesUpd ? _slideDot : ''}</button>
         </div>
         <div id="tabSlides" style="display:none;">${renderSlidesTab(ck, speaker, pair, true)}</div>
       ` : ''}
@@ -1132,7 +1160,8 @@ function renderConsultant(ck, speaker, canEdit) {
 
   if (isSimpleType(act)) {
     // 簡化清單
-    html += `<div class="week-card"><div class="week-header" style="background:${color}" onclick="toggleWeek('simple-body')"><div><h3>進度清單</h3><div class="week-sub">${act}</div></div><span>${done}/${total}</span></div><div class="week-body" id="simple-body">`;
+    const _simpleUpd = _updatedPairs.has(`${ck}\t${speaker}\tsimple`);
+    html += `<div class="week-card"><div class="week-header" style="background:${color}" onclick="toggleWeek('simple-body')"><div><h3>進度清單</h3><div class="week-sub">${act}</div></div><div style="display:flex;align-items:center;gap:6px;"><span>${done}/${total}</span>${_simpleUpd ? `<span id="weekDot_simple" style="width:8px;height:8px;border-radius:50%;background:white;display:inline-block;box-shadow:0 0 4px rgba(255,255,255,0.9);flex-shrink:0;"></span>` : ''}</div></div><div class="week-body" id="simple-body">`;
     html += SIMPLE_TASKS.map((t, ti) => {
       const checked = data[simpleTaskKey(ti)] ? 'checked' : '';
       const note = data[simpleNoteKey(ti)] || '';
@@ -1174,13 +1203,17 @@ function renderConsultant(ck, speaker, canEdit) {
           </div>
         </div>`;
       }).join('');
+      const _wkUpd = _updatedPairs.has(`${ck}\t${speaker}\tweek_${wi}`);
       html += `<div class="week-card" ${isCurWeek ? `style="border:2px solid ${color};"` : ''}>
         <div class="week-header" style="background:${color}" onclick="toggleWeek('wb_${wi}')">
           <div>
             <h3>${w.label}${isCurWeek ? ` <span style="font-size:11px;background:white;color:${color};border:1px solid ${color};border-radius:8px;padding:1px 7px;vertical-align:middle;">本週</span>` : ''}</h3>
             <div class="week-sub">${w.theme}</div>
           </div>
-          <span id="wcount_${wi}">${wD}/${wT}</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span id="wcount_${wi}">${wD}/${wT}</span>
+            ${_wkUpd ? `<span id="weekDot_${wi}" style="width:8px;height:8px;border-radius:50%;background:white;display:inline-block;box-shadow:0 0 4px rgba(255,255,255,0.9);flex-shrink:0;"></span>` : ''}
+          </div>
         </div>
         <div class="week-body" id="wb_${wi}">${tasks}</div>
       </div>`;
@@ -1205,7 +1238,24 @@ function toggleWeek(id) {
   const el = document.getElementById(id);
   if (!el) return;
   el.classList.toggle('open');
-  if (el.classList.contains('open')) logAction('week_open');
+  if (el.classList.contains('open')) {
+    logAction('week_open');
+    if (_viewingCk && _viewingSpeaker) {
+      let dotId, dotKey;
+      if (id === 'simple-body') {
+        dotId = 'weekDot_simple';
+        dotKey = `${_viewingCk}\t${_viewingSpeaker}\tsimple`;
+      } else {
+        const m = id.match(/^wb_(\d+)$/);
+        if (m) { dotId = `weekDot_${m[1]}`; dotKey = `${_viewingCk}\t${_viewingSpeaker}\tweek_${m[1]}`; }
+      }
+      if (dotKey && _updatedPairs.has(dotKey)) {
+        _updatedPairs.delete(dotKey);
+        const dot = document.getElementById(dotId);
+        if (dot) dot.remove();
+      }
+    }
+  }
 }
 
 function switchConsultantTab(tab) {
@@ -1301,6 +1351,14 @@ function switchSpeakerTab(tab) {
     btn.style.color = active ? color : '#aaa';
     btn.style.borderBottom = active ? `2px solid ${color}` : '2px solid transparent';
   });
+  if (tab === 'slides' && _viewingCk && _viewingSpeaker) {
+    const sKey = `${_viewingCk}\t${_viewingSpeaker}\tslides`;
+    if (_updatedPairs.has(sKey)) {
+      _updatedPairs.delete(sKey);
+      const dot = document.getElementById('slidesDot');
+      if (dot) dot.remove();
+    }
+  }
   if (tab === 'guide') logAction('view_guide');
   if (tab === 'cases') logAction('view_cases');
 }
