@@ -746,6 +746,7 @@ function renderUsageList(tab) {
     { label: '講者', items: _usageAllData.filter(d => d.label === '講者') }
   ];
   const activeGroup = groups.find(g => g.label === _usageActiveTab) || groups[0];
+  if (activeGroup) activeGroup.items = [...activeGroup.items].sort((a, b) => (b.count || 0) - (a.count || 0));
 
   const tabs = groups.map(g => `
     <button onclick="renderUsageList('${g.label}')"
