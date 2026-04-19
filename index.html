@@ -189,6 +189,18 @@
   </div>
 </div>
 
+<!-- ROLE SELECT -->
+<div class="login-page" id="roleSelectPage" style="display:none;">
+  <div class="login-box">
+    <h1 style="font-size:20px;">請選擇登入身份</h1>
+    <p id="roleSelectName" style="font-weight:700;color:#222;font-size:16px;margin-bottom:20px;"></p>
+    <div style="display:flex;flex-direction:column;gap:12px;width:100%;">
+      <button class="btn" onclick="enterApp('consultant')" style="background:#c0392b;">簡報顧問</button>
+      <button class="btn" onclick="enterApp('speaker')" style="background:#555;">簡報講者</button>
+    </div>
+  </div>
+</div>
+
 <!-- APP -->
 <div class="app" id="appPage">
   <div class="header">
@@ -433,11 +445,20 @@ function buildUserMap() {
   const cfg = getConfig();
   const map = {};
   map[cfg.adminPassword] = { role: 'admin' };
+  const consultantSet = new Set(cfg.pairs.map(p => p.consultant).filter(Boolean));
   cfg.pairs.forEach(p => {
-    // 顧問：可有多個講者，只記 role
-    if (p.consultant && !map[p.consultant]) map[p.consultant] = { role: 'consultant', consultantKey: p.consultant };
-    // 講者：對應到哪位顧問
-    if (p.speaker) map[p.speaker] = { role: 'speaker', consultantKey: p.consultant, speaker: p.speaker };
+    if (p.consultant && !map[p.consultant])
+      map[p.consultant] = { role: 'consultant', consultantKey: p.consultant };
+    if (p.speaker) {
+      if (consultantSet.has(p.speaker)) {
+        if (!map[p.speaker]) map[p.speaker] = { role: 'both', consultantKey: p.speaker };
+        map[p.speaker].role = 'both';
+        map[p.speaker].speakerConsultantKey = p.consultant;
+        map[p.speaker].speakerName = p.speaker;
+      } else {
+        map[p.speaker] = { role: 'speaker', consultantKey: p.consultant, speaker: p.speaker };
+      }
+    }
   });
   return map;
 }
@@ -445,6 +466,8 @@ function buildUserMap() {
 let currentUser = null;
 let currentRole = null;
 let currentConsultantKey = null;
+let currentSpeaker = null;
+let _pendingUserEntry = null;
 
 // ===== LOADER =====
 function showLoader(show, text) {
@@ -483,15 +506,40 @@ async function doLogin() {
     return;
   }
 
-  currentUser = name;
-  currentRole = users[name].role;
-  currentConsultantKey = users[name].consultantKey || null;
+  const entry = { name, ...users[name] };
+  if (entry.role === 'both') {
+    _pendingUserEntry = entry;
+    document.getElementById('roleSelectName').textContent = name;
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('roleSelectPage').style.display = 'flex';
+    return;
+  }
+  enterApp(entry.role, entry);
+}
 
-  fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'log', name, role: currentRole }) }).catch(() => {});
+function enterApp(role, entry) {
+  entry = entry || _pendingUserEntry;
+  _pendingUserEntry = null;
+  document.getElementById('roleSelectPage').style.display = 'none';
+
+  currentUser = entry.name;
+  currentRole = role;
+  if (role === 'consultant') {
+    currentConsultantKey = entry.consultantKey;
+    currentSpeaker = null;
+  } else if (role === 'speaker') {
+    currentConsultantKey = entry.speakerConsultantKey || entry.consultantKey;
+    currentSpeaker = entry.speakerName || entry.speaker || entry.name;
+  } else {
+    currentConsultantKey = entry.consultantKey || null;
+    currentSpeaker = null;
+  }
+
+  fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'log', name: currentUser, role: currentRole }) }).catch(() => {});
 
   document.getElementById('loginPage').style.display = 'none';
   document.getElementById('appPage').style.display = 'block';
-  document.getElementById('userBadge').textContent = name;
+  document.getElementById('userBadge').textContent = currentUser;
   document.getElementById('settingsBtn').style.display = currentRole === 'admin' ? 'block' : 'none';
   renderApp();
   _bgRefresh();
@@ -499,6 +547,8 @@ async function doLogin() {
 
 function doLogout() {
   currentUser = null; currentRole = null; currentConsultantKey = null;
+  currentSpeaker = null; _pendingUserEntry = null;
+  document.getElementById('roleSelectPage').style.display = 'none';
   document.getElementById('loginPage').style.display = 'flex';
   document.getElementById('appPage').style.display = 'none';
   document.getElementById('nameInput').value = '';
@@ -517,8 +567,7 @@ function renderApp() {
     renderConsultantOverview(currentConsultantKey);
   } else {
     document.getElementById('headerTitle').textContent = '我的進度';
-    const users = buildUserMap();
-    renderConsultant(users[currentUser].consultantKey, users[currentUser].speaker, false);
+    renderConsultant(currentConsultantKey, currentSpeaker || currentUser, false);
   }
 }
 
