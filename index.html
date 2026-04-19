@@ -476,6 +476,8 @@ async function doLogin() {
   currentRole = users[name].role;
   currentConsultantKey = users[name].consultantKey || null;
 
+  fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'log', name, role: currentRole }) }).catch(() => {});
+
   document.getElementById('loginPage').style.display = 'none';
   document.getElementById('appPage').style.display = 'block';
   document.getElementById('userBadge').textContent = name;
