@@ -1012,10 +1012,6 @@ function renderConsultantOverview(ck) {
     document.getElementById('mainContent').innerHTML = '<div class="card"><p style="color:#888;">目前尚未配對任何講者。</p></div>';
     return;
   }
-  if (myPairs.length === 1) {
-    renderConsultant(ck, myPairs[0].speaker, true);
-    return;
-  }
   let cardsHtml = '<div class="weeks-container">';
   myPairs.forEach(p => {
     const act = p.activityType || '主題簡報';
