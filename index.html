@@ -1150,6 +1150,8 @@ function switchSpeakerTab(tab) {
   document.querySelectorAll('.speaker-tab-btn').forEach(b => {
     b.classList.toggle('active', b.id === 'tabBtn_' + tab);
   });
+  if (tab === 'guide') logAction('view_guide');
+  if (tab === 'cases') logAction('view_cases');
 }
 
 // ===== CASES =====
@@ -1334,6 +1336,7 @@ function renderCasesTab(act, pair, color) {
 function openCaseModal(key) {
   const d = _caseDataMap.get(key);
   if (!d) return;
+  logAction('view_case_detail');
   const { cs, imgList, c } = d;
   const uid = 'cm_' + key;
   document.getElementById('caseModalContent').innerHTML = `
