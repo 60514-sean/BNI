@@ -207,6 +207,7 @@
     <h2 id="headerTitle">簡報進度系統</h2>
     <div class="header-right">
       <span class="user-badge" id="userBadge"></span>
+      <button class="settings-btn" id="refreshBtn" onclick="doRefresh()" style="display:none">重製</button>
       <button class="settings-btn" id="settingsBtn" onclick="showSettings()" style="display:none">設定</button>
       <button class="logout-btn" onclick="doLogout()">登出</button>
     </div>
@@ -552,6 +553,7 @@ function enterApp(role, entry) {
   document.getElementById('loginPage').style.display = 'none';
   document.getElementById('appPage').style.display = 'block';
   document.getElementById('userBadge').textContent = currentUser;
+  document.getElementById('refreshBtn').style.display = 'block';
   document.getElementById('settingsBtn').style.display = currentRole === 'admin' ? 'block' : 'none';
   renderApp();
   _bgRefresh();
@@ -560,11 +562,21 @@ function enterApp(role, entry) {
 function doLogout() {
   currentUser = null; currentRole = null; currentConsultantKey = null;
   currentSpeaker = null; _pendingUserEntry = null;
+  document.getElementById('refreshBtn').style.display = 'none';
   document.getElementById('roleSelectPage').style.display = 'none';
   document.getElementById('loginPage').style.display = 'flex';
   document.getElementById('appPage').style.display = 'none';
   document.getElementById('nameInput').value = '';
   document.getElementById('loginError').textContent = '';
+}
+
+async function doRefresh() {
+  showLoader(true, '更新中...');
+  _bgRefreshing = false;
+  await _bgRefresh();
+  showLoader(false);
+  renderApp();
+  showToast('資料已更新！');
 }
 
 document.getElementById('nameInput').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
