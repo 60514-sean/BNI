@@ -675,8 +675,32 @@ function svgCircle(count, max, color) {
   </svg>`;
 }
 
-const USAGE_WEEKS_N = 4;
 const USAGE_MAX = 14;
+const CONSULTANT_WEEKS = 26; // 半年
+const SPEAKER_WEEKS = 6;     // 倒數5週到當週
+
+function calcTenureCount(d, label) {
+  const ts = d.timestamps || [];
+  if (label === '顧問') {
+    const since = new Date(Date.now() - CONSULTANT_WEEKS * 7 * 864e5);
+    return ts.filter(t => new Date(t) >= since).length;
+  }
+  // 講者：依 presentationTime 計算6週視窗
+  const pair = (getConfig().pairs || []).find(p => p.speaker === d.name);
+  if (pair?.presentationTime) {
+    const parts = pair.presentationTime.split('/');
+    const presDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    const presMonday = new Date(presDate);
+    presMonday.setDate(presDate.getDate() - ((presDate.getDay() + 6) % 7));
+    const start = new Date(presMonday); start.setDate(presMonday.getDate() - 5 * 7);
+    const end   = new Date(presMonday); end.setDate(presMonday.getDate() + 7);
+    return ts.filter(t => { const dt = new Date(t); return dt >= start && dt < end; }).length;
+  }
+  const since = new Date(Date.now() - SPEAKER_WEEKS * 7 * 864e5);
+  return ts.filter(t => new Date(t) >= since).length;
+}
+
+function tenureWeeks(label) { return label === '顧問' ? CONSULTANT_WEEKS : SPEAKER_WEEKS; }
 const usageColor = avg => avg === 0 ? '#e74c3c' : avg <= 4 ? '#e67e22' : avg <= 9 ? '#f39c12' : '#27ae60';
 const usageLabel = avg => avg === 0 ? '未使用' : avg <= 4 ? '低' : avg <= 9 ? '中' : '高';
 
@@ -721,8 +745,8 @@ async function showUsageModal() {
     const consultants = [...new Set(_adminPairs.map(p => p.consultant).filter(Boolean))];
     const speakers    = [...new Set(_adminPairs.map(p => p.speaker).filter(Boolean))];
     _usageAllData = [
-      ...consultants.map(n => ({ name: n, label: '顧問', ...(logMap[n] || { count: 0 }) })),
-      ...speakers.map(n    => ({ name: n, label: '講者', ...(logMap[n] || { count: 0 }) }))
+      ...consultants.map(n => { const d = logMap[n] || {}; return { name: n, label: '顧問', ...d, tenureCount: calcTenureCount({...d, name: n}, '顧問') }; }),
+      ...speakers.map(n    => { const d = logMap[n] || {}; return { name: n, label: '講者', ...d, tenureCount: calcTenureCount({...d, name: n}, '講者') }; })
     ];
 
     if (_usageAllData.length === 0) {
@@ -746,7 +770,7 @@ function renderUsageList(tab) {
     { label: '講者', items: _usageAllData.filter(d => d.label === '講者') }
   ];
   const activeGroup = groups.find(g => g.label === _usageActiveTab) || groups[0];
-  if (activeGroup) activeGroup.items = [...activeGroup.items].sort((a, b) => (b.count || 0) - (a.count || 0));
+  if (activeGroup) activeGroup.items = [...activeGroup.items].sort((a, b) => (b.tenureCount || 0) - (a.tenureCount || 0));
 
   const tabs = groups.map(g => `
     <button onclick="renderUsageList('${g.label}')"
@@ -758,7 +782,8 @@ function renderUsageList(tab) {
     </button>`).join('');
 
   const cards = (activeGroup?.items || []).map(d => {
-    const avg = Math.round((d.count || 0) / USAGE_WEEKS_N * 10) / 10;
+    const wks = tenureWeeks(d.label);
+    const avg = Math.round((d.tenureCount || 0) / wks * 10) / 10;
     const color = usageColor(avg);
     const last = fmtLastTime(d.lastTime);
     const idx = _usageAllData.indexOf(d);
@@ -794,9 +819,11 @@ function renderUsageList(tab) {
 function renderUsageDetail(idx) {
   const d = _usageAllData[idx];
   if (!d) return;
-  const avg = Math.round((d.count || 0) / USAGE_WEEKS_N * 10) / 10;
+  const wks = tenureWeeks(d.label);
+  const avg = Math.round((d.tenureCount || 0) / wks * 10) / 10;
   const color = usageColor(avg);
   const ev = d.events || {};
+  const tenureLabel = d.label === '顧問' ? '半年（26週）' : '任職期間（6週）';
 
   const evRows = [
     { label: '登入',     key: 'login' },
@@ -820,7 +847,7 @@ function renderUsageDetail(idx) {
       ${svgCircle(avg, USAGE_MAX, color)}
       <div>
         <div style="font-size:18px;font-weight:700;color:#222;">${d.name}</div>
-        <div style="font-size:12px;color:#aaa;margin-top:2px;">${d.label}</div>
+        <div style="font-size:12px;color:#aaa;margin-top:2px;">${d.label}・${tenureLabel}</div>
         <div style="font-size:13px;font-weight:700;color:${color};margin-top:4px;">${usageLabel(avg)}・${avg} 次/週</div>
       </div>
     </div>
@@ -829,9 +856,13 @@ function renderUsageDetail(idx) {
         <span style="font-size:12px;color:#aaa;">最後活躍</span>
         <span style="font-size:12px;font-weight:600;color:#333;">${fmtLastTime(d.lastTime)}</span>
       </div>
-      <div style="display:flex;justify-content:space-between;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
         <span style="font-size:12px;color:#aaa;">常用時段</span>
         <span style="font-size:12px;font-weight:600;color:#333;">${fmtPeakHour(d.peakHour)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span style="font-size:12px;color:#aaa;">任職期間總次數</span>
+        <span style="font-size:12px;font-weight:600;color:#333;">${d.tenureCount || 0} 次</span>
       </div>
     </div>
     <div style="font-size:11px;font-weight:700;color:#aaa;letter-spacing:1px;margin-bottom:8px;">本月操作明細</div>
