@@ -263,6 +263,10 @@ let cache = {};
 // 頁面載入：從 localStorage 還原（毫秒級）
 try { const s = localStorage.getItem(LS_KEY); if (s) cache = JSON.parse(s); } catch {}
 
+// 比較基準：記錄上次 doRefresh 後的狀態，_bgRefresh 不動它
+// 跨帳號切換時，比對基準依舊是「上次看過的資料」
+let _refreshBaseline = JSON.parse(JSON.stringify(cache));
+
 function _lsSave() {
   try { localStorage.setItem(LS_KEY, JSON.stringify(cache)); } catch {}
 }
@@ -591,14 +595,14 @@ function _clearPairDotIfDone(ck, speaker) {
 
 async function doRefresh() {
   showLoader(true, '更新中...');
-  const oldCache = JSON.parse(JSON.stringify(cache));
+  const oldCache = _refreshBaseline;
   _updatedPairs = new Set();
   try {
     const res = await fetch(API_URL);
     const json = await res.json();
     if (json?.data) {
       const newData = json.data;
-      const pairs = (oldCache['__config__'] || cache['__config__'] || {}).pairs || [];
+      const pairs = (oldCache['__config__'] || newData['__config__'] || {}).pairs || [];
       pairs.forEach(p => {
         const pairId = `${p.consultant}\t${p.speaker}`;
         const act = p.activityType || '主題簡報';
@@ -637,6 +641,7 @@ async function doRefresh() {
       });
       cache = newData;
       _lsSave();
+      _refreshBaseline = JSON.parse(JSON.stringify(newData));
     }
   } catch {}
   showLoader(false);
