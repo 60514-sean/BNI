@@ -2058,8 +2058,8 @@ function buildGroupReminderText(consultant, pairs) {
     } else {
       lines.push(`這週幫你整理講者的進度，提供給你方便追蹤~`);
     }
+    lines.push('');
   }
-  lines.push('');
 
   // 判斷是否全部完成
   const allDone = pairs.every(p => getPct(p) === 100);
