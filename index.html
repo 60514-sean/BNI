@@ -2046,12 +2046,24 @@ function getPct(p) {
   return total ? Math.round(done / total * 100) : 0;
 }
 
+function isPrevWeeksDone(p) {
+  const act = p.activityType || '主題簡報';
+  if (isSimpleType(act)) return getPct(p) === 100;
+  const data = getData(p.consultant, p.speaker);
+  const { currentWeekIdx } = getPresentationInfo(p.presentationTime);
+  const limit = currentWeekIdx >= 0 ? currentWeekIdx : WEEKS.length;
+  for (let wi = 0; wi < limit; wi++) {
+    if (WEEKS[wi].tasks.some((_, ti) => !data[taskKey(wi, ti)])) return false;
+  }
+  return true;
+}
+
 function buildGroupReminderText(consultant, pairs) {
   const givenName = consultant && consultant.length >= 2 ? consultant.slice(-2) : consultant;
   const lines = [];
   lines.push(`☀️ ${givenName} 早安~`);
-  const allDoneCheck = pairs.every(p => getPct(p) === 100);
-  const allWeek0 = !allDoneCheck && pairs.every(p => getPresentationInfo(p.presentationTime).currentWeekIdx === 0);
+
+  const allWeek0 = pairs.every(p => getPresentationInfo(p.presentationTime).currentWeekIdx === 0);
   if (!allWeek0) {
     if (pairs.length === 1) {
       lines.push(`這週幫你整理 ${speakerGivenName(pairs[0].speaker)} 的進度，提供給你方便追蹤~`);
@@ -2061,39 +2073,39 @@ function buildGroupReminderText(consultant, pairs) {
     lines.push('');
   }
 
-  // 判斷是否全部完成
-  const allDone = pairs.every(p => getPct(p) === 100);
-  if (allDone) {
-    const names = pairs.map(p => speakerGivenName(p.speaker)).join('、');
-    lines.push(`${names} 的進度都完成了~~!非常感謝你~本周的進度我們一起來完成~~`);
-  } else {
-    pairs.forEach((p, idx) => {
+  // 分組：上週進度全完成 vs 尚有未完成
+  const praiseGroup = pairs.filter(p => isPrevWeeksDone(p));
+  const incompleteGroup = pairs.filter(p => !isPrevWeeksDone(p));
+
+  if (praiseGroup.length > 0) {
+    const names = praiseGroup.map(p => speakerGivenName(p.speaker)).join('、');
+    lines.push(`太棒了！${names} 之前的進度都完成了！這週的進度也再麻煩您了~`);
+  }
+
+  if (incompleteGroup.length > 0) {
+    if (praiseGroup.length > 0) lines.push('');
+    incompleteGroup.forEach((p, idx) => {
       const act = p.activityType || '主題簡報';
       const data = getData(p.consultant, p.speaker);
       const { currentWeekIdx } = getPresentationInfo(p.presentationTime);
-      const pct = getPct(p);
 
-      if (pairs.length > 1) lines.push(`【講者${idx + 1}】${speakerGivenName(p.speaker)}`);
+      if (incompleteGroup.length > 1) lines.push(`【講者】${speakerGivenName(p.speaker)}`);
 
-      if (pct === 100) {
-        lines.push(`感謝你認真輔導，${speakerGivenName(p.speaker)} 有你真好～之前的進度都完成了！`);
-      } else if (currentWeekIdx === 0) {
+      if (currentWeekIdx === 0) {
         lines.push(`這周 ${speakerGivenName(p.speaker)} 的進度再麻煩您了~`);
+      } else if (isSimpleType(act)) {
+        const cnt = SIMPLE_TASKS.filter((_, ti) => !data[simpleTaskKey(ti)]).length;
+        if (cnt > 0) lines.push(`${act} → 還差 ${cnt} 項`);
       } else {
-        if (isSimpleType(act)) {
-          const cnt = SIMPLE_TASKS.filter((_, ti) => !data[simpleTaskKey(ti)]).length;
-          if (cnt > 0) lines.push(`${act} → 還差 ${cnt} 項`);
-        } else {
-          const limit = currentWeekIdx >= 0 ? currentWeekIdx : WEEKS.length;
-          WEEKS.forEach((w, wi) => {
-            if (wi >= limit) return;
-            const cnt = w.tasks.filter((_, ti) => !data[taskKey(wi, ti)]).length;
-            if (cnt === 0) return;
-            lines.push(`${w.label} → 還差 ${cnt} 項`);
-          });
-        }
+        const limit = currentWeekIdx >= 0 ? currentWeekIdx : WEEKS.length;
+        WEEKS.forEach((w, wi) => {
+          if (wi >= limit) return;
+          const cnt = w.tasks.filter((_, ti) => !data[taskKey(wi, ti)]).length;
+          if (cnt === 0) return;
+          lines.push(`${w.label} → 還差 ${cnt} 項`);
+        });
       }
-      if (idx < pairs.length - 1) lines.push('');
+      if (idx < incompleteGroup.length - 1) lines.push('');
     });
   }
 
