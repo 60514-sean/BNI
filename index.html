@@ -649,6 +649,17 @@ function renderAdmin() {
        <button class="btn btn-sm" onclick="showReminders()">追蹤提醒</button>
        <button class="btn btn-sm" onclick="showUsageModal()">使用率</button>
      </div>` + html;
+  _prefetchUsageLogs();
+}
+
+let _usageLogCache = null;
+
+async function _prefetchUsageLogs() {
+  try {
+    const res = await fetch(`${API_URL}?action=getLogs`);
+    const json = await res.json();
+    _usageLogCache = json.data || [];
+  } catch { _usageLogCache = null; }
 }
 
 function svgCircle(count, max, color) {
@@ -666,15 +677,20 @@ function svgCircle(count, max, color) {
 
 async function showUsageModal() {
   const body = document.getElementById('usageModalBody');
-  body.innerHTML = '<div style="text-align:center;padding:24px;color:#aaa;">載入中...</div>';
   document.getElementById('usageModal').classList.add('open');
   document.body.style.overflow = 'hidden';
 
   try {
-    const res = await fetch(`${API_URL}?action=getLogs`);
-    const json = await res.json();
+    let data = _usageLogCache;
+    if (!data) {
+      body.innerHTML = '<div style="text-align:center;padding:24px;color:#aaa;">載入中...</div>';
+      const res = await fetch(`${API_URL}?action=getLogs`);
+      const json = await res.json();
+      data = json.data || [];
+      _usageLogCache = data;
+    }
     const logMap = {};
-    (json.data || []).forEach(d => { logMap[d.name] = d.count; });
+    data.forEach(d => { logMap[d.name] = d.count; });
 
     const consultants = [...new Set(_adminPairs.map(p => p.consultant).filter(Boolean))];
     const speakers    = [...new Set(_adminPairs.map(p => p.speaker).filter(Boolean))];
