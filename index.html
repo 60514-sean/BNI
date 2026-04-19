@@ -541,7 +541,7 @@ function enterApp(role, entry) {
     currentSpeaker = null;
   }
 
-  fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'log', name: currentUser, role: currentRole }) }).catch(() => {});
+  fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'log', name: currentUser, role: currentRole, event: 'login' }) }).catch(() => {});
 
   document.getElementById('loginPage').style.display = 'none';
   document.getElementById('appPage').style.display = 'block';
@@ -1031,7 +1031,17 @@ function renderConsultant(ck, speaker, canEdit) {
   document.getElementById('mainContent').innerHTML = html;
 }
 
-function toggleWeek(id) { document.getElementById(id)?.classList.toggle('open'); }
+function logAction(event) {
+  if (!currentUser) return;
+  fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'log', name: currentUser, role: currentRole, event }) }).catch(() => {});
+}
+
+function toggleWeek(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle('open');
+  if (el.classList.contains('open')) logAction('week_open');
+}
 
 function switchConsultantTab(tab) {
   const tt = document.getElementById('tabTracking');
@@ -1604,6 +1614,7 @@ async function toggleTask(ck, speaker, wi, ti, cb) {
   const wcount = document.getElementById(`wcount_${wi}`);
   if (wcount) wcount.textContent = `${weekDone}/${WEEKS[wi].tasks.length}`;
   saveData(ck, speaker, data);
+  logAction('task_check');
 }
 
 async function saveAll(ck, speaker) {
@@ -1617,6 +1628,7 @@ async function saveAll(ck, speaker) {
     });
   });
   saveData(ck, speaker, data);
+  logAction('save_all');
   showToast('已儲存！');
 }
 
@@ -1624,6 +1636,7 @@ async function saveNote(ck, speaker, wi, ti, val) {
   const data = getData(ck, speaker);
   data[noteKey(wi, ti)] = val;
   saveData(ck, speaker, data);
+  logAction('note_save');
 }
 
 async function toggleTaskSimple(ck, speaker, ti, cb) {
@@ -1640,12 +1653,14 @@ async function toggleTaskSimple(ck, speaker, ti, cb) {
   if (fill) fill.style.width = pct + '%';
   if (txt) txt.textContent = pct + '%';
   saveData(ck, speaker, data);
+  logAction('task_check');
 }
 
 async function saveNoteSimple(ck, speaker, ti, val) {
   const data = getData(ck, speaker);
   data[simpleNoteKey(ti)] = val;
   saveData(ck, speaker, data);
+  logAction('note_save');
 }
 
 async function saveAllSimple(ck, speaker) {
@@ -1657,6 +1672,7 @@ async function saveAllSimple(ck, speaker) {
     if (note) data[simpleNoteKey(ti)] = note.value;
   });
   saveData(ck, speaker, data);
+  logAction('save_all');
   showToast('已儲存！');
 }
 
