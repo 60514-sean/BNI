@@ -2067,33 +2067,26 @@ function buildGroupReminderText(consultant, pairs) {
   const praiseGroup = pairs.filter(p => isPrevWeeksDone(p));
   const incompleteGroup = pairs.filter(p => !isPrevWeeksDone(p));
 
-  const allWeek0 = pairs.every(p => getPresentationInfo(p.presentationTime).currentWeekIdx === 0);
-  const allPraised = incompleteGroup.length === 0;
-  if (!allWeek0 && !allPraised) {
-    if (pairs.length === 1) {
-      lines.push(`這週幫你整理${speakerGivenName(pairs[0].speaker)}的進度，提供給你方便追蹤~`);
-    } else {
-      lines.push(`這週幫你整理講者的進度，提供給你方便追蹤~`);
-    }
-    lines.push('');
-  }
-
   if (praiseGroup.length > 0) {
     const names = praiseGroup.map(p => speakerGivenName(p.speaker)).join('、');
-    lines.push(`感謝您上周的協助！${names}上週的進度都完成了！這週的進度也再麻煩您了~`);
+    lines.push(`感謝您上周的協助！${names}上週的進度都完成了！這週的進度也再麻煩您了`);
   }
 
   if (incompleteGroup.length > 0) {
-    if (praiseGroup.length > 0) lines.push('');
+    if (praiseGroup.length > 0) {
+      lines.push('');
+      lines.push('【講者】上周還有一些內容沒完成，我列出來，方便您追蹤，如下:');
+    }
+    lines.push('');
     incompleteGroup.forEach((p, idx) => {
       const act = p.activityType || '主題簡報';
       const data = getData(p.consultant, p.speaker);
       const { currentWeekIdx } = getPresentationInfo(p.presentationTime);
 
-      if (incompleteGroup.length > 1) lines.push(`【講者】${speakerGivenName(p.speaker)}`);
+      if (incompleteGroup.length > 1 || praiseGroup.length > 0) lines.push(`【講者】${speakerGivenName(p.speaker)}`);
 
       if (currentWeekIdx === 0) {
-        lines.push(`這周 ${speakerGivenName(p.speaker)} 的進度再麻煩您了~`);
+        lines.push(`這周${speakerGivenName(p.speaker)}的進度再麻煩您了~`);
       } else if (isSimpleType(act)) {
         const cnt = SIMPLE_TASKS.filter((_, ti) => !data[simpleTaskKey(ti)]).length;
         if (cnt > 0) lines.push(`${act} → 還差 ${cnt} 項`);
