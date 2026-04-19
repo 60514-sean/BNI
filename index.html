@@ -231,8 +231,11 @@
 <div class="detail-modal" id="usageModal" onclick="if(event.target===this)closeUsageModal()">
   <div class="detail-modal-box">
     <div class="detail-modal-head" style="background:#c0392b;">
-      <span style="font-size:16px;font-weight:700;color:white;">本月使用率</span>
-      <button class="modal-close-btn" onclick="closeUsageModal()" style="background:rgba(255,255,255,0.25);color:white;">✕</button>
+      <span style="font-size:16px;font-weight:700;color:white;">使用率</span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button onclick="showUsageModal(true)" style="background:rgba(255,255,255,0.2);border:none;color:white;padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer;">重新整理</button>
+        <button class="modal-close-btn" onclick="closeUsageModal()" style="background:rgba(255,255,255,0.25);color:white;">✕</button>
+      </div>
     </div>
     <div class="detail-modal-body" id="usageModalBody"></div>
   </div>
@@ -653,12 +656,15 @@ function renderAdmin() {
 }
 
 let _usageLogCache = null;
+let _usageLogCacheTime = 0;
+const USAGE_CACHE_TTL = 60000;
 
 async function _prefetchUsageLogs() {
   try {
     const res = await fetch(`${API_URL}?action=getLogs`);
     const json = await res.json();
     _usageLogCache = json.data || [];
+    _usageLogCacheTime = Date.now();
   } catch { _usageLogCache = null; }
 }
 
@@ -731,17 +737,25 @@ function _speakerInWindow(pair) {
   return Math.round((presMonday - todayMonday) / (7 * 864e5)) <= 5;
 }
 
-async function showUsageModal() {
+async function showUsageModal(forceRefresh) {
   const body = document.getElementById('usageModalBody');
   document.getElementById('usageModal').classList.add('open');
   document.body.style.overflow = 'hidden';
-  body.innerHTML = '<div style="text-align:center;padding:24px;color:#aaa;">載入中...</div>';
+
+  const isFresh = _usageLogCache && (Date.now() - _usageLogCacheTime) < USAGE_CACHE_TTL && !forceRefresh;
+  if (!isFresh) body.innerHTML = '<div style="text-align:center;padding:24px;color:#aaa;">載入中...</div>';
 
   try {
-    const res = await fetch(`${API_URL}?action=getLogs`);
-    const json = await res.json();
-    const data = json.data || [];
-    _usageLogCache = data;
+    let data;
+    if (isFresh) {
+      data = _usageLogCache;
+    } else {
+      const res = await fetch(`${API_URL}?action=getLogs`);
+      const json = await res.json();
+      data = json.data || [];
+      _usageLogCache = data;
+      _usageLogCacheTime = Date.now();
+    }
 
     const logMap = Object.fromEntries(data.map(d => [d.name, d]));
     const consultantSet = new Set(_adminPairs.map(p => p.consultant).filter(Boolean));
