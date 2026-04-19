@@ -2051,9 +2051,9 @@ function buildGroupReminderText(consultant, pairs) {
   const lines = [];
   lines.push(`☀️ ${givenName} 早安~`);
   if (pairs.length === 1) {
-    lines.push(`這週幫你整理 ${speakerGivenName(pairs[0].speaker)} 的進度，提供給你方便追蹤~另外也同步提供追蹤網址給您https://bni-navy.vercel.app/`);
+    lines.push(`這週幫你整理 ${speakerGivenName(pairs[0].speaker)} 的進度，提供給你方便追蹤~`);
   } else {
-    lines.push(`這週幫你整理講者的進度，提供給你方便追蹤~另外也同步提供追蹤網址給您https://bni-navy.vercel.app/`);
+    lines.push(`這週幫你整理講者的進度，提供給你方便追蹤~`);
   }
   lines.push('');
 
@@ -2087,9 +2087,6 @@ function buildGroupReminderText(consultant, pairs) {
             lines.push(`${w.label} → 還差 ${cnt} 項`);
             hasWeekLines = true;
           });
-          if (!hasWeekLines) lines.push(pairs.length === 1
-            ? `本周的進度再麻煩您了~另外也同步提供追蹤網址給您https://bni-navy.vercel.app/`
-            : `本周的進度再麻煩您了~`);
         }
       }
       if (idx < pairs.length - 1) lines.push('');
@@ -2097,6 +2094,7 @@ function buildGroupReminderText(consultant, pairs) {
   }
 
   lines.push('');
+  lines.push('追蹤網址：https://bni-navy.vercel.app/');
   lines.push('祝~今天順心優~❤️');
   return lines.join('\n');
 }
