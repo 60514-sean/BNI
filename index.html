@@ -723,14 +723,11 @@ async function showUsageModal() {
   document.body.style.overflow = 'hidden';
 
   try {
-    let data = _usageLogCache;
-    if (!data) {
-      body.innerHTML = '<div style="text-align:center;padding:24px;color:#aaa;">載入中...</div>';
-      const res = await fetch(`${API_URL}?action=getLogs`);
-      const json = await res.json();
-      data = json.data || [];
-      _usageLogCache = data;
-    }
+    body.innerHTML = '<div style="text-align:center;padding:24px;color:#aaa;">載入中...</div>';
+    const res = await fetch(`${API_URL}?action=getLogs`);
+    const json = await res.json();
+    const data = json.data || [];
+    _usageLogCache = data;
     const logMap = {};
     data.forEach(d => { logMap[d.name] = d; });
 
