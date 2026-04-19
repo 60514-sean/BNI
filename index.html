@@ -1700,6 +1700,9 @@ function addConsultant() {
   cfg.consultants.push(name);
   cache['__config__'] = cfg;
   showSettings();
+  const sec = document.getElementById('consultantSection');
+  const arrow = document.getElementById('consultantSectionArrow');
+  if (sec) { sec.style.display = ''; if (arrow) arrow.textContent = '▲'; }
 }
 
 function removeConsultant(i) {
@@ -1708,6 +1711,9 @@ function removeConsultant(i) {
   cfg.consultants.splice(i, 1);
   cache['__config__'] = cfg;
   showSettings();
+  const sec = document.getElementById('consultantSection');
+  const arrow = document.getElementById('consultantSectionArrow');
+  if (sec) { sec.style.display = ''; if (arrow) arrow.textContent = '▲'; }
 }
 
 function showSettings() {
@@ -1871,6 +1877,9 @@ function addPair() {
   cfg.pairs.push({ consultant: '', speaker: '' });
   cache['__config__'] = cfg;
   showSettings();
+  const sec = document.getElementById('pairsSection');
+  const arrow = document.getElementById('pairsSectionArrow');
+  if (sec) { sec.style.display = ''; if (arrow) arrow.textContent = '▲'; }
 }
 
 function removePair(i) {
@@ -1878,6 +1887,9 @@ function removePair(i) {
   cfg.pairs.splice(i, 1);
   cache['__config__'] = cfg;
   showSettings();
+  const sec = document.getElementById('pairsSection');
+  const arrow = document.getElementById('pairsSectionArrow');
+  if (sec) { sec.style.display = ''; if (arrow) arrow.textContent = '▲'; }
 }
 
 async function saveSettings() {
