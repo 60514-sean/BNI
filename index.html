@@ -410,6 +410,7 @@ const WEEK_HINTS = [
 const ACTIVITY_TYPES = ['主題簡報', '主題日', '共識會議', 'BOD'];
 const PRESENTATION_COUNTS = ['第1次', '第2次', '第2次+'];
 const ACTIVITY_COLORS = { '主題簡報': '#c0392b', '主題日': '#e67e22', '共識會議': '#2980b9', 'BOD': '#8e44ad' };
+const getActivityColor = act => ACTIVITY_COLORS[act || '主題簡報'] || '#c0392b';
 const DONE_COLOR = '#c0392b';
 const SIMPLE_TASKS = ['主題名稱確認', '一般引薦確認', '理想引薦確認', '夢幻引薦確認', '簡報繳交', 'RE稿完成'];
 const DATE_LABELS = ['繳交簡報', '線上RE稿', '簡報時間'];
@@ -691,7 +692,7 @@ function renderAdmin() {
     const data = getData(p.consultant, p.speaker);
     const { total, done } = calcProgress(act, data);
     const pct = total ? Math.round(done / total * 100) : 0;
-    const dispColor = ACTIVITY_COLORS[act] || '#c0392b';
+    const dispColor = getActivityColor(act);
     const done100 = pct === 100;
 
     const weekDots = isSimpleType(act)
@@ -972,7 +973,7 @@ function openAdminModal(pi) {
   _viewingCk = p.consultant;
   _viewingSpeaker = p.speaker;
   const act = p.activityType || '主題簡報';
-  const dispColor = ACTIVITY_COLORS[act] || '#c0392b';
+  const dispColor = getActivityColor(act);
   const data = getData(p.consultant, p.speaker);
   const { total, done } = calcProgress(act, data);
   const pct = total ? Math.round(done / total * 100) : 0;
@@ -1142,7 +1143,7 @@ function renderConsultantOverview(ck) {
   let cardsHtml = '<div class="weeks-container">';
   myPairs.forEach(p => {
     const act = p.activityType || '主題簡報';
-    const color = ACTIVITY_COLORS[act] || '#c0392b';
+    const color = getActivityColor(act);
     const data = getData(ck, p.speaker);
     const { total, done } = calcProgress(act, data);
     const pct = total ? Math.round(done / total * 100) : 0;
@@ -1182,7 +1183,7 @@ function renderConsultant(ck, speaker, canEdit) {
   const myPairs = cfg.pairs.filter(p => p.consultant === ck);
   const pair = cfg.pairs.find(p => p.consultant === ck && p.speaker === speaker) || {};
   const act = pair.activityType || '主題簡報';
-  const color = ACTIVITY_COLORS[act] || '#c0392b';
+  const color = getActivityColor(act);
   const data = getData(ck, speaker);
 
   const { total, done } = calcProgress(act, data);
@@ -1262,8 +1263,8 @@ function renderConsultant(ck, speaker, canEdit) {
       </div>`;
     }).join('');
     html += `</div></div>`;
-    if (canEdit) html += `<div style="margin-top:20px;padding-bottom:20px;"><button class="btn" style="background:${color}" onclick="saveAllSimple('${ck}','${speaker}')">儲存</button></div></div></div>`;
-    if (!canEdit) html += `<div style="margin-top:16px;padding-bottom:20px;"><button class="btn" style="background:${color}" onclick="saveAllSimple('${ck}','${speaker}')">儲存備註</button></div>`;
+    if (canEdit) html += `<div style="margin-top:20px;padding-bottom:20px;"><button class="btn" style="background:${color}" onclick="saveAllTasks('${ck}','${speaker}')">儲存</button></div></div></div>`;
+    if (!canEdit) html += `<div style="margin-top:16px;padding-bottom:20px;"><button class="btn" style="background:${color}" onclick="saveAllTasks('${ck}','${speaker}')">儲存備註</button></div>`;
   } else {
     // 6週進度
     const { currentWeekIdx } = getPresentationInfo(pair.presentationTime);
@@ -1307,8 +1308,8 @@ function renderConsultant(ck, speaker, canEdit) {
       </div>`;
     });
     html += `</div>`;
-    if (canEdit) html += `<div style="margin-top:20px;padding-bottom:20px;"><button class="btn" onclick="saveAll('${ck}','${speaker}')">儲存</button></div></div></div>`;
-    if (!canEdit) html += `<div style="margin-top:16px;padding-bottom:20px;"><button class="btn" style="background:${color}" onclick="saveAll('${ck}','${speaker}')">儲存備註</button></div>`;
+    if (canEdit) html += `<div style="margin-top:20px;padding-bottom:20px;"><button class="btn" onclick="saveAllTasks('${ck}','${speaker}')">儲存</button></div></div></div>`;
+    if (!canEdit) html += `<div style="margin-top:16px;padding-bottom:20px;"><button class="btn" style="background:${color}" onclick="saveAllTasks('${ck}','${speaker}')">儲存備註</button></div>`;
 
     document.getElementById('mainContent').innerHTML = html;
     return;
@@ -1937,10 +1938,10 @@ async function toggleTask(ck, speaker, wi, ti, cb) {
   const data = getData(ck, speaker);
   data[taskKey(wi, ti)] = cb.checked;
   const pair2 = getConfig().pairs.find(p => p.consultant === ck && p.speaker === speaker) || {};
-  const dynColor = ACTIVITY_COLORS[pair2.activityType || '主題簡報'] || '#c0392b';
+  const dynColor = getActivityColor(pair2.activityType);
   const lbl = document.getElementById(`lbl_${wi}_${ti}`);
   if (lbl) { lbl.className = 'task-label' + (cb.checked ? ' checked' : ''); lbl.style.textDecorationColor = cb.checked ? dynColor : ''; }
-  const done = WEEKS.reduce((s, w, wi2) => s + w.tasks.filter((_, ti2) => data[taskKey(wi2, ti2)]).length, 0);
+  const { done } = calcProgress(pair2.activityType || '主題簡報', data);
   const pct = Math.round(done / _TOTAL_TASKS * 100);
   const fill = document.querySelector('.overall-bar-fill');
   const txt = document.querySelector('.overall-pct-text');
@@ -1953,19 +1954,21 @@ async function toggleTask(ck, speaker, wi, ti, cb) {
   logAction('task_check');
 }
 
-async function saveAll(ck, speaker) {
+async function toggleTaskSimple(ck, speaker, ti, cb) {
   const data = getData(ck, speaker);
-  WEEKS.forEach((w, wi) => {
-    w.tasks.forEach((_, ti) => {
-      const cb = document.getElementById(`cb_${wi}_${ti}`);
-      const note = document.getElementById(`note_${wi}_${ti}`);
-      if (cb) data[taskKey(wi, ti)] = cb.checked;
-      if (note) data[noteKey(wi, ti)] = note.value;
-    });
-  });
+  data[simpleTaskKey(ti)] = cb.checked;
+  const pair = getConfig().pairs.find(p => p.consultant === ck && p.speaker === speaker) || {};
+  const color = getActivityColor(pair.activityType);
+  const lbl = document.getElementById(`slbl_${ti}`);
+  if (lbl) { lbl.className = 'task-label' + (cb.checked ? ' checked' : ''); lbl.style.textDecorationColor = cb.checked ? color : ''; }
+  const { done } = calcProgress(pair.activityType || '主題簡報', data);
+  const pct = Math.round(done / _TOTAL_SIMPLE * 100);
+  const fill = document.querySelector('.overall-bar-fill');
+  const txt = document.querySelector('.overall-pct-text');
+  if (fill) { fill.style.width = pct + '%'; fill.style.background = color; }
+  if (txt) { txt.textContent = pct + '%'; txt.style.color = color; }
   saveData(ck, speaker, data);
-  logAction('save_all');
-  showToast('已儲存！');
+  logAction('task_check');
 }
 
 async function saveNote(ck, speaker, wi, ti, val) {
@@ -1975,23 +1978,6 @@ async function saveNote(ck, speaker, wi, ti, val) {
   logAction('note_save');
 }
 
-async function toggleTaskSimple(ck, speaker, ti, cb) {
-  const data = getData(ck, speaker);
-  data[simpleTaskKey(ti)] = cb.checked;
-  const _pair = getConfig().pairs.find(p => p.consultant === ck && p.speaker === speaker) || {};
-  const _color = ACTIVITY_COLORS[_pair.activityType||'主題簡報'] || '#c0392b';
-  const lbl = document.getElementById(`slbl_${ti}`);
-  if (lbl) { lbl.className = 'task-label' + (cb.checked ? ' checked' : ''); lbl.style.textDecorationColor = cb.checked ? _color : ''; }
-  const done = SIMPLE_TASKS.filter((_, i) => data[simpleTaskKey(i)]).length;
-  const pct = Math.round(done / _TOTAL_SIMPLE * 100);
-  const fill = document.querySelector('.overall-bar-fill');
-  const txt = document.querySelector('.overall-pct-text');
-  if (fill) fill.style.width = pct + '%';
-  if (txt) txt.textContent = pct + '%';
-  saveData(ck, speaker, data);
-  logAction('task_check');
-}
-
 async function saveNoteSimple(ck, speaker, ti, val) {
   const data = getData(ck, speaker);
   data[simpleNoteKey(ti)] = val;
@@ -1999,14 +1985,26 @@ async function saveNoteSimple(ck, speaker, ti, val) {
   logAction('note_save');
 }
 
-async function saveAllSimple(ck, speaker) {
+async function saveAllTasks(ck, speaker) {
   const data = getData(ck, speaker);
-  SIMPLE_TASKS.forEach((_, ti) => {
-    const cb = document.getElementById(`scb_${ti}`);
-    const note = document.getElementById(`snote_${ti}`);
-    if (cb) data[simpleTaskKey(ti)] = cb.checked;
-    if (note) data[simpleNoteKey(ti)] = note.value;
-  });
+  const act = (getConfig().pairs.find(p => p.consultant === ck && p.speaker === speaker) || {}).activityType;
+  if (isSimpleType(act)) {
+    SIMPLE_TASKS.forEach((_, ti) => {
+      const cb = document.getElementById(`scb_${ti}`);
+      const note = document.getElementById(`snote_${ti}`);
+      if (cb) data[simpleTaskKey(ti)] = cb.checked;
+      if (note) data[simpleNoteKey(ti)] = note.value;
+    });
+  } else {
+    WEEKS.forEach((w, wi) => {
+      w.tasks.forEach((_, ti) => {
+        const cb = document.getElementById(`cb_${wi}_${ti}`);
+        const note = document.getElementById(`note_${wi}_${ti}`);
+        if (cb) data[taskKey(wi, ti)] = cb.checked;
+        if (note) data[noteKey(wi, ti)] = note.value;
+      });
+    });
+  }
   saveData(ck, speaker, data);
   logAction('save_all');
   showToast('已儲存！');
@@ -2169,7 +2167,7 @@ document.addEventListener('click', e => {
 function onActivityChange(i) {
   const act = document.getElementById(`act_${i}`)?.value || '主題簡報';
   const sel = document.getElementById(`act_${i}`);
-  if (sel) sel.style.color = ACTIVITY_COLORS[act] || '#c0392b';
+  if (sel) sel.style.color = getActivityColor(act);
   const simple = isSimpleType(act);
   [1, 2].forEach(f => {
     const row = document.getElementById(`dateRow_${i}_${f}`);
@@ -2234,7 +2232,7 @@ function showSettings() {
     ? consultants.map((c, i) => {
         const myPairs = cfg.pairs.filter(p => p.consultant === c && p.speaker);
         const speakerTags = myPairs.map(p => {
-          const color = ACTIVITY_COLORS[p.activityType||'主題簡報'] || '#c0392b';
+          const color = getActivityColor(p.activityType);
           const cntBadge = (p.activityType === '主題簡報' || !p.activityType) && p.presentationCount
             ? `<span style="font-size:11px;opacity:0.75;margin-left:4px;">${p.presentationCount}</span>` : '';
           return `<span style="padding:3px 10px;border-radius:12px;font-size:12px;background:${color}18;color:${color};border:1px solid ${color}40;">${p.speaker}${cntBadge}</span>`;
@@ -2255,7 +2253,7 @@ function showSettings() {
 
   let pairsHtml = cfg.pairs.map((p, i) => {
     const act = p.activityType || '主題簡報';
-    const color = ACTIVITY_COLORS[act] || '#c0392b';
+    const color = getActivityColor(act);
     const simple = isSimpleType(act);
     const pData = getData(p.consultant, p.speaker);
     const { total: pTotal, done: pDone } = calcProgress(act, pData);
@@ -2471,7 +2469,7 @@ function renderSlidesTab(ck, speaker, pair, canWrite) {
     keys = cnt === '第1次' ? SLIDE_KEYS_V1 : SLIDE_KEYS_V2;
   }
   const data = getSlidesData(ck, speaker);
-  const color = ACTIVITY_COLORS[pair.activityType||'主題簡報'] || '#c0392b';
+  const color = getActivityColor(pair.activityType);
   const pairId = `${ck}\t${speaker}`;
   const fields = slides.map((s, i) => {
     let rawVal;
@@ -2521,40 +2519,25 @@ async function saveAllSlides(ck, speaker, keysStr) {
   showToast('簡報內容已儲存！');
 }
 
-function clearSlideDot(ck, speaker, i, keysStr) {
-  keysStr.split(',').forEach(k => {
-    _updatedPairs.delete(`${ck}\t${speaker}\tslide_${k}`);
-  });
-  const dot = document.getElementById(`slideDot_${i}`);
+function clearDot(ck, speaker, keys, dotId) {
+  keys.forEach(k => _updatedPairs.delete(`${ck}\t${speaker}\t${k}`));
+  const dot = document.getElementById(dotId);
   if (dot) dot.remove();
   _clearPairDotIfDone(ck, speaker);
 }
-function clearNoteDot(ck, speaker, wi, ti) {
-  _updatedPairs.delete(`${ck}\t${speaker}\tnote_${wi}_${ti}`);
-  const dot = document.getElementById(`noteDot_${wi}_${ti}`);
-  if (dot) dot.remove();
-  _clearPairDotIfDone(ck, speaker);
-}
-function clearSimpleNoteDot(ck, speaker, ti) {
-  _updatedPairs.delete(`${ck}\t${speaker}\tsnote_${ti}`);
-  const dot = document.getElementById(`snoteDot_${ti}`);
-  if (dot) dot.remove();
-  _clearPairDotIfDone(ck, speaker);
-}
-function ackSimpleNoteDot(ck, speaker, ti) {
-  _updatedPairs.delete(`${ck}\t${speaker}\tsnote_${ti}`);
-  const dot = document.getElementById(`rsnoteDot_${ti}`);
-  if (dot) dot.remove();
-  _clearPairDotIfDone(ck, speaker);
-}
+function clearSlideDot(ck, speaker, i, keysStr) { clearDot(ck, speaker, keysStr.split(',').map(k => `slide_${k}`), `slideDot_${i}`); }
+function clearNoteDot(ck, speaker, wi, ti) { clearDot(ck, speaker, [`note_${wi}_${ti}`], `noteDot_${wi}_${ti}`); }
+function clearSimpleNoteDot(ck, speaker, ti) { clearDot(ck, speaker, [`snote_${ti}`], `snoteDot_${ti}`); }
+function ackSimpleNoteDot(ck, speaker, ti) { clearDot(ck, speaker, [`snote_${ti}`], `rsnoteDot_${ti}`); }
 
 // ===== REMINDERS =====
+const REMINDER_FOOTER = '祝~今天順心優~❤️';
+
 function buildReminderText(p) {
   const act = p.activityType || '主題簡報';
   const data = getData(p.consultant, p.speaker);
   const { currentWeekIdx } = getPresentationInfo(p.presentationTime);
-
-  const givenName = p.consultant && p.consultant.length > 1 ? p.consultant.slice(1) : p.consultant;
+  const givenName = speakerGivenName(p.consultant);
 
   const { total, done } = calcProgress(act, data);
   const pct = total ? Math.round(done / total * 100) : 0;
@@ -2586,7 +2569,7 @@ function buildReminderText(p) {
   }
 
   lines.push('');
-  lines.push('祝~今天順心優~❤️');
+  lines.push(REMINDER_FOOTER);
   return lines.join('\n');
 }
 
@@ -2596,11 +2579,7 @@ function speakerGivenName(name) {
 
 function getPct(p) {
   const act = p.activityType || '主題簡報';
-  const data = getData(p.consultant, p.speaker);
-  const total = isSimpleType(act) ? SIMPLE_TASKS.length : WEEKS.reduce((s, w) => s + w.tasks.length, 0);
-  const done = isSimpleType(act)
-    ? SIMPLE_TASKS.filter((_, ti) => data[simpleTaskKey(ti)]).length
-    : WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
+  const { total, done } = calcProgress(act, getData(p.consultant, p.speaker));
   return total ? Math.round(done / total * 100) : 0;
 }
 
@@ -2616,7 +2595,7 @@ function isPrevWeeksDone(p, currentWeekIdx, data) {
 }
 
 function buildGroupReminderText(consultant, pairs) {
-  const givenName = consultant && consultant.length >= 2 ? consultant.slice(-2) : consultant;
+  const givenName = speakerGivenName(consultant);
   const lines = [];
   lines.push(`☀️${givenName}早安~`);
 
@@ -2675,7 +2654,7 @@ function buildGroupReminderText(consultant, pairs) {
 
   lines.push('');
   lines.push('追蹤網址：https://bni-navy.vercel.app/');
-  lines.push('祝~今天順心優~❤️');
+  lines.push(REMINDER_FOOTER);
   return lines.join('\n').replace(/\n{3,}/g, '\n\n');
 }
 
