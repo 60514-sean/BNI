@@ -936,6 +936,8 @@ function openAdminModal(pi) {
   const p = _adminPairs[pi];
   if (!p) return;
   const pairId = `${p.consultant}\t${p.speaker}`;
+  _viewingCk = p.consultant;
+  _viewingSpeaker = p.speaker;
   if (_updatedPairs.has(pairId)) {
     _updatedPairs.delete(pairId);
     const dot = document.getElementById(`updDot_${pi}`);
@@ -1009,6 +1011,7 @@ function adminTab(pi, tab, color) {
 function renderSimpleReadonly(ck, speaker, color) {
   const c = color || '#c0392b';
   const data = getData(ck, speaker);
+  const hasUpd = _updatedPairs.has(`${ck}\t${speaker}\tsimple`);
   const rows = SIMPLE_TASKS.map((t, ti) => {
     const checked = !!data[simpleTaskKey(ti)];
     const note = data[simpleNoteKey(ti)] || '';
@@ -1020,16 +1023,22 @@ function renderSimpleReadonly(ck, speaker, color) {
       </div>
     </div>`;
   }).join('');
-  return `<div>${rows}</div>`;
+  return `<div>
+    ${hasUpd ? `<div style="display:flex;align-items:center;gap:6px;padding:6px 0 10px;border-bottom:1px solid #f0f0f0;margin-bottom:4px;">
+      <span class="week-update-dot" style="background:${c};box-shadow:0 0 0 1.5px rgba(0,0,0,0.12);"></span>
+      <span style="font-size:12px;color:${c};font-weight:600;">有資料更新</span>
+    </div>` : ''}
+    ${rows}
+  </div>`;
 }
 
 function renderWeeksReadonly(ck, speaker, color) {
   const c = color || '#c0392b';
   const data = getData(ck, speaker);
-  const uid = ck + '_' + speaker;
   return WEEKS.map((w, wi) => {
     const wD = w.tasks.filter((_,ti) => data[taskKey(wi,ti)]).length;
     const allDone = wD === w.tasks.length;
+    const hasUpd = _updatedPairs.has(`${ck}\t${speaker}\tweek_${wi}`);
     const rows = w.tasks.map((t, ti) => {
       const checked = !!data[taskKey(wi,ti)];
       const note = data[noteKey(wi,ti)] || '';
@@ -1042,14 +1051,30 @@ function renderWeeksReadonly(ck, speaker, color) {
       </div>`;
     }).join('');
     return `<div style="margin-bottom:6px;border:1px solid #f0f0f0;border-radius:8px;overflow:hidden;">
-      <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'':'none'"
+      <div onclick="toggleReadonlyWeek(this,'${ck}','${speaker}',${wi})"
         style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;cursor:pointer;background:${allDone?c+'18':'#fafafa'};">
         <span style="font-size:13px;font-weight:bold;color:${allDone?c:'#555'};">${w.label}｜${w.theme}</span>
-        <span style="font-size:12px;padding:2px 8px;border-radius:10px;background:${allDone?c:'#eee'};color:${allDone?'white':'#888'};">${wD}/${w.tasks.length}</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          ${hasUpd ? `<span id="rdotWk_${wi}" class="week-update-dot" style="background:${c};box-shadow:0 0 0 1.5px rgba(0,0,0,0.12);"></span>` : ''}
+          <span style="font-size:12px;padding:2px 8px;border-radius:10px;background:${allDone?c:'#eee'};color:${allDone?'white':'#888'};">${wD}/${w.tasks.length}</span>
+        </div>
       </div>
       <div style="display:none;padding:6px 12px 8px;">${rows}</div>
     </div>`;
   }).join('');
+}
+
+function toggleReadonlyWeek(el, ck, speaker, wi) {
+  const body = el.nextElementSibling;
+  body.style.display = body.style.display === 'none' ? '' : 'none';
+  if (body.style.display !== 'none') {
+    const dotKey = `${ck}\t${speaker}\tweek_${wi}`;
+    if (_updatedPairs.has(dotKey)) {
+      _updatedPairs.delete(dotKey);
+      const dot = document.getElementById(`rdotWk_${wi}`);
+      if (dot) dot.remove();
+    }
+  }
 }
 
 // ===== CONSULTANT OVERVIEW =====
