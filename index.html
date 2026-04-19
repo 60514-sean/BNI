@@ -2050,10 +2050,14 @@ function buildGroupReminderText(consultant, pairs) {
   const givenName = consultant && consultant.length >= 2 ? consultant.slice(-2) : consultant;
   const lines = [];
   lines.push(`☀️ ${givenName} 早安~`);
-  if (pairs.length === 1) {
-    lines.push(`這週幫你整理 ${speakerGivenName(pairs[0].speaker)} 的進度，提供給你方便追蹤~`);
-  } else {
-    lines.push(`這週幫你整理講者的進度，提供給你方便追蹤~`);
+  const allDoneCheck = pairs.every(p => getPct(p) === 100);
+  const allWeek0 = !allDoneCheck && pairs.every(p => getPresentationInfo(p.presentationTime).currentWeekIdx === 0);
+  if (!allWeek0) {
+    if (pairs.length === 1) {
+      lines.push(`這週幫你整理 ${speakerGivenName(pairs[0].speaker)} 的進度，提供給你方便追蹤~`);
+    } else {
+      lines.push(`這週幫你整理講者的進度，提供給你方便追蹤~`);
+    }
   }
   lines.push('');
 
