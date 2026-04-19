@@ -140,7 +140,7 @@
     aspect-ratio: 1; display: flex; flex-direction: column; justify-content: space-between;
     border: 1px solid #f0f0f0; position: relative;
   }
-  .update-dot { position:absolute;top:8px;right:8px;width:10px;height:10px;border-radius:50%;pointer-events:none; }
+  .update-dot { position:absolute;top:8px;right:8px;width:11px;height:11px;border-radius:50%;pointer-events:none;z-index:2; }
   .admin-sq-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.12); transform: translateY(-2px); }
   .admin-sq-bar { height: 4px; border-radius: 2px; background: #eee; margin-top: 8px; }
   .admin-sq-bar-fill { height: 4px; border-radius: 2px; transition: width 0.3s; }
@@ -576,17 +576,23 @@ let _updatedPairs = new Set();
 async function doRefresh() {
   showLoader(true, '更新中...');
   const oldCache = JSON.parse(JSON.stringify(cache));
-  _bgRefreshing = false;
-  await _bgRefresh();
-  // 比對哪些配對有資料變動
   _updatedPairs = new Set();
-  const cfg = getConfig();
-  (cfg.pairs || []).forEach(p => {
-    const key = progressKey(p.consultant, p.speaker);
-    if (JSON.stringify(oldCache[key] || {}) !== JSON.stringify(cache[key] || {})) {
-      _updatedPairs.add(`${p.consultant}\t${p.speaker}`);
+  try {
+    const res = await fetch(API_URL);
+    const json = await res.json();
+    if (json?.data) {
+      const newData = json.data;
+      const pairs = (oldCache['__config__'] || cache['__config__'] || {}).pairs || [];
+      pairs.forEach(p => {
+        const key = progressKey(p.consultant, p.speaker);
+        if (JSON.stringify(oldCache[key] || {}) !== JSON.stringify(newData[key] || {})) {
+          _updatedPairs.add(`${p.consultant}\t${p.speaker}`);
+        }
+      });
+      cache = newData;
+      _lsSave();
     }
-  });
+  } catch {}
   showLoader(false);
   renderApp();
   showToast(_updatedPairs.size ? `資料已更新（${_updatedPairs.size} 筆有變動）` : '資料已是最新');
