@@ -1107,9 +1107,9 @@ function renderConsultant(ck, speaker, canEdit) {
     <div id="tabTracking">
       ${hasSlides(act) ? `
         <div style="display:flex;gap:0;border-bottom:2px solid #f0f0f0;margin-bottom:12px;">
-          <button id="tabBtn_progress" onclick="switchSpeakerTab('progress')"
+          <button id="tabBtn_progress" data-color="${color}" onclick="switchSpeakerTab('progress')"
             style="padding:8px 16px;border:none;background:none;font-size:13px;cursor:pointer;font-weight:bold;color:${color};border-bottom:2px solid ${color};margin-bottom:-2px;">進度</button>
-          <button id="tabBtn_slides" onclick="switchSpeakerTab('slides')"
+          <button id="tabBtn_slides" data-color="${color}" onclick="switchSpeakerTab('slides')"
             style="padding:8px 16px;border:none;background:none;font-size:13px;cursor:pointer;color:#aaa;border-bottom:2px solid transparent;margin-bottom:-2px;">簡報內容</button>
         </div>
         <div id="tabSlides" style="display:none;">${renderSlidesTab(ck, speaker, pair, true)}</div>
@@ -1277,6 +1277,16 @@ function switchSpeakerTab(tab) {
   if (tc) tc.style.display = tab === 'cases' ? '' : 'none';
   document.querySelectorAll('.speaker-tab-btn').forEach(b => {
     b.classList.toggle('active', b.id === 'tabBtn_' + tab);
+  });
+  // 更新 inline-style 內層分頁按鈕（進度/簡報內容）
+  ['progress', 'slides'].forEach(t => {
+    const btn = document.getElementById('tabBtn_' + t);
+    if (!btn || btn.classList.contains('speaker-tab-btn')) return;
+    const active = t === tab;
+    const color = btn.dataset.color || '#c0392b';
+    btn.style.fontWeight = active ? 'bold' : 'normal';
+    btn.style.color = active ? color : '#aaa';
+    btn.style.borderBottom = active ? `2px solid ${color}` : '2px solid transparent';
   });
   if (tab === 'guide') logAction('view_guide');
   if (tab === 'cases') logAction('view_cases');
