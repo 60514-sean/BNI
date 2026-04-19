@@ -215,6 +215,17 @@
   </div>
 </div>
 
+<!-- USAGE MODAL -->
+<div class="detail-modal" id="usageModal" onclick="if(event.target===this)closeUsageModal()">
+  <div class="detail-modal-box">
+    <div class="detail-modal-head" style="background:#c0392b;">
+      <span style="font-size:16px;font-weight:700;color:white;">本月使用率</span>
+      <button class="modal-close-btn" onclick="closeUsageModal()" style="background:rgba(255,255,255,0.25);color:white;">✕</button>
+    </div>
+    <div class="detail-modal-body" id="usageModalBody"></div>
+  </div>
+</div>
+
 <!-- ADMIN DETAIL MODAL -->
 <div class="detail-modal" id="adminDetailModal" onclick="if(event.target===this)closeAdminModal()">
   <div class="detail-modal-box">
@@ -579,34 +590,31 @@ function renderAdmin() {
   });
   html += '</div>';
   document.getElementById('mainContent').innerHTML =
-    `<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
-       <button class="btn btn-sm" onclick="showReminders()" style="flex-shrink:0;">追蹤提醒</button>
-       <div style="display:flex;align-items:center;gap:8px;background:#fafafa;border:1px solid #f0f0f0;border-radius:10px;padding:6px 12px;overflow-x:auto;flex:1;min-width:0;">
-         <span style="font-size:10px;font-weight:700;color:#bbb;white-space:nowrap;margin-right:4px;">本月使用率</span>
-         <div id="usageRatePanel" style="display:flex;gap:8px;align-items:center;">
-           <div style="font-size:11px;color:#bbb;">載入中...</div>
-         </div>
-       </div>
+    `<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px;">
+       <button class="btn btn-sm" onclick="showReminders()">追蹤提醒</button>
+       <button class="btn btn-sm" onclick="showUsageModal()">使用率</button>
      </div>` + html;
-  fetchAndRenderUsage();
 }
 
 function svgCircle(count, max, color) {
-  const r = 15, cx = 19, cy = 19, sw = 4;
+  const r = 22, cx = 28, cy = 28, sw = 5;
   const circ = 2 * Math.PI * r;
   const fill = Math.min(count / max, 1) * circ;
-  return `<svg width="38" height="38" viewBox="0 0 38 38">
+  return `<svg width="56" height="56" viewBox="0 0 56 56">
     <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#ebebeb" stroke-width="${sw}"/>
     <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${sw}"
       stroke-dasharray="${fill.toFixed(1)} ${circ.toFixed(1)}"
       stroke-linecap="round" transform="rotate(-90 ${cx} ${cy})"/>
-    <text x="${cx}" y="${cy + 4}" text-anchor="middle" font-size="10" font-weight="800" fill="${color}">${count}</text>
+    <text x="${cx}" y="${cy + 5}" text-anchor="middle" font-size="13" font-weight="800" fill="${color}">${count}</text>
   </svg>`;
 }
 
-async function fetchAndRenderUsage() {
-  const panel = document.getElementById('usageRatePanel');
-  if (!panel) return;
+async function showUsageModal() {
+  const body = document.getElementById('usageModalBody');
+  body.innerHTML = '<div style="text-align:center;padding:24px;color:#aaa;">載入中...</div>';
+  document.getElementById('usageModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
   try {
     const res = await fetch(`${API_URL}?action=getLogs`);
     const json = await res.json();
@@ -620,19 +628,36 @@ async function fetchAndRenderUsage() {
       ...speakers.map(n    => ({ name: n, label: '講者', count: logMap[n] || 0 }))
     ];
 
-    if (all.length === 0) { panel.innerHTML = '<div style="font-size:11px;color:#bbb;">無配對資料</div>'; return; }
+    if (all.length === 0) { body.innerHTML = '<div style="padding:24px;color:#aaa;text-align:center;">無配對資料</div>'; return; }
 
     const MAX = 8;
-    panel.innerHTML = all.map(d => {
-      const color = d.count === 0 ? '#e74c3c' : d.count <= 2 ? '#f39c12' : '#27ae60';
-      return `<div style="text-align:center;flex-shrink:0;">
-        ${svgCircle(d.count, MAX, color)}
-        <div style="font-size:9px;color:#555;margin-top:1px;max-width:38px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${d.name}</div>
-      </div>`;
-    }).join('');
+    const groups = [
+      { label: '顧問', items: all.filter(d => d.label === '顧問') },
+      { label: '講者', items: all.filter(d => d.label === '講者') }
+    ];
+
+    body.innerHTML = groups.filter(g => g.items.length).map(g => `
+      <div style="margin-bottom:20px;">
+        <div style="font-size:12px;font-weight:700;color:#aaa;margin-bottom:10px;">${g.label}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:14px;">
+          ${g.items.map(d => {
+            const color = d.count === 0 ? '#e74c3c' : d.count <= 2 ? '#f39c12' : '#27ae60';
+            return `<div style="text-align:center;">
+              ${svgCircle(d.count, MAX, color)}
+              <div style="font-size:11px;color:#333;margin-top:4px;max-width:52px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${d.name}</div>
+              <div style="font-size:10px;color:#aaa;">${d.count} 次</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`).join('');
   } catch {
-    panel.innerHTML = '<div style="font-size:11px;color:#bbb;">無法載入</div>';
+    body.innerHTML = '<div style="padding:24px;color:#e74c3c;text-align:center;">載入失敗，請稍後再試</div>';
   }
+}
+
+function closeUsageModal() {
+  document.getElementById('usageModal').classList.remove('open');
+  document.body.style.overflow = '';
 }
 
 function openAdminModal(pi) {
