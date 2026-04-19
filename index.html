@@ -2074,7 +2074,7 @@ function buildGroupReminderText(consultant, pairs) {
       if (pct === 100) {
         lines.push(`感謝你認真輔導，${speakerGivenName(p.speaker)} 有你真好～之前的進度都完成了！`);
       } else if (currentWeekIdx === 0) {
-        lines.push(`這周 ${speakerGivenName(p.speaker)} 的進度再麻煩妳了~`);
+        lines.push(`這周 ${speakerGivenName(p.speaker)} 的進度再麻煩您了~`);
       } else {
         if (isSimpleType(act)) {
           const cnt = SIMPLE_TASKS.filter((_, ti) => !data[simpleTaskKey(ti)]).length;
