@@ -2063,8 +2063,13 @@ function buildGroupReminderText(consultant, pairs) {
   const lines = [];
   lines.push(`☀️${givenName}早安~`);
 
+  // 分組：上週進度全完成 vs 尚有未完成
+  const praiseGroup = pairs.filter(p => isPrevWeeksDone(p));
+  const incompleteGroup = pairs.filter(p => !isPrevWeeksDone(p));
+
   const allWeek0 = pairs.every(p => getPresentationInfo(p.presentationTime).currentWeekIdx === 0);
-  if (!allWeek0) {
+  const allPraised = incompleteGroup.length === 0;
+  if (!allWeek0 && !allPraised) {
     if (pairs.length === 1) {
       lines.push(`這週幫你整理${speakerGivenName(pairs[0].speaker)}的進度，提供給你方便追蹤~`);
     } else {
@@ -2072,10 +2077,6 @@ function buildGroupReminderText(consultant, pairs) {
     }
     lines.push('');
   }
-
-  // 分組：上週進度全完成 vs 尚有未完成
-  const praiseGroup = pairs.filter(p => isPrevWeeksDone(p));
-  const incompleteGroup = pairs.filter(p => !isPrevWeeksDone(p));
 
   if (praiseGroup.length > 0) {
     const names = praiseGroup.map(p => speakerGivenName(p.speaker)).join('、');
