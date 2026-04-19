@@ -739,6 +739,16 @@ async function showUsageModal() {
             const color = usageColor(avg);
             const last = fmtLastTime(d.lastTime);
             const peak = fmtPeakHour(d.peakHour);
+            const ev = d.events || {};
+            const evTags = [
+              ev.task_check  ? `勾選${ev.task_check}`   : '',
+              ev.note_save   ? `備註${ev.note_save}`    : '',
+              ev.save_all    ? `儲存${ev.save_all}`     : '',
+              ev.week_open   ? `週次${ev.week_open}`    : '',
+              ev.view_guide  ? `攻略${ev.view_guide}`   : '',
+              ev.view_cases  ? `案例${ev.view_cases}`   : '',
+              ev.view_case_detail ? `詳情${ev.view_case_detail}` : '',
+            ].filter(Boolean).join('・');
             return `<div style="text-align:center;width:64px;">
               ${svgCircle(avg, MAX, color)}
               <div style="font-size:11px;color:#333;margin-top:4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${d.name}</div>
@@ -746,6 +756,7 @@ async function showUsageModal() {
               <div style="font-size:9px;color:#bbb;">${avg} 次/週</div>
               ${last ? `<div style="font-size:9px;color:#aaa;margin-top:3px;">${last}</div>` : ''}
               ${peak ? `<div style="font-size:9px;color:#bbb;">${peak}</div>` : ''}
+              ${evTags ? `<div style="font-size:9px;color:#ccc;margin-top:2px;white-space:normal;line-height:1.5;">${evTags}</div>` : ''}
             </div>`;
           }).join('')}
         </div>
