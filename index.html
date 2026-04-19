@@ -679,14 +679,14 @@ function svgCircle(count, max, color, label) {
 }
 
 function usageActivityLabel(avg) {
-  if (avg <= 0.2) return '危險';
-  if (avg <= 0.5) return '一般';
+  if (avg < 6) return '危險';
+  if (avg <= 12) return '一般';
   return '活躍';
 }
 
-const USAGE_MAX = 1;
-const usageColor = avg => avg === 0 ? '#e74c3c' : avg <= 0.2 ? '#e67e22' : avg <= 0.5 ? '#f39c12' : '#27ae60';
-const usageLabel = avg => avg === 0 ? '未使用' : avg <= 0.2 ? '低' : avg <= 0.5 ? '中' : '高';
+const USAGE_MAX = 12;
+const usageColor = avg => avg < 6 ? '#e74c3c' : avg <= 12 ? '#f39c12' : '#27ae60';
+const usageLabel = avg => avg < 6 ? '危險' : avg <= 12 ? '一般' : '活躍';
 
 function calcDailyAvg(d) {
   const ts = d.timestamps || [];
