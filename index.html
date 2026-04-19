@@ -733,9 +733,25 @@ async function showUsageModal() {
 
     const consultants = [...new Set(_adminPairs.map(p => p.consultant).filter(Boolean))];
     const speakers    = [...new Set(_adminPairs.map(p => p.speaker).filter(Boolean))];
+
+    function speakerInWindow(name) {
+      const pair = _adminPairs.find(p => p.speaker === name);
+      if (!pair?.presentationTime) return false;
+      const parts = pair.presentationTime.split('/');
+      if (parts.length < 3) return false;
+      const presDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      const today = new Date(); today.setHours(0,0,0,0);
+      const presMonday = new Date(presDate);
+      presMonday.setDate(presDate.getDate() - ((presDate.getDay() + 6) % 7));
+      const todayMonday = new Date(today);
+      todayMonday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+      const weeksDiff = Math.round((presMonday - todayMonday) / (7 * 864e5));
+      return weeksDiff <= 5; // 倒數5週內或已過
+    }
+
     _usageAllData = [
       ...consultants.map(n => { const d = logMap[n] || {}; return { name: n, label: '顧問', ...d }; }),
-      ...speakers.map(n    => { const d = logMap[n] || {}; return { name: n, label: '講者', ...d }; })
+      ...speakers.filter(speakerInWindow).map(n => { const d = logMap[n] || {}; return { name: n, label: '講者', ...d }; })
     ];
 
     if (_usageAllData.length === 0) {
