@@ -1519,13 +1519,19 @@ function getPresentationInfo(presentationTime) {
   const presDate = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
   const today = new Date(); today.setHours(0,0,0,0); presDate.setHours(0,0,0,0);
   const diffDays = Math.round((presDate - today) / (1000*60*60*24));
+  // 依日曆週（週一起、週日終）計算週次差
+  const presWeekStart = new Date(presDate);
+  presWeekStart.setDate(presDate.getDate() - ((presDate.getDay() + 6) % 7));
+  const todayWeekStart = new Date(today);
+  todayWeekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+  const weeksDiff = Math.round((presWeekStart - todayWeekStart) / (1000*60*60*24*7));
   let weekIdx = -1;
-  if (diffDays <= 7) weekIdx = 5;        // 當週（含簡報日前7天）
-  else if (diffDays <= 14) weekIdx = 4;  // 倒數1週
-  else if (diffDays <= 21) weekIdx = 3;  // 倒數2週
-  else if (diffDays <= 28) weekIdx = 2;  // 倒數3週
-  else if (diffDays <= 35) weekIdx = 1;  // 倒數4週
-  else if (diffDays <= 42) weekIdx = 0;  // 倒數5週
+  if (weeksDiff === 0) weekIdx = 5;      // 當週
+  else if (weeksDiff === 1) weekIdx = 4; // 倒數1週
+  else if (weeksDiff === 2) weekIdx = 3; // 倒數2週
+  else if (weeksDiff === 3) weekIdx = 2; // 倒數3週
+  else if (weeksDiff === 4) weekIdx = 1; // 倒數4週
+  else if (weeksDiff === 5) weekIdx = 0; // 倒數5週
   return { countdown: diffDays, currentWeekIdx: weekIdx };
 }
 
