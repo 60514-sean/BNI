@@ -577,6 +577,18 @@ let _updatedPairs = new Set();
 let _viewingCk = null;
 let _viewingSpeaker = null;
 
+function _pairHasAnyUpdate(ck, speaker) {
+  const prefix = `${ck}\t${speaker}\t`;
+  for (const k of _updatedPairs) { if (k.startsWith(prefix)) return true; }
+  return false;
+}
+function _clearPairDotIfDone(ck, speaker) {
+  if (_pairHasAnyUpdate(ck, speaker)) return;
+  _updatedPairs.delete(`${ck}\t${speaker}`);
+  const pi = _adminPairs.findIndex(p => p.consultant === ck && p.speaker === speaker);
+  if (pi >= 0) { const d = document.getElementById(`updDot_${pi}`); if (d) d.remove(); }
+}
+
 async function doRefresh() {
   showLoader(true, '更新中...');
   const oldCache = JSON.parse(JSON.stringify(cache));
@@ -946,11 +958,6 @@ function openAdminModal(pi) {
   const pairId = `${p.consultant}\t${p.speaker}`;
   _viewingCk = p.consultant;
   _viewingSpeaker = p.speaker;
-  if (_updatedPairs.has(pairId)) {
-    _updatedPairs.delete(pairId);
-    const dot = document.getElementById(`updDot_${pi}`);
-    if (dot) dot.remove();
-  }
   const act = p.activityType || '主題簡報';
   const dispColor = ACTIVITY_COLORS[act] || '#c0392b';
   const data = getData(p.consultant, p.speaker);
@@ -965,12 +972,14 @@ function openAdminModal(pi) {
   const detail = isSimpleType(act)
     ? renderSimpleReadonly(p.consultant, p.speaker, dispColor)
     : renderWeeksReadonly(p.consultant, p.speaker, dispColor);
+  const _admSlideUpd = _updatedPairs.has(`${pairId}\tslides`);
+  const _admSlideDot = _admSlideUpd ? `<span id="adtSlidesDot_${pi}" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dispColor};margin-left:5px;vertical-align:middle;animation:dotPulse 1.4s ease-in-out infinite;"></span>` : '';
   const detailInner = hasSlides(act)
     ? `<div style="display:flex;gap:0;border-bottom:2px solid #f0f0f0;margin-bottom:14px;">
          <button id="adt_${pi}_p" onclick="adminTab(${pi},'p','${dispColor}')"
            style="padding:8px 16px;border:none;background:none;font-size:13px;cursor:pointer;font-weight:bold;color:${dispColor};border-bottom:2px solid ${dispColor};margin-bottom:-2px;">進度</button>
          <button id="adt_${pi}_s" onclick="adminTab(${pi},'s','${dispColor}')"
-           style="padding:8px 16px;border:none;background:none;font-size:13px;cursor:pointer;color:#aaa;border-bottom:2px solid transparent;margin-bottom:-2px;">簡報內容</button>
+           style="padding:8px 16px;border:none;background:none;font-size:13px;cursor:pointer;color:#aaa;border-bottom:2px solid transparent;margin-bottom:-2px;">簡報內容${_admSlideDot}</button>
        </div>
        <div id="adp_${pi}_p">${detail}</div>
        <div id="adp_${pi}_s" style="display:none;">${renderSlidesTab(p.consultant, p.speaker, p, false)}</div>`
@@ -1014,6 +1023,22 @@ function adminTab(pi, tab, color) {
     btn.style.borderBottom = active ? `2px solid ${color}` : '2px solid transparent';
     btn.style.marginBottom = '-2px';
   });
+  if (tab === 's') {
+    const p = _adminPairs[pi];
+    if (!p) return;
+    const ck = p.consultant, speaker = p.speaker;
+    const pairId = `${ck}\t${speaker}`;
+    // 清除 slides-level dot
+    _updatedPairs.delete(`${pairId}\tslides`);
+    const sDot = document.getElementById(`adtSlidesDot_${pi}`);
+    if (sDot) sDot.remove();
+    // 唯讀模式：全部 field 一次可見，全部清除
+    for (const k of [..._updatedPairs]) {
+      if (k.startsWith(`${pairId}\tslide_`)) _updatedPairs.delete(k);
+    }
+    document.querySelectorAll('[id^="slideDot_"]').forEach(d => d.remove());
+    _clearPairDotIfDone(ck, speaker);
+  }
 }
 
 function renderSimpleReadonly(ck, speaker, color) {
@@ -1081,6 +1106,7 @@ function toggleReadonlyWeek(el, ck, speaker, wi) {
       _updatedPairs.delete(dotKey);
       const dot = document.getElementById(`rdotWk_${wi}`);
       if (dot) dot.remove();
+      _clearPairDotIfDone(ck, speaker);
     }
   }
 }
@@ -1130,7 +1156,6 @@ function renderConsultantOverview(ck) {
 
 // ===== CONSULTANT DETAIL =====
 function renderConsultant(ck, speaker, canEdit) {
-  _updatedPairs.delete(`${ck}\t${speaker}`);
   _viewingCk = ck;
   _viewingSpeaker = speaker;
   const cfg = getConfig();
@@ -1288,6 +1313,7 @@ function toggleWeek(id) {
         _updatedPairs.delete(dotKey);
         const dot = document.getElementById(dotId);
         if (dot) dot.remove();
+        _clearPairDotIfDone(_viewingCk, _viewingSpeaker);
       }
     }
   }
@@ -1392,6 +1418,7 @@ function switchSpeakerTab(tab) {
       _updatedPairs.delete(sKey);
       const dot = document.getElementById('slidesDot');
       if (dot) dot.remove();
+      _clearPairDotIfDone(_viewingCk, _viewingSpeaker);
     }
   }
   if (tab === 'guide') logAction('view_guide');
@@ -2471,6 +2498,7 @@ function clearSlideDot(ck, speaker, i, keysStr) {
   });
   const dot = document.getElementById(`slideDot_${i}`);
   if (dot) dot.remove();
+  _clearPairDotIfDone(ck, speaker);
 }
 
 // ===== REMINDERS =====
