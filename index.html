@@ -579,28 +579,28 @@ function renderAdmin() {
   });
   html += '</div>';
   document.getElementById('mainContent').innerHTML =
-    `<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;gap:12px;">
-       <div style="flex:1;">
-         <div style="font-size:11px;font-weight:700;color:#aaa;letter-spacing:0.5px;margin-bottom:8px;">本月使用率</div>
-         <div id="usageRatePanel" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;">
-           <div style="font-size:11px;color:#bbb;padding-top:8px;">載入中...</div>
+    `<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+       <button class="btn btn-sm" onclick="showReminders()" style="flex-shrink:0;">追蹤提醒</button>
+       <div style="display:flex;align-items:center;gap:8px;background:#fafafa;border:1px solid #f0f0f0;border-radius:10px;padding:6px 12px;overflow-x:auto;flex:1;min-width:0;">
+         <span style="font-size:10px;font-weight:700;color:#bbb;white-space:nowrap;margin-right:4px;">本月使用率</span>
+         <div id="usageRatePanel" style="display:flex;gap:8px;align-items:center;">
+           <div style="font-size:11px;color:#bbb;">載入中...</div>
          </div>
        </div>
-       <button class="btn btn-sm" onclick="showReminders()" style="flex-shrink:0;margin-top:4px;">追蹤提醒</button>
      </div>` + html;
   fetchAndRenderUsage();
 }
 
 function svgCircle(count, max, color) {
-  const r = 20, cx = 26, cy = 26, sw = 5;
+  const r = 15, cx = 19, cy = 19, sw = 4;
   const circ = 2 * Math.PI * r;
   const fill = Math.min(count / max, 1) * circ;
-  return `<svg width="52" height="52" viewBox="0 0 52 52">
+  return `<svg width="38" height="38" viewBox="0 0 38 38">
     <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#ebebeb" stroke-width="${sw}"/>
     <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${sw}"
       stroke-dasharray="${fill.toFixed(1)} ${circ.toFixed(1)}"
       stroke-linecap="round" transform="rotate(-90 ${cx} ${cy})"/>
-    <text x="${cx}" y="${cy + 5}" text-anchor="middle" font-size="13" font-weight="800" fill="${color}">${count}</text>
+    <text x="${cx}" y="${cy + 4}" text-anchor="middle" font-size="10" font-weight="800" fill="${color}">${count}</text>
   </svg>`;
 }
 
@@ -625,10 +625,9 @@ async function fetchAndRenderUsage() {
     const MAX = 8;
     panel.innerHTML = all.map(d => {
       const color = d.count === 0 ? '#e74c3c' : d.count <= 2 ? '#f39c12' : '#27ae60';
-      return `<div style="text-align:center;">
+      return `<div style="text-align:center;flex-shrink:0;">
         ${svgCircle(d.count, MAX, color)}
-        <div style="font-size:10px;color:#444;margin-top:2px;max-width:52px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${d.name}</div>
-        <div style="font-size:9px;color:#aaa;">${d.label}</div>
+        <div style="font-size:9px;color:#555;margin-top:1px;max-width:38px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${d.name}</div>
       </div>`;
     }).join('');
   } catch {
