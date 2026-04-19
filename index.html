@@ -1172,7 +1172,7 @@ function showCasesSettings() {
       ? group.map(({ cs, i }) => {
           const imgCount = caseImgList(cs).length;
           return `
-          <div style="border:1px solid #eee;border-radius:8px;padding:12px;margin-bottom:8px;">
+          <div id="caseItem_${i}" style="border:1px solid #eee;border-radius:8px;padding:12px;margin-bottom:8px;">
             <div style="display:flex;gap:8px;margin-bottom:8px;">
               <div style="flex:1;min-width:0;">
                 <input id="editTopic_${i}" value="${(cs.topic||'').replace(/"/g,'&quot;')}" placeholder="簡報主題" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-weight:600;outline:none;margin-bottom:4px;" />
@@ -1309,12 +1309,21 @@ async function addCase() {
     } catch(e) { showToast('網路失敗：' + e.message); return; }
   }
   const cases = getCases();
+  const newIdx = cases.length;
   cases.push({ type, speaker, topic, note, themeDayName, date, images });
   cache['__cases__'] = cases;
   saveCases(cases);
   showToast(`案例已新增！共 ${images.length} 張圖`);
   const el = document.getElementById('casesSection');
-  if (el) el.innerHTML = showCasesSettings();
+  if (el) {
+    el.innerHTML = showCasesSettings();
+    const gid = 'caseGroup_' + type.replace(/[^a-z0-9]/gi,'');
+    const grp = document.getElementById(gid);
+    const grpArrow = document.getElementById(gid + '_arrow');
+    if (grp) { grp.style.display = ''; if (grpArrow) grpArrow.textContent = '▲'; }
+    const newItem = document.getElementById(`caseItem_${newIdx}`);
+    if (newItem) { newItem.style.border = '2px solid #c0392b'; newItem.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  }
 }
 
 function removeCase(i) {
@@ -1689,6 +1698,8 @@ function addConsultant() {
   const sec = document.getElementById('consultantSection');
   const arrow = document.getElementById('consultantSectionArrow');
   if (sec) { sec.style.display = ''; if (arrow) arrow.textContent = '▲'; }
+  const newRow = document.getElementById(`consultantRow_${cfg.consultants.length - 1}`);
+  if (newRow) { newRow.style.border = '2px solid #c0392b'; newRow.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
 }
 
 function removeConsultant(i) {
@@ -1717,7 +1728,7 @@ function showSettings() {
             ? `<span style="font-size:11px;opacity:0.75;margin-left:4px;">${p.presentationCount}</span>` : '';
           return `<span style="padding:3px 10px;border-radius:12px;font-size:12px;background:${color}18;color:${color};border:1px solid ${color}40;">${p.speaker}${cntBadge}</span>`;
         }).join('');
-        return `<div style="border:1px solid #eee;border-radius:8px;padding:12px;margin-bottom:8px;">
+        return `<div id="consultantRow_${i}" style="border:1px solid #eee;border-radius:8px;padding:12px;margin-bottom:8px;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:${myPairs.length?'8px':'0'};">
             <span style="flex:1;font-size:14px;font-weight:bold;">${c}</span>
             <span style="font-size:12px;color:#888;background:#f5f5f5;padding:2px 10px;border-radius:12px;">共 ${myPairs.length} 位</span>
@@ -1866,6 +1877,8 @@ function addPair() {
   const sec = document.getElementById('pairsSection');
   const arrow = document.getElementById('pairsSectionArrow');
   if (sec) { sec.style.display = ''; if (arrow) arrow.textContent = '▲'; }
+  const newRow = document.getElementById(`pairRow_${cfg.pairs.length - 1}`);
+  if (newRow) { newRow.style.border = '2px solid #c0392b'; newRow.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
 }
 
 function removePair(i) {
