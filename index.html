@@ -579,9 +579,61 @@ function renderAdmin() {
   });
   html += '</div>';
   document.getElementById('mainContent').innerHTML =
-    `<div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
-       <button class="btn btn-sm" onclick="showReminders()">追蹤提醒</button>
+    `<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;gap:12px;">
+       <div style="flex:1;">
+         <div style="font-size:11px;font-weight:700;color:#aaa;letter-spacing:0.5px;margin-bottom:8px;">本月使用率</div>
+         <div id="usageRatePanel" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;">
+           <div style="font-size:11px;color:#bbb;padding-top:8px;">載入中...</div>
+         </div>
+       </div>
+       <button class="btn btn-sm" onclick="showReminders()" style="flex-shrink:0;margin-top:4px;">追蹤提醒</button>
      </div>` + html;
+  fetchAndRenderUsage();
+}
+
+function svgCircle(count, max, color) {
+  const r = 20, cx = 26, cy = 26, sw = 5;
+  const circ = 2 * Math.PI * r;
+  const fill = Math.min(count / max, 1) * circ;
+  return `<svg width="52" height="52" viewBox="0 0 52 52">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#ebebeb" stroke-width="${sw}"/>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${sw}"
+      stroke-dasharray="${fill.toFixed(1)} ${circ.toFixed(1)}"
+      stroke-linecap="round" transform="rotate(-90 ${cx} ${cy})"/>
+    <text x="${cx}" y="${cy + 5}" text-anchor="middle" font-size="13" font-weight="800" fill="${color}">${count}</text>
+  </svg>`;
+}
+
+async function fetchAndRenderUsage() {
+  const panel = document.getElementById('usageRatePanel');
+  if (!panel) return;
+  try {
+    const res = await fetch(`${API_URL}?action=getLogs`);
+    const json = await res.json();
+    const logMap = {};
+    (json.data || []).forEach(d => { logMap[d.name] = d.count; });
+
+    const consultants = [...new Set(_adminPairs.map(p => p.consultant).filter(Boolean))];
+    const speakers    = [...new Set(_adminPairs.map(p => p.speaker).filter(Boolean))];
+    const all = [
+      ...consultants.map(n => ({ name: n, label: '顧問', count: logMap[n] || 0 })),
+      ...speakers.map(n    => ({ name: n, label: '講者', count: logMap[n] || 0 }))
+    ];
+
+    if (all.length === 0) { panel.innerHTML = '<div style="font-size:11px;color:#bbb;">無配對資料</div>'; return; }
+
+    const MAX = 8;
+    panel.innerHTML = all.map(d => {
+      const color = d.count === 0 ? '#e74c3c' : d.count <= 2 ? '#f39c12' : '#27ae60';
+      return `<div style="text-align:center;">
+        ${svgCircle(d.count, MAX, color)}
+        <div style="font-size:10px;color:#444;margin-top:2px;max-width:52px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${d.name}</div>
+        <div style="font-size:9px;color:#aaa;">${d.label}</div>
+      </div>`;
+    }).join('');
+  } catch {
+    panel.innerHTML = '<div style="font-size:11px;color:#bbb;">無法載入</div>';
+  }
 }
 
 function openAdminModal(pi) {
