@@ -610,9 +610,17 @@ async function doRefresh() {
         }
         // 簡報內容比對
         const sldKey = `slides_${p.consultant}_${p.speaker}`;
-        if (JSON.stringify(oldCache[sldKey] || {}) !== JSON.stringify(newData[sldKey] || {})) {
+        const oldSld = oldCache[sldKey] || {};
+        const newSld = newData[sldKey] || {};
+        if (JSON.stringify(oldSld) !== JSON.stringify(newSld)) {
           _updatedPairs.add(pairId);
           _updatedPairs.add(`${pairId}\tslides`);
+          const allSldKeys = new Set([...Object.keys(oldSld), ...Object.keys(newSld)]);
+          allSldKeys.forEach(k => {
+            if (JSON.stringify(oldSld[k]) !== JSON.stringify(newSld[k])) {
+              _updatedPairs.add(`${pairId}\tslide_${k}`);
+            }
+          });
         }
       });
       cache = newData;
@@ -2409,8 +2417,10 @@ function renderSlidesTab(ck, speaker, pair, canWrite) {
   }
   const data = getSlidesData(ck, speaker);
   const color = ACTIVITY_COLORS[pair.activityType||'主題簡報'] || '#c0392b';
+  const pairId = `${ck}\t${speaker}`;
   const fields = slides.map((s, i) => {
     let rawVal;
+    const fieldKeys = i === 0 ? ['s0', 's1'] : [keys[i]];
     if (i === 0) {
       const v0 = data['s0'] || '';
       const v1 = data['s1'] || '';
@@ -2420,9 +2430,16 @@ function renderSlidesTab(ck, speaker, pair, canWrite) {
     }
     const val = rawVal.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const hintText = s.hint ? ` — ${s.hint}` : '';
+    const hasUpdate = fieldKeys.some(k => _updatedPairs.has(`${pairId}\tslide_${k}`));
+    const dotHtml = hasUpdate
+      ? `<span id="slideDot_${i}" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${color};margin-left:6px;flex-shrink:0;animation:dotPulse 1.4s ease-in-out infinite;vertical-align:middle;"></span>`
+      : '';
+    const clearDotFn = hasUpdate
+      ? `clearSlideDot('${ck}','${speaker}',${i},'${fieldKeys.join(',')}');`
+      : '';
     return `<div style="margin-bottom:14px;">
-      <div style="font-size:13px;font-weight:600;color:${color};margin-bottom:4px;">${i+1}. ${s.title}<span style="font-weight:400;color:#999;font-size:12px;">${hintText}</span></div>
-      <textarea id="slide_${i}" ${canWrite?'':'disabled'} onchange="saveSlide('${ck}','${speaker}','${keys[i]}',this.value)"
+      <div style="font-size:13px;font-weight:600;color:${color};margin-bottom:4px;display:flex;align-items:center;">${i+1}. ${s.title}<span style="font-weight:400;color:#999;font-size:12px;">${hintText}</span>${dotHtml}</div>
+      <textarea id="slide_${i}" ${canWrite?'':'disabled'} onchange="saveSlide('${ck}','${speaker}','${keys[i]}',this.value)" onfocus="${clearDotFn}"
         placeholder="${s.placeholder||''}"
         style="width:100%;border:1px solid #e0e0e0;border-radius:6px;padding:8px 10px;font-size:13px;resize:vertical;min-height:60px;outline:none;font-family:inherit;${canWrite?'':'background:#fafafa;color:#888;'}">${val}</textarea>
     </div>`;
@@ -2446,6 +2463,14 @@ async function saveAllSlides(ck, speaker, keysStr) {
   });
   saveSlidesData(ck, speaker, data);
   showToast('簡報內容已儲存！');
+}
+
+function clearSlideDot(ck, speaker, i, keysStr) {
+  keysStr.split(',').forEach(k => {
+    _updatedPairs.delete(`${ck}\t${speaker}\tslide_${k}`);
+  });
+  const dot = document.getElementById(`slideDot_${i}`);
+  if (dot) dot.remove();
 }
 
 // ===== REMINDERS =====
