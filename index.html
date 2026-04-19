@@ -1903,8 +1903,7 @@ async function saveSettings() {
 
 // ===== SLIDES =====
 const SLIDES_V1 = [
-  { title: '主題名稱（EDM標題）', hint: '18字以內' },
-  { title: '封面', hint: '主題名稱、講者姓名' },
+  { title: '封面', hint: '主題名稱（EDM標題）、講者姓名' },
   { title: '我在做什麼', hint: '' },
   { title: '我為什麼做這個事業', hint: '' },
   { title: '成功案例 1', hint: '' },
@@ -1915,8 +1914,7 @@ const SLIDES_V1 = [
   { title: '記憶口號', hint: '' },
 ];
 const SLIDES_V2 = [
-  { title: '主題名稱（EDM標題）', hint: '18字以內' },
-  { title: '封面', hint: '主題名稱、講者姓名' },
+  { title: '封面', hint: '主題名稱（EDM標題）、講者姓名' },
   { title: '自我介紹 / 我在做什麼', hint: '' },
   { title: '獨特銷售主張', hint: '針對目標客群' },
   { title: '最佳 LCD', hint: '描述 + 案例 + 總結' },
@@ -1927,8 +1925,7 @@ const SLIDES_V2 = [
   { title: '記憶口號', hint: '' },
 ];
 const SLIDES_V3 = [
-  { title: '主題名稱（EDM標題）', hint: '18字以內' },
-  { title: '封面', hint: '主題名稱、講者姓名' },
+  { title: '封面', hint: '主題名稱（EDM標題）、講者姓名' },
   { title: '我在做什麼', hint: '' },
   { title: '簡述自家產業', hint: '' },
   { title: '最佳 LCD', hint: '描述、案例、小總結' },
@@ -1955,32 +1952,42 @@ function renderSlidesTab(ck, speaker, pair, canWrite) {
   }
   const data = getSlidesData(ck, speaker);
   const color = ACTIVITY_COLORS[pair.activityType||'主題簡報'] || '#c0392b';
+  // slide 0 對映 s0（合併舊 s1），slide 1+ 對映 s2, s3...（偏移1）
+  const keys = slides.map((_, i) => i === 0 ? 's0' : `s${i+1}`);
   const fields = slides.map((s, i) => {
-    const val = (data[`s${i}`] || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    let rawVal;
+    if (i === 0) {
+      const v0 = data['s0'] || '';
+      const v1 = data['s1'] || '';
+      rawVal = (v0 && v1) ? v0 + '\n' + v1 : (v0 || v1);
+    } else {
+      rawVal = data[keys[i]] || '';
+    }
+    const val = rawVal.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const hintText = s.hint ? ` — ${s.hint}` : '';
     return `<div style="margin-bottom:14px;">
       <div style="font-size:13px;font-weight:600;color:${color};margin-bottom:4px;">${i+1}. ${s.title}<span style="font-weight:400;color:#999;font-size:12px;">${hintText}</span></div>
-      <textarea id="slide_${i}" ${canWrite?'':'disabled'} onchange="saveSlide('${ck}','${speaker}',${i},this.value)"
+      <textarea id="slide_${i}" ${canWrite?'':'disabled'} onchange="saveSlide('${ck}','${speaker}','${keys[i]}',this.value)"
         style="width:100%;border:1px solid #e0e0e0;border-radius:6px;padding:8px 10px;font-size:13px;resize:vertical;min-height:60px;outline:none;font-family:inherit;${canWrite?'':'background:#fafafa;color:#888;'}">${val}</textarea>
     </div>`;
   }).join('');
   return `<div style="font-size:12px;color:#888;margin-bottom:10px;">架構：${archName}</div>
     ${fields}
-    ${canWrite ? `<div style="padding-bottom:20px;"><button class="btn" style="background:${color}" onclick="saveAllSlides('${ck}','${speaker}',${slides.length})">儲存簡報內容</button></div>` : ''}`;
+    ${canWrite ? `<div style="padding-bottom:20px;"><button class="btn" style="background:${color}" onclick="saveAllSlides('${ck}','${speaker}','${keys.join(',')}')">儲存簡報內容</button></div>` : ''}`;
 }
 
-async function saveSlide(ck, speaker, idx, val) {
+async function saveSlide(ck, speaker, key, val) {
   const data = getSlidesData(ck, speaker);
-  data[`s${idx}`] = val;
+  data[key] = val;
   saveSlidesData(ck, speaker, data);
 }
 
-async function saveAllSlides(ck, speaker, count) {
+async function saveAllSlides(ck, speaker, keysStr) {
   const data = getSlidesData(ck, speaker);
-  for (let i = 0; i < count; i++) {
+  keysStr.split(',').forEach((key, i) => {
     const ta = document.getElementById(`slide_${i}`);
-    if (ta) data[`s${i}`] = ta.value;
-  }
+    if (ta) data[key] = ta.value;
+  });
   saveSlidesData(ck, speaker, data);
   showToast('簡報內容已儲存！');
 }
