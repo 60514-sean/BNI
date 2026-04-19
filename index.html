@@ -140,7 +140,9 @@
     aspect-ratio: 1; display: flex; flex-direction: column; justify-content: space-between;
     border: 1px solid #f0f0f0; position: relative;
   }
-  .update-dot { position:absolute;top:8px;right:8px;width:11px;height:11px;border-radius:50%;pointer-events:none;z-index:2; }
+  @keyframes dotPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.75;transform:scale(1.35)} }
+  .update-dot { position:absolute;top:8px;right:8px;width:11px;height:11px;border-radius:50%;pointer-events:none;z-index:2;animation:dotPulse 1.4s ease-in-out infinite; }
+  .week-update-dot { width:9px;height:9px;border-radius:50%;display:inline-block;flex-shrink:0;animation:dotPulse 1.4s ease-in-out infinite; }
   .admin-sq-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.12); transform: translateY(-2px); }
   .admin-sq-bar { height: 4px; border-radius: 2px; background: #eee; margin-top: 8px; }
   .admin-sq-bar-fill { height: 4px; border-radius: 2px; transition: width 0.3s; }
@@ -1120,7 +1122,7 @@ function renderConsultant(ck, speaker, canEdit) {
     html += `<div style="margin-bottom:16px;"><button class="btn btn-sm btn-outline" onclick="renderConsultantOverview('${ck}')">← 返回</button></div>`;
   }
   const _slidesUpd = _updatedPairs.has(`${ck}\t${speaker}\tslides`);
-  const _slideDot = `<span id="slidesDot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${color};margin-left:5px;vertical-align:middle;"></span>`;
+  const _slideDot = `<span id="slidesDot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-left:5px;vertical-align:middle;animation:dotPulse 1.4s ease-in-out infinite;"></span>`;
   if (!canEdit) {
     html += `<div class="speaker-tabs" style="--tab-color:${color}">
       <button id="tabBtn_progress" class="speaker-tab-btn active" onclick="switchSpeakerTab('progress')">我的進度</button>
@@ -1161,7 +1163,7 @@ function renderConsultant(ck, speaker, canEdit) {
   if (isSimpleType(act)) {
     // 簡化清單
     const _simpleUpd = _updatedPairs.has(`${ck}\t${speaker}\tsimple`);
-    html += `<div class="week-card"><div class="week-header" style="background:${color}" onclick="toggleWeek('simple-body')"><div><h3>進度清單</h3><div class="week-sub">${act}</div></div><div style="display:flex;align-items:center;gap:6px;"><span>${done}/${total}</span>${_simpleUpd ? `<span id="weekDot_simple" style="width:8px;height:8px;border-radius:50%;background:white;display:inline-block;box-shadow:0 0 4px rgba(255,255,255,0.9);flex-shrink:0;"></span>` : ''}</div></div><div class="week-body" id="simple-body">`;
+    html += `<div class="week-card"><div class="week-header" style="background:${color}" onclick="toggleWeek('simple-body')"><div><h3>進度清單</h3><div class="week-sub">${act}</div></div><div style="display:flex;align-items:center;gap:6px;"><span>${done}/${total}</span>${_simpleUpd ? `<span id="weekDot_simple" class="week-update-dot" style="background:white;box-shadow:0 0 5px rgba(255,255,255,0.95);"></span>` : ''}</div></div><div class="week-body" id="simple-body">`;
     html += SIMPLE_TASKS.map((t, ti) => {
       const checked = data[simpleTaskKey(ti)] ? 'checked' : '';
       const note = data[simpleNoteKey(ti)] || '';
@@ -1212,7 +1214,7 @@ function renderConsultant(ck, speaker, canEdit) {
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
             <span id="wcount_${wi}">${wD}/${wT}</span>
-            ${_wkUpd ? `<span id="weekDot_${wi}" style="width:8px;height:8px;border-radius:50%;background:white;display:inline-block;box-shadow:0 0 4px rgba(255,255,255,0.9);flex-shrink:0;"></span>` : ''}
+            ${_wkUpd ? `<span id="weekDot_${wi}" class="week-update-dot" style="background:white;box-shadow:0 0 5px rgba(255,255,255,0.95);"></span>` : ''}
           </div>
         </div>
         <div class="week-body" id="wb_${wi}">${tasks}</div>
