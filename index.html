@@ -263,11 +263,14 @@ function _lsSave() {
   try { localStorage.setItem(LS_KEY, JSON.stringify(cache)); } catch {}
 }
 
-// 背景從 server 取得最新資料
+// 背景從 server 取得最新資料（防止重複同時觸發）
+let _bgRefreshing = false;
 function _bgRefresh() {
+  if (_bgRefreshing) return Promise.resolve();
+  _bgRefreshing = true;
   return fetch(API_URL).then(r => r.json()).then(json => {
     if (json?.data) { cache = json.data; _lsSave(); }
-  }).catch(() => {});
+  }).catch(() => {}).finally(() => { _bgRefreshing = false; });
 }
 
 // 頁面載入時立即開始背景刷新
@@ -596,14 +599,7 @@ function renderAdmin() {
   _adminPairs.forEach((p, pi) => {
     const act = p.activityType || '主題簡報';
     const data = getData(p.consultant, p.speaker);
-    let total, done;
-    if (isSimpleType(act)) {
-      total = SIMPLE_TASKS.length;
-      done = SIMPLE_TASKS.filter((_, ti) => data[simpleTaskKey(ti)]).length;
-    } else {
-      total = WEEKS.reduce((s, w) => s + w.tasks.length, 0);
-      done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
-    }
+    const { total, done } = calcProgress(act, data);
     const pct = total ? Math.round(done / total * 100) : 0;
     const dispColor = ACTIVITY_COLORS[act] || '#c0392b';
     const done100 = pct === 100;
@@ -684,12 +680,6 @@ function svgCircle(count, max, color, label) {
   </svg>`;
 }
 
-function usageActivityLabel(avg) {
-  if (avg < 6) return '危險';
-  if (avg <= 12) return '一般';
-  return '活躍';
-}
-
 const USAGE_MAX = 12;
 const usageColor = avg => avg < 6 ? '#e74c3c' : avg <= 12 ? '#f39c12' : '#27ae60';
 const usageLabel = avg => avg < 6 ? '危險' : avg <= 12 ? '一般' : '活躍';
@@ -765,7 +755,7 @@ async function showUsageModal(forceRefresh) {
     function makeEntry(name, label) {
       const d = logMap[name] || {};
       const avg = calcDailyAvg(d);
-      return { name, label, avg, color: usageColor(avg), actLabel: usageActivityLabel(avg), last: fmtLastTime(d.lastTime), events: d.events || {}, timestamps: d.timestamps || [], lastTime: d.lastTime, peakHour: d.peakHour };
+      return { name, label, avg, color: usageColor(avg), actLabel: usageLabel(avg), last: fmtLastTime(d.lastTime), events: d.events || {}, timestamps: d.timestamps || [], lastTime: d.lastTime, peakHour: d.peakHour };
     }
 
     const consultants = [...consultantSet].map(n => makeEntry(n, '顧問')).sort((a, b) => b.avg - a.avg);
@@ -853,7 +843,7 @@ function renderUsageDetail(idx) {
     <button onclick="renderUsageList()"
       style="background:none;border:none;color:#c0392b;font-size:13px;cursor:pointer;padding:0;margin-bottom:16px;">← 返回</button>
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
-      ${svgCircle(avg, USAGE_MAX, color, usageActivityLabel(avg))}
+      ${svgCircle(avg, USAGE_MAX, color, usageLabel(avg))}
       <div>
         <div style="font-size:18px;font-weight:700;color:#222;">${d.name}</div>
         <div style="font-size:12px;color:#aaa;margin-top:2px;">${d.label}</div>
@@ -889,14 +879,7 @@ function openAdminModal(pi) {
   const act = p.activityType || '主題簡報';
   const dispColor = ACTIVITY_COLORS[act] || '#c0392b';
   const data = getData(p.consultant, p.speaker);
-  let total, done;
-  if (isSimpleType(act)) {
-    total = SIMPLE_TASKS.length;
-    done = SIMPLE_TASKS.filter((_, ti) => data[simpleTaskKey(ti)]).length;
-  } else {
-    total = WEEKS.reduce((s, w) => s + w.tasks.length, 0);
-    done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
-  }
+  const { total, done } = calcProgress(act, data);
   const pct = total ? Math.round(done / total * 100) : 0;
   const dates = [
     isSimpleType(act) && p.submitDate1 ? `${DATE_LABELS[0]}：${p.submitDate1}` : '',
@@ -1017,13 +1000,7 @@ function renderConsultantOverview(ck) {
     const act = p.activityType || '主題簡報';
     const color = ACTIVITY_COLORS[act] || '#c0392b';
     const data = getData(ck, p.speaker);
-    let total, done;
-    if (isSimpleType(act)) {
-      total = SIMPLE_TASKS.length; done = SIMPLE_TASKS.filter((_, ti) => data[simpleTaskKey(ti)]).length;
-    } else {
-      total = WEEKS.reduce((s, w) => s + w.tasks.length, 0);
-      done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
-    }
+    const { total, done } = calcProgress(act, data);
     const pct = total ? Math.round(done / total * 100) : 0;
     const dates = [
       isSimpleType(act) && p.submitDate1 ? `${DATE_LABELS[0]}：${p.submitDate1}` : '',
@@ -1048,7 +1025,7 @@ function renderConsultantOverview(ck) {
       <button id="tabBtn_cases" class="speaker-tab-btn" onclick="switchConsultantTab('cases')">簡報案例</button>
     </div>
     <div id="tabTracking">${cardsHtml}</div>
-    <div id="tabCases" style="display:none;">${renderCasesAllTypes('#c0392b')}</div>`;
+    <div id="tabConsultantCases" style="display:none;">${renderCasesAllTypes('#c0392b')}</div>`;
 }
 
 // ===== CONSULTANT DETAIL =====
@@ -1060,13 +1037,7 @@ function renderConsultant(ck, speaker, canEdit) {
   const color = ACTIVITY_COLORS[act] || '#c0392b';
   const data = getData(ck, speaker);
 
-  let total, done;
-  if (isSimpleType(act)) {
-    total = SIMPLE_TASKS.length; done = SIMPLE_TASKS.filter((_, ti) => data[simpleTaskKey(ti)]).length;
-  } else {
-    total = WEEKS.reduce((s, w) => s + w.tasks.length, 0);
-    done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
-  }
+  const { total, done } = calcProgress(act, data);
   const pct = total ? Math.round(done / total * 100) : 0;
   const progressColor = color;
 
@@ -1103,7 +1074,7 @@ function renderConsultant(ck, speaker, canEdit) {
       <button id="tabBtn_tracking" class="speaker-tab-btn active" onclick="switchConsultantTab('tracking')">講者追蹤</button>
       <button id="tabBtn_cases" class="speaker-tab-btn" onclick="switchConsultantTab('cases')">簡報案例</button>
     </div>
-    <div id="tabCases" style="display:none;">${renderCasesAllTypes(color)}</div>
+    <div id="tabConsultantCases" style="display:none;">${renderCasesAllTypes(color)}</div>
     <div id="tabTracking">
       ${hasSlides(act) ? `
         <div style="display:flex;gap:0;border-bottom:2px solid #f0f0f0;margin-bottom:12px;">
@@ -1197,7 +1168,7 @@ function toggleWeek(id) {
 
 function switchConsultantTab(tab) {
   const tt = document.getElementById('tabTracking');
-  const tc = document.getElementById('tabCases');
+  const tc = document.getElementById('tabConsultantCases');
   if (tt) tt.style.display = tab === 'tracking' ? '' : 'none';
   if (tc) tc.style.display = tab === 'cases' ? '' : 'none';
   document.querySelectorAll('.speaker-tab-btn').forEach(b => {
@@ -1761,6 +1732,16 @@ function renderGuide(act, color, pair) {
 }
 
 const _TOTAL_TASKS = WEEKS.reduce((s, w) => s + w.tasks.length, 0);
+const _TOTAL_SIMPLE = SIMPLE_TASKS.length;
+
+function calcProgress(act, data) {
+  if (isSimpleType(act)) {
+    const done = SIMPLE_TASKS.filter((_, ti) => data[simpleTaskKey(ti)]).length;
+    return { total: _TOTAL_SIMPLE, done };
+  }
+  const done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
+  return { total: _TOTAL_TASKS, done };
+}
 
 async function toggleTask(ck, speaker, wi, ti, cb) {
   const data = getData(ck, speaker);
@@ -1812,7 +1793,7 @@ async function toggleTaskSimple(ck, speaker, ti, cb) {
   const lbl = document.getElementById(`slbl_${ti}`);
   if (lbl) { lbl.className = 'task-label' + (cb.checked ? ' checked' : ''); lbl.style.textDecorationColor = cb.checked ? _color : ''; }
   const done = SIMPLE_TASKS.filter((_, i) => data[simpleTaskKey(i)]).length;
-  const pct = Math.round(done / SIMPLE_TASKS.length * 100);
+  const pct = Math.round(done / _TOTAL_SIMPLE * 100);
   const fill = document.querySelector('.overall-bar-fill');
   const txt = document.querySelector('.overall-pct-text');
   if (fill) fill.style.width = pct + '%';
@@ -2087,10 +2068,7 @@ function showSettings() {
     const color = ACTIVITY_COLORS[act] || '#c0392b';
     const simple = isSimpleType(act);
     const pData = getData(p.consultant, p.speaker);
-    const pTotal = isSimpleType(act) ? SIMPLE_TASKS.length : WEEKS.reduce((s,w)=>s+w.tasks.length,0);
-    const pDone = isSimpleType(act)
-      ? SIMPLE_TASKS.filter((_,ti)=>pData[simpleTaskKey(ti)]).length
-      : WEEKS.reduce((s,w,wi)=>s+w.tasks.filter((_,ti)=>pData[taskKey(wi,ti)]).length,0);
+    const { total: pTotal, done: pDone } = calcProgress(act, pData);
     const isDone = pTotal > 0 && pDone === pTotal;
     const conSelectOpts = `<option value="">選擇顧問</option>${conOptions}` +
       (p.consultant && !consultants.includes(p.consultant) ? `<option value="${p.consultant}" selected>${p.consultant}</option>` : '');
@@ -2351,12 +2329,7 @@ function buildReminderText(p) {
 
   const givenName = p.consultant && p.consultant.length > 1 ? p.consultant.slice(1) : p.consultant;
 
-  const total = isSimpleType(act)
-    ? SIMPLE_TASKS.length
-    : WEEKS.reduce((s, w) => s + w.tasks.length, 0);
-  const done = isSimpleType(act)
-    ? SIMPLE_TASKS.filter((_, ti) => data[simpleTaskKey(ti)]).length
-    : WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
+  const { total, done } = calcProgress(act, data);
   const pct = total ? Math.round(done / total * 100) : 0;
 
   const lines = [];
