@@ -800,10 +800,10 @@ function renderConsultant(ck, speaker, canEdit) {
     <p>輔導講者：<strong>${speaker}</strong>${activityBadge(act)}${countBadge(pair)}</p>
     ${dates.length ? `<p style="font-size:13px;color:#888;margin-top:6px;">${dates.join('　')}</p>` : ''}
     ${countdownHtml(pair.presentationTime, act, color)}
-    ${canEdit ? `<div style="margin-top:10px;display:flex;align-items:center;gap:10px;">
+    <div style="margin-top:10px;display:flex;align-items:center;gap:10px;">
       <div style="flex:1;background:#eee;border-radius:10px;height:8px;"><div style="width:${pct}%;background:${progressColor};height:8px;border-radius:10px;transition:width .3s;"></div></div>
       <span style="font-size:13px;font-weight:bold;color:${progressColor};min-width:36px;">${pct}%</span>
-    </div>` : ''}
+    </div>
   </div>`;
   if (canEdit) {
     html += `<div class="speaker-tabs" style="--tab-color:${color}">
@@ -813,12 +813,6 @@ function renderConsultant(ck, speaker, canEdit) {
     ${hasSlides(act) ? `<div id="tabSlides" style="display:none;">${renderSlidesTab(ck, speaker, pair, true)}</div>` : ''}
     <div id="tabProgress">`;
   }
-  if (!canEdit) html += `
-    <div class="overall-progress">
-      <h3 style="color:${color}">整體完成進度</h3>
-      <div class="overall-bar-wrap"><div class="overall-bar-fill" style="width:${pct}%;background:${progressColor}"></div></div>
-      <div class="overall-pct-text" style="color:${progressColor}">${pct}%</div>
-    </div>`;
 
   if (isSimpleType(act)) {
     // 簡化清單
