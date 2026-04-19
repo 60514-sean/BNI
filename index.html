@@ -2076,6 +2076,9 @@ function buildGroupReminderText(consultant, pairs) {
     if (praiseGroup.length > 0) {
       lines.push('');
       lines.push('【講者】上周還有一些內容沒完成，我列出來，方便您追蹤，如下:');
+    } else {
+      const introName = incompleteGroup.length === 1 ? speakerGivenName(incompleteGroup[0].speaker) + '的' : '講者的';
+      lines.push(`感謝您上周的協助！這週幫你整理${introName}進度，提供給你方便追蹤~`);
     }
     lines.push('');
     incompleteGroup.forEach((p, idx) => {
@@ -2083,7 +2086,7 @@ function buildGroupReminderText(consultant, pairs) {
       const data = getData(p.consultant, p.speaker);
       const { currentWeekIdx } = getPresentationInfo(p.presentationTime);
 
-      if (incompleteGroup.length > 1 || praiseGroup.length > 0) lines.push(`【講者】${speakerGivenName(p.speaker)}`);
+      lines.push(`【講者】${speakerGivenName(p.speaker)}`);
 
       if (currentWeekIdx === 0) {
         lines.push(`這周${speakerGivenName(p.speaker)}的進度再麻煩您了~`);
