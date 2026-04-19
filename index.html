@@ -563,7 +563,7 @@ function enterApp(role, entry) {
   document.getElementById('refreshBtn').style.display = 'block';
   document.getElementById('settingsBtn').style.display = currentRole === 'admin' ? 'block' : 'none';
   renderApp();
-  _bgRefresh();
+  doRefresh(true);
 }
 
 function doLogout() {
@@ -593,8 +593,8 @@ function _clearPairDotIfDone(ck, speaker) {
   if (pi >= 0) { const d = document.getElementById(`updDot_${pi}`); if (d) d.remove(); }
 }
 
-async function doRefresh() {
-  showLoader(true, '更新中...');
+async function doRefresh(silent = false) {
+  if (!silent) showLoader(true, '更新中...');
   const oldCache = _refreshBaseline;
   _updatedPairs = new Set();
   try {
@@ -652,9 +652,9 @@ async function doRefresh() {
       _refreshBaseline = JSON.parse(JSON.stringify(newData));
     }
   } catch {}
-  showLoader(false);
+  if (!silent) showLoader(false);
   renderApp();
-  showToast(_updatedPairs.size ? `資料已更新（${_updatedPairs.size} 筆有變動）` : '資料已是最新');
+  if (!silent) showToast(_updatedPairs.size ? `資料已更新（${_updatedPairs.size} 筆有變動）` : '資料已是最新');
 }
 
 document.getElementById('nameInput').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
