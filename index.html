@@ -1072,13 +1072,7 @@ function renderSimpleReadonly(ck, speaker, color) {
       </div>
     </div>`;
   }).join('');
-  return `<div>
-    ${hasUpd ? `<div style="display:flex;align-items:center;gap:6px;padding:6px 0 10px;border-bottom:1px solid #f0f0f0;margin-bottom:4px;">
-      <span class="week-update-dot" style="background:${c};box-shadow:0 0 0 1.5px rgba(0,0,0,0.12);"></span>
-      <span style="font-size:12px;color:${c};font-weight:600;">有資料更新</span>
-    </div>` : ''}
-    ${rows}
-  </div>`;
+  return `<div>${rows}</div>`;
 }
 
 function renderWeeksReadonly(ck, speaker, color) {
