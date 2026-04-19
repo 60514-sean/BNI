@@ -690,21 +690,41 @@ async function showUsageModal() {
       _usageLogCache = data;
     }
     const logMap = {};
-    data.forEach(d => { logMap[d.name] = d.count; });
+    data.forEach(d => { logMap[d.name] = d; });
 
     const consultants = [...new Set(_adminPairs.map(p => p.consultant).filter(Boolean))];
     const speakers    = [...new Set(_adminPairs.map(p => p.speaker).filter(Boolean))];
     const all = [
-      ...consultants.map(n => ({ name: n, label: '顧問', count: logMap[n] || 0 })),
-      ...speakers.map(n    => ({ name: n, label: '講者', count: logMap[n] || 0 }))
+      ...consultants.map(n => ({ name: n, label: '顧問', ...(logMap[n] || { count: 0 }) })),
+      ...speakers.map(n    => ({ name: n, label: '講者', ...(logMap[n] || { count: 0 }) }))
     ];
 
     if (all.length === 0) { body.innerHTML = '<div style="padding:24px;color:#aaa;text-align:center;">無配對資料</div>'; return; }
 
-    const WEEKS = 4;
+    const WEEKS_N = 4;
     const MAX = 14;
     const usageColor = avg => avg === 0 ? '#e74c3c' : avg <= 4 ? '#e67e22' : avg <= 9 ? '#f39c12' : '#27ae60';
     const usageLabel = avg => avg === 0 ? '未使用' : avg <= 4 ? '低' : avg <= 9 ? '中' : '高';
+
+    function fmtLastTime(iso) {
+      if (!iso) return '';
+      const d = new Date(iso), now = new Date();
+      const days = Math.floor((now - d) / 864e5);
+      const hh = String(d.getHours()).padStart(2,'0'), mm = String(d.getMinutes()).padStart(2,'0');
+      if (days === 0) return `今天 ${hh}:${mm}`;
+      if (days === 1) return `昨天 ${hh}:${mm}`;
+      return `${days}天前`;
+    }
+
+    function fmtPeakHour(h) {
+      if (h == null) return '';
+      if (h >= 6 && h < 12) return `早上${h}點`;
+      if (h >= 12 && h < 14) return `中午${h}點`;
+      if (h >= 14 && h < 18) return `下午${h-12}點`;
+      if (h >= 18) return `晚上${h-12}點`;
+      return `凌晨${h}點`;
+    }
+
     const groups = [
       { label: '顧問', items: all.filter(d => d.label === '顧問') },
       { label: '講者', items: all.filter(d => d.label === '講者') }
@@ -715,13 +735,17 @@ async function showUsageModal() {
         <div style="font-size:12px;font-weight:700;color:#aaa;margin-bottom:10px;">${g.label}</div>
         <div style="display:flex;flex-wrap:wrap;gap:14px;">
           ${g.items.map(d => {
-            const avg = Math.round(d.count / WEEKS * 10) / 10;
+            const avg = Math.round((d.count || 0) / WEEKS_N * 10) / 10;
             const color = usageColor(avg);
-            return `<div style="text-align:center;">
+            const last = fmtLastTime(d.lastTime);
+            const peak = fmtPeakHour(d.peakHour);
+            return `<div style="text-align:center;width:64px;">
               ${svgCircle(avg, MAX, color)}
-              <div style="font-size:11px;color:#333;margin-top:4px;max-width:56px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${d.name}</div>
+              <div style="font-size:11px;color:#333;margin-top:4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${d.name}</div>
               <div style="font-size:10px;font-weight:700;color:${color};">${usageLabel(avg)}</div>
               <div style="font-size:9px;color:#bbb;">${avg} 次/週</div>
+              ${last ? `<div style="font-size:9px;color:#aaa;margin-top:3px;">${last}</div>` : ''}
+              ${peak ? `<div style="font-size:9px;color:#bbb;">${peak}</div>` : ''}
             </div>`;
           }).join('')}
         </div>
