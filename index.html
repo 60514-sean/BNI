@@ -257,6 +257,8 @@
 // ===== API =====
 const API_URL = 'https://script.google.com/macros/s/AKfycbzBdCa_GQlxwxXa4LHsYSlhDlEXI6xoJQfRgJXL3uepbgcz4V-R9Oxrx7dAQvDJ4wiZ/exec';
 const LS_KEY = 'bni_cache_v1';
+const LS_TIME_KEY = 'bni_cache_time_v1';
+const BG_REFRESH_TTL = 120000; // cache 2 分鐘內不重打 API
 
 let cache = {};
 
@@ -268,7 +270,10 @@ try { const s = localStorage.getItem(LS_KEY); if (s) cache = JSON.parse(s); } ca
 let _refreshBaseline = JSON.parse(JSON.stringify(cache));
 
 function _lsSave() {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(cache)); } catch {}
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(cache));
+    localStorage.setItem(LS_TIME_KEY, Date.now().toString());
+  } catch {}
 }
 
 // 背景從 server 取得最新資料（防止重複同時觸發）
@@ -281,8 +286,9 @@ function _bgRefresh() {
   }).catch(() => {}).finally(() => { _bgRefreshing = false; });
 }
 
-// 頁面載入時立即開始背景刷新
-_bgRefresh();
+// 頁面載入時，只有 cache 過期才打 API
+const _cacheAge = Date.now() - (parseInt(localStorage.getItem(LS_TIME_KEY) || '0'));
+if (_cacheAge > BG_REFRESH_TTL) _bgRefresh();
 
 // 儲存佇列：Map 以 key 去重複，只保留最新值
 const _saveQueue = new Map();
@@ -659,7 +665,7 @@ async function doRefresh(silent = false) {
     }
   } catch {}
   if (!silent) showLoader(false);
-  renderApp();
+  if (!silent || _updatedPairs.size > 0) renderApp();
   if (!silent) showToast(_updatedPairs.size ? `資料已更新（${_updatedPairs.size} 筆有變動）` : '資料已是最新');
 }
 
@@ -755,6 +761,7 @@ let _usageLogCacheTime = 0;
 const USAGE_CACHE_TTL = 60000;
 
 async function _prefetchUsageLogs() {
+  if (_usageLogCache && (Date.now() - _usageLogCacheTime) < USAGE_CACHE_TTL) return;
   try {
     const res = await fetch(`${API_URL}?action=getLogs`);
     const json = await res.json();
