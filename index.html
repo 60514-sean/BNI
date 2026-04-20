@@ -1210,14 +1210,15 @@ function renderConsultant(ck, speaker, canEdit) {
   const _slidesUpd = _updatedPairs.has(`${ck}\t${speaker}\tslides`);
   const _slideDot = `<span id="slidesDot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-left:5px;vertical-align:middle;animation:dotPulse 1.4s ease-in-out infinite;"></span>`;
   if (!canEdit) {
+    const isConsultantView = currentRole === 'consultant';
     html += `<div class="speaker-tabs" style="--tab-color:${color}">
       <button id="tabBtn_progress" class="speaker-tab-btn active" onclick="switchSpeakerTab('progress')">我的進度</button>
       ${hasSlides(act) ? `<button id="tabBtn_slides" class="speaker-tab-btn" onclick="switchSpeakerTab('slides')">我的簡報${_slidesUpd ? _slideDot : ''}</button>` : ''}
-      <button id="tabBtn_guide" class="speaker-tab-btn" onclick="switchSpeakerTab('guide')">簡報攻略</button>
-      <button id="tabBtn_cases" class="speaker-tab-btn" onclick="switchSpeakerTab('cases')">簡報案例</button>
+      ${!isConsultantView ? `<button id="tabBtn_guide" class="speaker-tab-btn" onclick="switchSpeakerTab('guide')">簡報攻略</button>` : ''}
+      ${!isConsultantView ? `<button id="tabBtn_cases" class="speaker-tab-btn" onclick="switchSpeakerTab('cases')">簡報案例</button>` : ''}
     </div>
-    <div id="tabGuide" style="display:none;">${renderGuide(act, color, pair)}</div>
-    <div id="tabCases" style="display:none;">${renderCasesTab(act, pair, color)}</div>
+    ${!isConsultantView ? `<div id="tabGuide" style="display:none;">${renderGuide(act, color, pair)}</div>` : ''}
+    ${!isConsultantView ? `<div id="tabCases" style="display:none;">${renderCasesTab(act, pair, color)}</div>` : ''}
     ${hasSlides(act) ? `<div id="tabSlides" style="display:none;">${renderSlidesTab(ck, speaker, pair, !locked)}</div>` : ''}
     <div id="tabProgress">`;
   }
