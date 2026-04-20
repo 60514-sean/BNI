@@ -411,6 +411,9 @@ const ACTIVITY_TYPES = ['主題簡報', '主題日', '共識會議', 'BOD'];
 const PRESENTATION_COUNTS = ['第1次', '第2次', '第2次+'];
 const ACTIVITY_COLORS = { '主題簡報': '#c0392b', '主題日': '#e67e22', '共識會議': '#2980b9', 'BOD': '#8e44ad' };
 const getActivityColor = act => ACTIVITY_COLORS[act || '主題簡報'] || '#c0392b';
+const LOCKED_COLOR = '#aaaaaa';
+const LOCK_WEEKS_THRESHOLD = 6;
+const getDisplayColor = (act, locked) => locked ? LOCKED_COLOR : getActivityColor(act);
 const DONE_COLOR = '#c0392b';
 const SIMPLE_TASKS = ['主題名稱確認', '一般引薦確認', '理想引薦確認', '夢幻引薦確認', '簡報繳交', 'RE稿完成'];
 const DATE_LABELS = ['繳交簡報', '線上RE稿', '簡報時間'];
@@ -457,6 +460,7 @@ async function saveConfig(cfg) {
 function progressKey(ck, speaker) { return `progress_${ck}_${speaker}`; }
 function getData(ck, speaker) { return cache[progressKey(ck, speaker)] || {}; }
 async function saveData(ck, speaker, data) { await apiSave(progressKey(ck, speaker), data); }
+function getPairByKeys(ck, speaker) { return getConfig().pairs.find(p => p.consultant === ck && p.speaker === speaker) || {}; }
 
 function taskKey(wi, ti) { return `w${wi}_t${ti}`; }
 function noteKey(wi, ti) { return `w${wi}_t${ti}_note`; }
@@ -693,7 +697,7 @@ function renderAdmin() {
     const { total, done } = calcProgress(act, data);
     const pct = total ? Math.round(done / total * 100) : 0;
     const locked = isPairLocked(p);
-    const dispColor = locked ? '#aaaaaa' : getActivityColor(act);
+    const dispColor = getDisplayColor(act, locked);
     const done100 = pct === 100;
 
     const weekDots = isSimpleType(act)
@@ -790,8 +794,7 @@ function fmtLastTime(iso) {
   if (!iso) return '—';
   const d = new Date(iso), now = new Date();
   const hh = String(d.getHours()).padStart(2,'0'), mm = String(d.getMinutes()).padStart(2,'0');
-  const isToday = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
-  if (isToday) return `今天 ${hh}:${mm}`;
+  if (d.toDateString() === now.toDateString()) return `今天 ${hh}:${mm}`;
   const yyyy = d.getFullYear(), mo = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0');
   return `${yyyy}/${mo}/${dd} ${hh}:${mm}`;
 }
@@ -974,7 +977,7 @@ function openAdminModal(pi) {
   _viewingCk = p.consultant;
   _viewingSpeaker = p.speaker;
   const act = p.activityType || '主題簡報';
-  const dispColor = isPairLocked(p) ? '#aaaaaa' : getActivityColor(act);
+  const dispColor = getDisplayColor(act, isPairLocked(p));
   const data = getData(p.consultant, p.speaker);
   const { total, done } = calcProgress(act, data);
   const pct = total ? Math.round(done / total * 100) : 0;
@@ -1132,7 +1135,7 @@ function renderConsultantOverview(ck) {
   let cardsHtml = '<div class="weeks-container">';
   myPairs.forEach(p => {
     const act = p.activityType || '主題簡報';
-    const color = isPairLocked(p) ? '#aaaaaa' : getActivityColor(act);
+    const color = getDisplayColor(act, isPairLocked(p));
     const data = getData(ck, p.speaker);
     const { total, done } = calcProgress(act, data);
     const pct = total ? Math.round(done / total * 100) : 0;
@@ -1172,9 +1175,10 @@ function renderConsultant(ck, speaker, canEdit) {
   const myPairs = cfg.pairs.filter(p => p.consultant === ck);
   const pair = cfg.pairs.find(p => p.consultant === ck && p.speaker === speaker) || {};
   const act = pair.activityType || '主題簡報';
-  const locked = isPairLocked(pair);
+  const { weeksDiff: _presWeeksDiff } = pair.presentationTime ? getPresentationInfo(pair.presentationTime) : { weeksDiff: -Infinity };
+  const locked = _presWeeksDiff > LOCK_WEEKS_THRESHOLD;
   if (locked) canEdit = false;
-  const color = locked ? '#aaaaaa' : getActivityColor(act);
+  const color = getDisplayColor(act, locked);
   const data = getData(ck, speaker);
 
   const { total, done } = calcProgress(act, data);
@@ -1192,11 +1196,8 @@ function renderConsultant(ck, speaker, canEdit) {
     html += `<div style="margin-bottom:16px;"><button class="btn btn-sm btn-outline" onclick="renderConsultantOverview('${ck}')">← 返回</button></div>`;
   }
   if (locked) {
-    const { weeksDiff } = getPresentationInfo(pair.presentationTime);
-    const weeksLeft = pair.presentationTime ? weeksDiff - 6 : null;
-    html += `<div style="background:#f7f7f7;border:1.5px dashed #ccc;border-radius:10px;padding:10px 16px;margin-bottom:14px;text-align:center;color:#999;font-size:13px;">
-      目前為預覽模式${weeksLeft != null ? `，約 ${weeksLeft} 週後（倒數6週起）開放編輯` : ''}
-    </div>`;
+    const weeksLeft = _presWeeksDiff - LOCK_WEEKS_THRESHOLD;
+    html += `<div style="background:#f7f7f7;border:1.5px dashed #ccc;border-radius:10px;padding:10px 16px;margin-bottom:14px;text-align:center;color:#999;font-size:13px;">目前為預覽模式，約 ${weeksLeft} 週後（倒數${LOCK_WEEKS_THRESHOLD}週起）開放編輯</div>`;
   }
   const _slidesUpd = _updatedPairs.has(`${ck}\t${speaker}\tslides`);
   const _slideDot = `<span id="slidesDot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-left:5px;vertical-align:middle;animation:dotPulse 1.4s ease-in-out infinite;"></span>`;
@@ -1935,7 +1936,7 @@ function calcProgress(act, data) {
 async function toggleTask(ck, speaker, wi, ti, cb) {
   const data = getData(ck, speaker);
   data[taskKey(wi, ti)] = cb.checked;
-  const pair2 = getConfig().pairs.find(p => p.consultant === ck && p.speaker === speaker) || {};
+  const pair2 = getPairByKeys(ck, speaker);
   const dynColor = getActivityColor(pair2.activityType);
   const lbl = document.getElementById(`lbl_${wi}_${ti}`);
   if (lbl) { lbl.className = 'task-label' + (cb.checked ? ' checked' : ''); lbl.style.textDecorationColor = cb.checked ? dynColor : ''; }
@@ -1955,7 +1956,7 @@ async function toggleTask(ck, speaker, wi, ti, cb) {
 async function toggleTaskSimple(ck, speaker, ti, cb) {
   const data = getData(ck, speaker);
   data[simpleTaskKey(ti)] = cb.checked;
-  const pair = getConfig().pairs.find(p => p.consultant === ck && p.speaker === speaker) || {};
+  const pair = getPairByKeys(ck, speaker);
   const color = getActivityColor(pair.activityType);
   const lbl = document.getElementById(`slbl_${ti}`);
   if (lbl) { lbl.className = 'task-label' + (cb.checked ? ' checked' : ''); lbl.style.textDecorationColor = cb.checked ? color : ''; }
@@ -1985,7 +1986,7 @@ async function saveNoteSimple(ck, speaker, ti, val) {
 
 async function saveAllTasks(ck, speaker) {
   const data = getData(ck, speaker);
-  const act = (getConfig().pairs.find(p => p.consultant === ck && p.speaker === speaker) || {}).activityType;
+  const act = getPairByKeys(ck, speaker).activityType;
   if (isSimpleType(act)) {
     SIMPLE_TASKS.forEach((_, ti) => {
       const cb = document.getElementById(`scb_${ti}`);
@@ -2035,7 +2036,7 @@ function getPresentationInfo(presentationTime) {
 function isPairLocked(pair) {
   if (!pair.presentationTime) return false;
   const { weeksDiff } = getPresentationInfo(pair.presentationTime);
-  return weeksDiff > 6;
+  return weeksDiff > LOCK_WEEKS_THRESHOLD;
 }
 
 function countdownHtml(presentationTime, act, color) {
