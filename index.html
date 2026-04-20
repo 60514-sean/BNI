@@ -574,8 +574,9 @@ function enterApp(role, entry) {
   document.getElementById('userBadge').textContent = currentUser;
   document.getElementById('refreshBtn').style.display = 'block';
   document.getElementById('settingsBtn').style.display = currentRole === 'admin' ? 'block' : 'none';
+  renderApp();
   _refreshBaseline = JSON.parse(JSON.stringify(cache));
-  doRefresh(false);
+  doRefresh(true);
   _startAutoPoll();
 }
 
