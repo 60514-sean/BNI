@@ -583,7 +583,7 @@ function enterApp(role, entry) {
 let _autoPollTimer = null;
 function _startAutoPoll() {
   if (_autoPollTimer) clearInterval(_autoPollTimer);
-  _autoPollTimer = setInterval(() => { if (currentUser) doRefresh(true); }, 30000);
+  _autoPollTimer = setInterval(() => { if (currentUser) doRefresh(true); }, 10000);
 }
 
 function doLogout() {
