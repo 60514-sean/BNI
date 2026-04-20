@@ -815,9 +815,13 @@ function fmtLastTime(iso) {
   if (!iso) return '—';
   const d = new Date(iso), now = new Date();
   const hh = String(d.getHours()).padStart(2,'0'), mm = String(d.getMinutes()).padStart(2,'0');
-  if (d.toDateString() === now.toDateString()) return `今天 ${hh}:${mm}`;
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diffDays = Math.floor((startOfToday - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
+  if (diffDays === 0) return `今天 ${hh}:${mm}`;
+  if (diffDays === 1) return `昨天 ${hh}:${mm}`;
+  if (diffDays === 2) return `前天 ${hh}:${mm}`;
   const yyyy = d.getFullYear(), mo = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0');
-  return `${yyyy}/${mo}/${dd} ${hh}:${mm}`;
+  return `${yyyy}/${mo}/${dd}`;
 }
 
 function fmtPeakHour(h) {
