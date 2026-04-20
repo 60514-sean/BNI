@@ -692,7 +692,8 @@ function renderAdmin() {
     const data = getData(p.consultant, p.speaker);
     const { total, done } = calcProgress(act, data);
     const pct = total ? Math.round(done / total * 100) : 0;
-    const dispColor = getActivityColor(act);
+    const locked = isPairLocked(p);
+    const dispColor = locked ? '#aaaaaa' : getActivityColor(act);
     const done100 = pct === 100;
 
     const weekDots = isSimpleType(act)
@@ -973,7 +974,7 @@ function openAdminModal(pi) {
   _viewingCk = p.consultant;
   _viewingSpeaker = p.speaker;
   const act = p.activityType || '主題簡報';
-  const dispColor = getActivityColor(act);
+  const dispColor = isPairLocked(p) ? '#aaaaaa' : getActivityColor(act);
   const data = getData(p.consultant, p.speaker);
   const { total, done } = calcProgress(act, data);
   const pct = total ? Math.round(done / total * 100) : 0;
@@ -1131,7 +1132,7 @@ function renderConsultantOverview(ck) {
   let cardsHtml = '<div class="weeks-container">';
   myPairs.forEach(p => {
     const act = p.activityType || '主題簡報';
-    const color = getActivityColor(act);
+    const color = isPairLocked(p) ? '#aaaaaa' : getActivityColor(act);
     const data = getData(ck, p.speaker);
     const { total, done } = calcProgress(act, data);
     const pct = total ? Math.round(done / total * 100) : 0;
@@ -1171,7 +1172,9 @@ function renderConsultant(ck, speaker, canEdit) {
   const myPairs = cfg.pairs.filter(p => p.consultant === ck);
   const pair = cfg.pairs.find(p => p.consultant === ck && p.speaker === speaker) || {};
   const act = pair.activityType || '主題簡報';
-  const color = getActivityColor(act);
+  const locked = isPairLocked(pair);
+  if (locked) canEdit = false;
+  const color = locked ? '#aaaaaa' : getActivityColor(act);
   const data = getData(ck, speaker);
 
   const { total, done } = calcProgress(act, data);
@@ -1188,6 +1191,13 @@ function renderConsultant(ck, speaker, canEdit) {
   if (canEdit && myPairs.length > 1) {
     html += `<div style="margin-bottom:16px;"><button class="btn btn-sm btn-outline" onclick="renderConsultantOverview('${ck}')">← 返回</button></div>`;
   }
+  if (locked) {
+    const { weeksDiff } = getPresentationInfo(pair.presentationTime);
+    const weeksLeft = pair.presentationTime ? weeksDiff - 6 : null;
+    html += `<div style="background:#f7f7f7;border:1.5px dashed #ccc;border-radius:10px;padding:10px 16px;margin-bottom:14px;text-align:center;color:#999;font-size:13px;">
+      目前為預覽模式${weeksLeft != null ? `，約 ${weeksLeft} 週後（倒數6週起）開放編輯` : ''}
+    </div>`;
+  }
   const _slidesUpd = _updatedPairs.has(`${ck}\t${speaker}\tslides`);
   const _slideDot = `<span id="slidesDot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-left:5px;vertical-align:middle;animation:dotPulse 1.4s ease-in-out infinite;"></span>`;
   if (!canEdit) {
@@ -1199,7 +1209,7 @@ function renderConsultant(ck, speaker, canEdit) {
     </div>
     <div id="tabGuide" style="display:none;">${renderGuide(act, color, pair)}</div>
     <div id="tabCases" style="display:none;">${renderCasesTab(act, pair, color)}</div>
-    ${hasSlides(act) ? `<div id="tabSlides" style="display:none;">${renderSlidesTab(ck, speaker, pair, true)}</div>` : ''}
+    ${hasSlides(act) ? `<div id="tabSlides" style="display:none;">${renderSlidesTab(ck, speaker, pair, !locked)}</div>` : ''}
     <div id="tabProgress">`;
   }
   html += `<div class="speaker-info">
@@ -1252,7 +1262,7 @@ function renderConsultant(ck, speaker, canEdit) {
     }).join('');
     html += `</div></div>`;
     if (canEdit) html += `<div style="margin-top:20px;padding-bottom:20px;"><button class="btn" style="background:${color}" onclick="saveAllTasks('${ck}','${speaker}')">儲存</button></div></div></div>`;
-    if (!canEdit) html += `<div style="margin-top:16px;padding-bottom:20px;"><button class="btn" style="background:${color}" onclick="saveAllTasks('${ck}','${speaker}')">儲存備註</button></div>`;
+    if (!canEdit && !locked) html += `<div style="margin-top:16px;padding-bottom:20px;"><button class="btn" style="background:${color}" onclick="saveAllTasks('${ck}','${speaker}')">儲存備註</button></div>`;
   } else {
     // 6週進度
     const { currentWeekIdx } = getPresentationInfo(pair.presentationTime);
@@ -1297,7 +1307,7 @@ function renderConsultant(ck, speaker, canEdit) {
     });
     html += `</div>`;
     if (canEdit) html += `<div style="margin-top:20px;padding-bottom:20px;"><button class="btn" onclick="saveAllTasks('${ck}','${speaker}')">儲存</button></div></div></div>`;
-    if (!canEdit) html += `<div style="margin-top:16px;padding-bottom:20px;"><button class="btn" style="background:${color}" onclick="saveAllTasks('${ck}','${speaker}')">儲存備註</button></div>`;
+    if (!canEdit && !locked) html += `<div style="margin-top:16px;padding-bottom:20px;"><button class="btn" style="background:${color}" onclick="saveAllTasks('${ck}','${speaker}')">儲存備註</button></div>`;
 
     document.getElementById('mainContent').innerHTML = html;
     return;
@@ -2019,7 +2029,13 @@ function getPresentationInfo(presentationTime) {
   else if (weeksDiff === 3) weekIdx = 2; // 倒數3週
   else if (weeksDiff === 4) weekIdx = 1; // 倒數4週
   else if (weeksDiff === 5) weekIdx = 0; // 倒數5週
-  return { countdown: diffDays, currentWeekIdx: weekIdx };
+  return { countdown: diffDays, currentWeekIdx: weekIdx, weeksDiff };
+}
+
+function isPairLocked(pair) {
+  if (!pair.presentationTime) return false;
+  const { weeksDiff } = getPresentationInfo(pair.presentationTime);
+  return weeksDiff > 6;
 }
 
 function countdownHtml(presentationTime, act, color) {
