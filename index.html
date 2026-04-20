@@ -574,8 +574,8 @@ function enterApp(role, entry) {
   document.getElementById('userBadge').textContent = currentUser;
   document.getElementById('refreshBtn').style.display = 'block';
   document.getElementById('settingsBtn').style.display = currentRole === 'admin' ? 'block' : 'none';
-  renderApp();
-  doRefresh(true);
+  _refreshBaseline = JSON.parse(JSON.stringify(cache));
+  doRefresh(false);
 }
 
 function doLogout() {
@@ -1955,6 +1955,7 @@ async function toggleTask(ck, speaker, wi, ti, cb) {
   if (wcount) wcount.textContent = `${weekDone}/${WEEKS[wi].tasks.length}`;
   saveData(ck, speaker, data);
   logAction('task_check');
+  showToast(cb.checked ? '已勾選' : '已取消勾選');
 }
 
 async function toggleTaskSimple(ck, speaker, ti, cb) {
@@ -1972,6 +1973,7 @@ async function toggleTaskSimple(ck, speaker, ti, cb) {
   if (txt) { txt.textContent = pct + '%'; txt.style.color = color; }
   saveData(ck, speaker, data);
   logAction('task_check');
+  showToast(cb.checked ? '已勾選' : '已取消勾選');
 }
 
 async function saveNote(ck, speaker, wi, ti, val) {
