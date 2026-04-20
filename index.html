@@ -576,11 +576,19 @@ function enterApp(role, entry) {
   document.getElementById('settingsBtn').style.display = currentRole === 'admin' ? 'block' : 'none';
   _refreshBaseline = JSON.parse(JSON.stringify(cache));
   doRefresh(false);
+  _startAutoPoll();
+}
+
+let _autoPollTimer = null;
+function _startAutoPoll() {
+  if (_autoPollTimer) clearInterval(_autoPollTimer);
+  _autoPollTimer = setInterval(() => { if (currentUser) doRefresh(true); }, 30000);
 }
 
 function doLogout() {
   currentUser = null; currentRole = null; currentConsultantKey = null;
   currentSpeaker = null; _pendingUserEntry = null;
+  if (_autoPollTimer) { clearInterval(_autoPollTimer); _autoPollTimer = null; }
   document.getElementById('refreshBtn').style.display = 'none';
   document.getElementById('roleSelectPage').style.display = 'none';
   document.getElementById('loginPage').style.display = 'flex';
@@ -667,6 +675,7 @@ async function doRefresh(silent = false) {
   if (!silent) showLoader(false);
   if (!silent || _updatedPairs.size > 0) renderApp();
   if (!silent) showToast(_updatedPairs.size ? `資料已更新（${_updatedPairs.size} 筆有變動）` : '資料已是最新');
+  if (silent && _updatedPairs.size > 0) showToast(`資料已更新（${_updatedPairs.size} 筆有變動）`);
 }
 
 document.getElementById('nameInput').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
