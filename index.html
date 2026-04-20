@@ -647,6 +647,8 @@ async function doRefresh(silent = false) {
               if (JSON.stringify(oldW) !== JSON.stringify(newW)) {
                 _updatedPairs.add(`${pairId}\tweek_${wi}`);
                 w.tasks.forEach((_, ti) => {
+                  if (!!oldProg[taskKey(wi,ti)] !== !!newProg[taskKey(wi,ti)])
+                    _updatedPairs.add(`${pairId}\ttask_${wi}_${ti}`);
                   if ((oldProg[noteKey(wi,ti)]||'') !== (newProg[noteKey(wi,ti)]||''))
                     _updatedPairs.add(`${pairId}\tnote_${wi}_${ti}`);
                 });
@@ -1104,12 +1106,14 @@ function renderWeeksReadonly(ck, speaker, color) {
     const rows = w.tasks.map((t, ti) => {
       const checked = !!data[taskKey(wi,ti)];
       const note = data[noteKey(wi,ti)] || '';
+      const taskUpd = _updatedPairs.has(`${ck}\t${speaker}\ttask_${wi}_${ti}`);
+      const taskDotHtml = taskUpd ? `<span id="rtaskDot_${wi}_${ti}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${c};margin-left:5px;flex-shrink:0;animation:dotPulse 1.4s ease-in-out infinite;vertical-align:middle;"></span>` : '';
       const noteUpd = _updatedPairs.has(`${ck}\t${speaker}\tnote_${wi}_${ti}`);
       const noteDotHtml = noteUpd ? `<span id="rnoteDot_${wi}_${ti}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${c};margin-left:5px;flex-shrink:0;animation:dotPulse 1.4s ease-in-out infinite;vertical-align:middle;cursor:pointer;" onclick="clearRNoteDot('${ck}','${speaker}',${wi},${ti})" title="點擊標記已讀"></span>` : '';
       return `<div style="display:flex;gap:8px;align-items:flex-start;padding:4px 0;border-bottom:1px solid #f5f5f5;">
         <input type="checkbox" disabled ${checked?'checked':''} style="accent-color:${c};margin-top:3px;flex-shrink:0;">
         <div>
-          <span style="font-size:13px;${checked?'color:#aaa;text-decoration:line-through;':'color:#333;'}">${t}</span>
+          <span style="font-size:13px;${checked?'color:#aaa;text-decoration:line-through;':'color:#333;'}">${t}</span>${taskDotHtml}
           ${note?`<div style="font-size:11px;color:#888;margin-top:1px;display:flex;align-items:center;${noteUpd?'cursor:pointer;':''}" ${noteUpd?`onclick="clearRNoteDot('${ck}','${speaker}',${wi},${ti})"`:''} title="${noteUpd?'點擊標記已讀':''}">
             ${note}${noteDotHtml}</div>`:(noteUpd?`<div style="display:flex;align-items:center;gap:3px;margin-top:1px;cursor:pointer;" onclick="clearRNoteDot('${ck}','${speaker}',${wi},${ti})"><span style="font-size:10px;color:${c};font-weight:600;">備註已清除</span>${noteDotHtml}</div>`:'')}
         </div>
@@ -1139,6 +1143,16 @@ function toggleReadonlyWeek(el, ck, speaker, wi) {
       const dot = document.getElementById(`rdotWk_${wi}`);
       if (dot) dot.remove();
     }
+    _clearPairDotIfDone(ck, speaker);
+  } else {
+    WEEKS[wi]?.tasks.forEach((_, ti) => {
+      const k = `${ck}\t${speaker}\ttask_${wi}_${ti}`;
+      if (_updatedPairs.has(k)) {
+        _updatedPairs.delete(k);
+        const d = document.getElementById(`rtaskDot_${wi}_${ti}`);
+        if (d) d.remove();
+      }
+    });
     _clearPairDotIfDone(ck, speaker);
   }
 }
@@ -1292,13 +1306,15 @@ function renderConsultant(ck, speaker, canEdit) {
         const note = data[noteKey(wi, ti)] || '';
         const cls = data[taskKey(wi, ti)] ? 'checked' : '';
         const dis = canEdit ? '' : 'disabled';
+        const taskUpd2 = _updatedPairs.has(`${ck}\t${speaker}\ttask_${wi}_${ti}`);
+        const taskDot2 = taskUpd2 ? `<span id="taskDot_${wi}_${ti}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${color};margin-left:5px;flex-shrink:0;animation:dotPulse 1.4s ease-in-out infinite;vertical-align:middle;"></span>` : '';
         const noteUpd = _updatedPairs.has(`${ck}\t${speaker}\tnote_${wi}_${ti}`);
         const noteDot = noteUpd ? `<span id="noteDot_${wi}_${ti}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${color};margin-left:5px;flex-shrink:0;animation:dotPulse 1.4s ease-in-out infinite;vertical-align:middle;"></span>` : '';
         const noteFocus = noteUpd ? `clearNoteDot('${ck}','${speaker}',${wi},${ti});` : '';
         return `<div class="task-item">
           <input type="checkbox" class="task-check" id="cb_${wi}_${ti}" ${checked} ${dis} style="accent-color:${color}" onchange="toggleTask('${ck}','${speaker}',${wi},${ti},this)">
           <div class="task-content">
-            <div class="task-label ${cls}" id="lbl_${wi}_${ti}" style="${cls ? `text-decoration-color:${color}` : ''}">${t}</div>
+            <div class="task-label ${cls}" id="lbl_${wi}_${ti}" style="${cls ? `text-decoration-color:${color}` : ''}">${t}${taskDot2}</div>
             ${noteUpd ? `<div style="display:flex;align-items:center;gap:3px;margin-top:2px;"><span style="font-size:10px;color:${color};font-weight:600;">備註更新</span>${noteDot}</div>` : ''}
             <textarea class="task-note" id="note_${wi}_${ti}" placeholder="${WEEK_HINTS[wi]?.[ti] || ''}"
               onchange="saveNote('${ck}','${speaker}',${wi},${ti},this.value)"
@@ -1356,6 +1372,22 @@ function toggleWeek(id) {
         _updatedPairs.delete(dotKey);
         const dot = document.getElementById(dotId);
         if (dot) dot.remove();
+        _clearPairDotIfDone(_viewingCk, _viewingSpeaker);
+      }
+    }
+  } else {
+    if (_viewingCk && _viewingSpeaker) {
+      const m = id.match(/^wb_(\d+)$/);
+      if (m) {
+        const wi = parseInt(m[1]);
+        WEEKS[wi]?.tasks.forEach((_, ti) => {
+          const k = `${_viewingCk}\t${_viewingSpeaker}\ttask_${wi}_${ti}`;
+          if (_updatedPairs.has(k)) {
+            _updatedPairs.delete(k);
+            const d = document.getElementById(`taskDot_${wi}_${ti}`);
+            if (d) d.remove();
+          }
+        });
         _clearPairDotIfDone(_viewingCk, _viewingSpeaker);
       }
     }
