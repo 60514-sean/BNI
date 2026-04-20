@@ -1192,7 +1192,7 @@ function renderConsultant(ck, speaker, canEdit) {
   ].filter(Boolean);
 
   let html = '';
-  if (canEdit && myPairs.length > 1) {
+  if (myPairs.length > 1) {
     html += `<div style="margin-bottom:16px;"><button class="btn btn-sm btn-outline" onclick="renderConsultantOverview('${ck}')">← 返回</button></div>`;
   }
   if (locked) {
