@@ -788,11 +788,11 @@ function calcDailyAvg(d) {
 function fmtLastTime(iso) {
   if (!iso) return '—';
   const d = new Date(iso), now = new Date();
-  const days = Math.floor((now - d) / 864e5);
   const hh = String(d.getHours()).padStart(2,'0'), mm = String(d.getMinutes()).padStart(2,'0');
-  if (days === 0) return `今天 ${hh}:${mm}`;
-  if (days === 1) return `昨天 ${hh}:${mm}`;
-  return `${days}天前`;
+  const isToday = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+  if (isToday) return `今天 ${hh}:${mm}`;
+  const yyyy = d.getFullYear(), mo = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0');
+  return `${yyyy}/${mo}/${dd} ${hh}:${mm}`;
 }
 
 function fmtPeakHour(h) {
