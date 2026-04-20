@@ -1228,12 +1228,7 @@ function renderConsultant(ck, speaker, canEdit) {
     ${renderProgressBar(pct, progressColor)}
   </div>`;
   if (canEdit) {
-    html += `<div class="speaker-tabs" style="--tab-color:${color}">
-      <button id="tabBtn_tracking" class="speaker-tab-btn active" onclick="switchConsultantTab('tracking')">講者追蹤</button>
-      <button id="tabBtn_cases" class="speaker-tab-btn" onclick="switchConsultantTab('cases')">簡報案例</button>
-    </div>
-    <div id="tabConsultantCases" style="display:none;">${renderCasesAllTypes(color)}</div>
-    <div id="tabTracking">
+    html += `<div id="tabTracking">
       ${hasSlides(act) ? `
         <div style="display:flex;gap:0;border-bottom:2px solid #f0f0f0;margin-bottom:12px;">
           <button id="tabBtn_progress" data-color="${color}" onclick="switchSpeakerTab('progress')"
