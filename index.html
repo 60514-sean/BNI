@@ -421,17 +421,18 @@ const DATE_LABELS = ['繳交簡報', '線上RE稿', '簡報時間'];
 function simpleTaskKey(ti) { return `s_t${ti}`; }
 function simpleNoteKey(ti) { return `s_t${ti}_note`; }
 
-function activityBadge(type) {
-  const color = ACTIVITY_COLORS[type] || '#888';
-  return `<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:bold;background:${color};color:white;margin-left:8px;">${type || '主題簡報'}</span>`;
+function activityBadge(type, color) {
+  const c = color || ACTIVITY_COLORS[type] || '#888';
+  return `<span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:bold;background:${c};color:white;margin-left:8px;">${type || '主題簡報'}</span>`;
 }
 
 function isSimpleType(type) { return type && type !== '主題簡報'; }
 
-function countBadge(pair) {
+function countBadge(pair, color) {
   if (isSimpleType(pair.activityType)) return '';
   if (!pair.presentationCount) return '';
-  return `<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;border:1px solid #c0392b40;color:#c0392b;margin-left:6px;">${pair.presentationCount}</span>`;
+  const c = color || '#c0392b';
+  return `<span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;border:1px solid ${c}40;color:${c};margin-left:6px;">${pair.presentationCount}</span>`;
 }
 
 // ===== CONFIG =====
@@ -1007,7 +1008,7 @@ function openAdminModal(pi) {
     <div style="flex:1;">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
         <span style="font-size:17px;font-weight:700;color:#222;">${p.speaker || '—'}</span>
-        ${activityBadge(act)}${countBadge(p)}
+        ${activityBadge(act, dispColor)}${countBadge(p, dispColor)}
       </div>
       <div style="font-size:12px;color:#aaa;margin-top:3px;">顧問：${p.consultant || '—'}</div>
       ${dates ? `<div style="font-size:12px;color:#888;margin-top:4px;">${dates}</div>` : ''}
@@ -1149,7 +1150,7 @@ function renderConsultantOverview(ck) {
       <div class="pair-card" style="cursor:pointer;${pct === 100 ? `border:2px solid ${color};background:white;` : ''}" onclick="renderConsultant('${ck}','${p.speaker}',true)">
         ${_hasUpd2 ? `<div class="update-dot" style="background:${color};box-shadow:0 0 6px ${color}80;top:12px;right:12px;"></div>` : ''}
         <div class="pair-header">
-          <span class="pair-title">${p.speaker||'—'}${activityBadge(act)}${countBadge(p)}</span>
+          <span class="pair-title">${p.speaker||'—'}${activityBadge(act, color)}${countBadge(p, color)}</span>
         </div>
         ${dates ? `<div style="font-size:12px;color:#888;margin-top:6px;">${dates}</div>` : ''}
         ${countdownHtml(p.presentationTime, act, color)}
@@ -1214,7 +1215,7 @@ function renderConsultant(ck, speaker, canEdit) {
     <div id="tabProgress">`;
   }
   html += `<div class="speaker-info">
-    <p>輔導講者：<strong>${speaker}</strong>${activityBadge(act)}${countBadge(pair)}</p>
+    <p>輔導講者：<strong>${speaker}</strong>${activityBadge(act, color)}${countBadge(pair, color)}</p>
     ${dates.length ? `<p style="font-size:13px;color:#888;margin-top:6px;">${dates.join('　')}</p>` : ''}
     ${countdownHtml(pair.presentationTime, act, color)}
     ${renderProgressBar(pct, progressColor)}
