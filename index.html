@@ -1042,15 +1042,10 @@ function adminTab(pi, tab, color) {
     if (!p) return;
     const ck = p.consultant, speaker = p.speaker;
     const pairId = `${ck}\t${speaker}`;
-    // 清除 slides-level dot
+    // 清除 slides tab-level dot（僅清除分頁按鈕的提示，各欄位 dot 保留直到個別點擊）
     _updatedPairs.delete(`${pairId}\tslides`);
     const sDot = document.getElementById(`adtSlidesDot_${pi}`);
     if (sDot) sDot.remove();
-    // 唯讀模式：全部 field 一次可見，全部清除
-    for (const k of [..._updatedPairs]) {
-      if (k.startsWith(`${pairId}\tslide_`)) _updatedPairs.delete(k);
-    }
-    document.querySelectorAll('[id^="slideDot_"]').forEach(d => d.remove());
     _clearPairDotIfDone(ck, speaker);
   }
 }
@@ -1087,12 +1082,13 @@ function renderWeeksReadonly(ck, speaker, color) {
       const checked = !!data[taskKey(wi,ti)];
       const note = data[noteKey(wi,ti)] || '';
       const noteUpd = _updatedPairs.has(`${ck}\t${speaker}\tnote_${wi}_${ti}`);
-      const noteDotHtml = noteUpd ? `<span id="rnoteDot_${wi}_${ti}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${c};margin-left:5px;flex-shrink:0;animation:dotPulse 1.4s ease-in-out infinite;vertical-align:middle;"></span>` : '';
+      const noteDotHtml = noteUpd ? `<span id="rnoteDot_${wi}_${ti}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${c};margin-left:5px;flex-shrink:0;animation:dotPulse 1.4s ease-in-out infinite;vertical-align:middle;cursor:pointer;" onclick="clearRNoteDot('${ck}','${speaker}',${wi},${ti})" title="點擊標記已讀"></span>` : '';
       return `<div style="display:flex;gap:8px;align-items:flex-start;padding:4px 0;border-bottom:1px solid #f5f5f5;">
         <input type="checkbox" disabled ${checked?'checked':''} style="accent-color:${c};margin-top:3px;flex-shrink:0;">
         <div>
           <span style="font-size:13px;${checked?'color:#aaa;text-decoration:line-through;':'color:#333;'}">${t}</span>
-          ${note?`<div style="font-size:11px;color:#888;margin-top:1px;display:flex;align-items:center;">${note}${noteDotHtml}</div>`:(noteUpd?`<div style="display:flex;align-items:center;gap:3px;margin-top:1px;"><span style="font-size:10px;color:${c};font-weight:600;">備註已清除</span>${noteDotHtml}</div>`:'')}
+          ${note?`<div style="font-size:11px;color:#888;margin-top:1px;display:flex;align-items:center;${noteUpd?'cursor:pointer;':''}" ${noteUpd?`onclick="clearRNoteDot('${ck}','${speaker}',${wi},${ti})"`:''} title="${noteUpd?'點擊標記已讀':''}">
+            ${note}${noteDotHtml}</div>`:(noteUpd?`<div style="display:flex;align-items:center;gap:3px;margin-top:1px;cursor:pointer;" onclick="clearRNoteDot('${ck}','${speaker}',${wi},${ti})"><span style="font-size:10px;color:${c};font-weight:600;">備註已清除</span>${noteDotHtml}</div>`:'')}
         </div>
       </div>`;
     }).join('');
@@ -1119,14 +1115,6 @@ function toggleReadonlyWeek(el, ck, speaker, wi) {
       _updatedPairs.delete(dotKey);
       const dot = document.getElementById(`rdotWk_${wi}`);
       if (dot) dot.remove();
-    }
-    // 唯讀：展開時一次清除所有備註 dots
-    if (wi < WEEKS.length) {
-      WEEKS[wi].tasks.forEach((_, ti) => {
-        _updatedPairs.delete(`${ck}\t${speaker}\tnote_${wi}_${ti}`);
-        const nd = document.getElementById(`rnoteDot_${wi}_${ti}`);
-        if (nd) nd.remove();
-      });
     }
     _clearPairDotIfDone(ck, speaker);
   }
@@ -2527,6 +2515,7 @@ function clearDot(ck, speaker, keys, dotId) {
 }
 function clearSlideDot(ck, speaker, i, keysStr) { clearDot(ck, speaker, keysStr.split(',').map(k => `slide_${k}`), `slideDot_${i}`); }
 function clearNoteDot(ck, speaker, wi, ti) { clearDot(ck, speaker, [`note_${wi}_${ti}`], `noteDot_${wi}_${ti}`); }
+function clearRNoteDot(ck, speaker, wi, ti) { clearDot(ck, speaker, [`note_${wi}_${ti}`], `rnoteDot_${wi}_${ti}`); }
 function clearSimpleNoteDot(ck, speaker, ti) { clearDot(ck, speaker, [`snote_${ti}`], `snoteDot_${ti}`); }
 function ackSimpleNoteDot(ck, speaker, ti) { clearDot(ck, speaker, [`snote_${ti}`], `rsnoteDot_${ti}`); }
 
