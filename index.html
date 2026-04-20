@@ -611,6 +611,8 @@ function _clearPairDotIfDone(ck, speaker) {
   _updatedPairs.delete(`${ck}\t${speaker}`);
   const pi = _adminPairs.findIndex(p => p.consultant === ck && p.speaker === speaker);
   if (pi >= 0) { const d = document.getElementById(`updDot_${pi}`); if (d) d.remove(); }
+  const d2 = document.getElementById(`covDot_${speaker}`);
+  if (d2) d2.remove();
 }
 
 async function doRefresh(silent = false) {
@@ -1164,7 +1166,7 @@ function renderConsultantOverview(ck) {
     const _hasUpd2 = _updatedPairs.has(`${ck}\t${p.speaker}`);
     cardsHtml += `
       <div class="pair-card" style="cursor:pointer;${pct === 100 ? `border:2px solid ${color};background:white;` : ''}" onclick="renderConsultant('${ck}','${p.speaker}',true)">
-        ${_hasUpd2 ? `<div class="update-dot" style="background:${color};box-shadow:0 0 6px ${color}80;top:12px;right:12px;"></div>` : ''}
+        ${_hasUpd2 ? `<div class="update-dot" id="covDot_${p.speaker}" style="background:${color};box-shadow:0 0 6px ${color}80;top:12px;right:12px;"></div>` : ''}
         <div class="pair-header">
           <span class="pair-title">${p.speaker||'—'}${activityBadge(act, color)}${countBadge(p, color)}</span>
         </div>
