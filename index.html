@@ -602,6 +602,18 @@ let _updatedPairs = new Set();
 let _viewingCk = null;
 let _viewingSpeaker = null;
 
+function _countLeafUpdates() {
+  let count = 0;
+  for (const k of _updatedPairs) {
+    const parts = k.split('\t');
+    if (parts.length < 3) continue;
+    const type = parts[2];
+    if (type === 'simple' || type === 'slides' || type.startsWith('week_')) continue;
+    count++;
+  }
+  return count;
+}
+
 function _pairHasAnyUpdate(ck, speaker) {
   const prefix = `${ck}\t${speaker}\t`;
   for (const k of _updatedPairs) { if (k.startsWith(prefix)) return true; }
@@ -679,8 +691,9 @@ async function doRefresh(silent = false) {
   } catch {}
   if (!silent) showLoader(false);
   if (!silent || _updatedPairs.size > 0) renderApp();
-  if (!silent) showToast(_updatedPairs.size ? `資料已更新（${_updatedPairs.size} 筆有變動）` : '資料已是最新');
-  if (silent && _updatedPairs.size > 0) showToast(`資料已更新（${_updatedPairs.size} 筆有變動）`);
+  const _leafCount = _countLeafUpdates();
+  if (!silent) showToast(_leafCount ? `資料已更新（${_leafCount} 筆有變動）` : '資料已是最新');
+  if (silent && _updatedPairs.size > 0) showToast(`資料已更新（${_leafCount} 筆有變動）`);
 }
 
 document.getElementById('nameInput').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
