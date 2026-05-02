@@ -276,23 +276,30 @@ function _lsSave() {
   } catch {}
 }
 
+// 儲存佇列：Map 以 key 去重複，只保留最新值
+const _saveQueue = new Map();
+let _saveRunning = false;
+
 // 背景從 server 取得最新資料（防止重複同時觸發）
 let _bgRefreshing = false;
 function _bgRefresh() {
   if (_bgRefreshing) return Promise.resolve();
+  // 有待送出或處理中的儲存時跳過，避免 server 舊資料覆蓋本地未送出的變更
+  if (_saveQueue.size > 0 || _saveRunning) return Promise.resolve();
   _bgRefreshing = true;
   return fetch(API_URL).then(r => r.json()).then(json => {
-    if (json?.data) { cache = json.data; _lsSave(); }
+    if (json?.data) {
+      // 抓資料期間若又有人 queue 新儲存，先不覆蓋
+      if (_saveQueue.size > 0 || _saveRunning) return;
+      cache = json.data;
+      _lsSave();
+    }
   }).catch(() => {}).finally(() => { _bgRefreshing = false; });
 }
 
 // 頁面載入時，只有 cache 過期才打 API
 const _cacheAge = Date.now() - (parseInt(localStorage.getItem(LS_TIME_KEY) || '0'));
 if (_cacheAge > BG_REFRESH_TTL) _bgRefresh();
-
-// 儲存佇列：Map 以 key 去重複，只保留最新值
-const _saveQueue = new Map();
-let _saveRunning = false;
 
 async function _drainSaveQueue() {
   if (_saveRunning || _saveQueue.size === 0) return;
@@ -2475,10 +2482,34 @@ function removePair(i) {
 
 async function saveSettings() {
   const cfg = readFormIntoCfg();
-  cfg.pairs = cfg.pairs.filter(p => p.consultant || p.speaker);
+  // 視為「使用者尚未開始輸入」的完全空白列直接過濾
+  const nonEmpty = cfg.pairs.filter(p =>
+    p.consultant || p.speaker || p.submitDate1 || p.submitDate2 || p.presentationTime || p.presentationCount
+  );
+  // 必填欄位驗證：依活動類型決定哪些欄位必填
+  for (let i = 0; i < nonEmpty.length; i++) {
+    const p = nonEmpty[i];
+    const missing = [];
+    if (!p.consultant) missing.push('顧問');
+    if (!p.speaker) missing.push('講者姓名');
+    if (p.activityType === '主題簡報') {
+      if (!p.presentationCount) missing.push('簡報次數');
+    } else {
+      if (!p.submitDate1) missing.push(DATE_LABELS[0]);
+      if (!p.submitDate2) missing.push(DATE_LABELS[1]);
+    }
+    if (!p.presentationTime) missing.push(DATE_LABELS[2]);
+    if (missing.length) {
+      alert(`第 ${i + 1} 組配對缺少必填欄位：\n${missing.join('、')}`);
+      const idx = cfg.pairs.indexOf(p);
+      const row = document.getElementById(`pairRow_${idx}`);
+      if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+  }
+  cfg.pairs = nonEmpty;
   saveConfig(cfg);
   showToast('設定已儲存！');
-  // 留在設定頁，只重新渲染設定內容（避免使用者被踢回主頁）
   showSettings();
 }
 
