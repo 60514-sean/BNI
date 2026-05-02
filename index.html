@@ -104,6 +104,9 @@
   .pair-arrow { color: #c0392b; font-size: 18px; font-weight: bold; }
   .add-pair-btn { display: flex; align-items: center; gap: 6px; background: none; border: 2px dashed #c0392b; color: #c0392b; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; margin-top: 4px; }
   .add-pair-btn:hover { background: #fdf0f0; }
+  .fab-add-pair { position: fixed; right: 20px; bottom: 20px; width: 56px; height: 56px; border-radius: 50%; background: #c0392b; color: white; border: none; font-size: 28px; font-weight: 300; cursor: pointer; box-shadow: 0 4px 16px rgba(192,57,43,0.4); z-index: 9000; display: none; align-items: center; justify-content: center; line-height: 1; transition: transform 0.15s, box-shadow 0.15s; }
+  .fab-add-pair:hover { background: #a83226; box-shadow: 0 6px 20px rgba(192,57,43,0.5); transform: scale(1.05); }
+  .fab-add-pair.visible { display: flex; }
   .hint { font-size: 13px; color: #888; margin-top: 6px; }
   .success-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #c0392b; color: white; padding: 12px 24px; border-radius: 8px; font-size: 15px; z-index: 9999; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 
@@ -2266,6 +2269,11 @@ function toggleSection(id) {
   const hidden = el.style.display === 'none';
   el.style.display = hidden ? '' : 'none';
   if (arrow) arrow.textContent = hidden ? '▲' : '▼';
+  // 配對段落展開時顯示浮動新增鈕
+  if (id === 'pairsSection') {
+    const fab = document.getElementById('fabAddPair');
+    if (fab) fab.classList.toggle('visible', hidden);
+  }
 }
 
 function addConsultant() {
@@ -2367,16 +2375,21 @@ function showSettings() {
     <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
       <button class="btn btn-sm btn-gray" onclick="renderApp()">← 回主頁</button>
     </div>
+    <button id="fabAddPair" class="fab-add-pair" onclick="addPair()" title="新增配對">＋</button>
     <div class="card">
-      <div class="card-title">負責人登入密碼</div>
-      <div class="settings-section">
-        <div class="admin-pw-row">
-          <input type="text" id="adminPw" value="${cfg.adminPassword}" placeholder="負責人姓名／密碼" />
-        </div>
-        <p class="hint">負責人用這個名稱登入系統</p>
+      <div class="card-title" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="toggleSection('adminPwSection')">
+        <span>負責人登入密碼</span><span id="adminPwSectionArrow">▼</span>
       </div>
-      <div style="margin-top:12px;">
-        <button class="btn btn-sm" onclick="saveSettings()">儲存設定</button>
+      <div id="adminPwSection" style="display:none;">
+        <div class="settings-section">
+          <div class="admin-pw-row">
+            <input type="text" id="adminPw" value="${cfg.adminPassword}" placeholder="負責人姓名／密碼" />
+          </div>
+          <p class="hint">負責人用這個名稱登入系統</p>
+        </div>
+        <div style="margin-top:12px;">
+          <button class="btn btn-sm" onclick="saveSettings()">儲存設定</button>
+        </div>
       </div>
     </div>
 
@@ -2405,8 +2418,8 @@ function showSettings() {
       <div id="pairsSection" style="display:none;">
         <div class="settings-section">
           <p class="hint" style="margin-bottom:12px;">左側選擇顧問，右側輸入講者姓名，姓名即為登入密碼</p>
-          <button class="add-pair-btn" onclick="addPair()" style="margin-bottom:12px;">＋ 新增配對</button>
           <div id="pairsContainer">${pairsHtml}</div>
+          <button class="add-pair-btn" onclick="addPair()">＋ 新增配對</button>
         </div>
         <div style="margin-top:12px;">
           <button class="btn btn-sm" onclick="saveSettings()">儲存設定</button>
@@ -2466,6 +2479,8 @@ function addPair() {
   const sec = document.getElementById('pairsSection');
   const arrow = document.getElementById('pairsSectionArrow');
   if (sec) { sec.style.display = ''; if (arrow) arrow.textContent = '▲'; }
+  const fab = document.getElementById('fabAddPair');
+  if (fab) fab.classList.add('visible');
   const newRow = document.getElementById(`pairRow_${cfg.pairs.length - 1}`);
   if (newRow) { newRow.style.border = '2px solid #c0392b'; newRow.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
 }
