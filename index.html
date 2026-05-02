@@ -2405,8 +2405,8 @@ function showSettings() {
       <div id="pairsSection" style="display:none;">
         <div class="settings-section">
           <p class="hint" style="margin-bottom:12px;">左側選擇顧問，右側輸入講者姓名，姓名即為登入密碼</p>
+          <button class="add-pair-btn" onclick="addPair()" style="margin-bottom:12px;">＋ 新增配對</button>
           <div id="pairsContainer">${pairsHtml}</div>
-          <button class="add-pair-btn" onclick="addPair()">＋ 新增配對</button>
         </div>
         <div style="margin-top:12px;">
           <button class="btn btn-sm" onclick="saveSettings()">儲存設定</button>
@@ -2461,6 +2461,7 @@ function addPair() {
   const cfg = readFormIntoCfg();
   cfg.pairs.push({ consultant: '', speaker: '' });
   cache['__config__'] = cfg;
+  _lsSave();
   showSettings();
   const sec = document.getElementById('pairsSection');
   const arrow = document.getElementById('pairsSectionArrow');
@@ -2489,9 +2490,13 @@ async function saveSettings() {
   const nonEmpty = cfg.pairs.filter(p =>
     p.consultant || p.speaker || p.submitDate1 || p.submitDate2 || p.presentationTime || p.presentationCount
   );
-  // 必填欄位驗證：依活動類型決定哪些欄位必填
-  for (let i = 0; i < nonEmpty.length; i++) {
-    const p = nonEmpty[i];
+  cfg.pairs = nonEmpty;
+  // 先儲存目前狀態（包含未填齊的列）以免使用者輸入流失
+  saveConfig(cfg);
+
+  // 必填欄位提醒（僅提示，不擋儲存）
+  const issues = [];
+  nonEmpty.forEach((p, i) => {
     const missing = [];
     if (!p.consultant) missing.push('顧問');
     if (!p.speaker) missing.push('講者姓名');
@@ -2502,16 +2507,18 @@ async function saveSettings() {
       if (!p.submitDate2) missing.push(DATE_LABELS[1]);
     }
     if (!p.presentationTime) missing.push(DATE_LABELS[2]);
-    if (missing.length) {
-      alert(`第 ${i + 1} 組配對缺少必填欄位：\n${missing.join('、')}`);
-      const idx = cfg.pairs.indexOf(p);
-      const row = document.getElementById(`pairRow_${idx}`);
-      if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
-    }
+    if (missing.length) issues.push({ idx: i, missing });
+  });
+
+  if (issues.length) {
+    const lines = issues.map(x => `第 ${x.idx + 1} 組：${x.missing.join('、')}`);
+    alert(`資料已暫存，但以下配對尚有欄位未填：\n\n${lines.join('\n')}\n\n請補齊後再次儲存。`);
+    const firstRow = document.getElementById(`pairRow_${issues[0].idx}`);
+    if (firstRow) firstRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showSettings();
+    return;
   }
-  cfg.pairs = nonEmpty;
-  saveConfig(cfg);
+
   showToast('設定已儲存！');
   showSettings();
 }
