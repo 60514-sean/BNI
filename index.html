@@ -2419,7 +2419,6 @@ function showSettings() {
         <div class="settings-section">
           <p class="hint" style="margin-bottom:12px;">左側選擇顧問，右側輸入講者姓名，姓名即為登入密碼</p>
           <div id="pairsContainer">${pairsHtml}</div>
-          <button class="add-pair-btn" onclick="addPair()">＋ 新增配對</button>
         </div>
         <div style="margin-top:12px;">
           <button class="btn btn-sm" onclick="saveSettings()">儲存設定</button>
@@ -2493,10 +2492,13 @@ function removePair(i) {
   }
   cfg.pairs.splice(i, 1);
   cache['__config__'] = cfg;
+  _lsSave();
   showSettings();
   const sec = document.getElementById('pairsSection');
   const arrow = document.getElementById('pairsSectionArrow');
   if (sec) { sec.style.display = ''; if (arrow) arrow.textContent = '▲'; }
+  const fab = document.getElementById('fabAddPair');
+  if (fab) fab.classList.add('visible');
 }
 
 async function saveSettings() {
