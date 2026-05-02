@@ -2478,7 +2478,8 @@ async function saveSettings() {
   cfg.pairs = cfg.pairs.filter(p => p.consultant || p.speaker);
   saveConfig(cfg);
   showToast('設定已儲存！');
-  setTimeout(() => renderApp(), 800);
+  // 留在設定頁，只重新渲染設定內容（避免使用者被踢回主頁）
+  showSettings();
 }
 
 
