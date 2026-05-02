@@ -2364,6 +2364,9 @@ function showSettings() {
   }).join('');
 
   document.getElementById('mainContent').innerHTML = `
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+      <button class="btn btn-sm btn-gray" onclick="renderApp()">← 回主頁</button>
+    </div>
     <div class="card">
       <div class="card-title">負責人登入密碼</div>
       <div class="settings-section">
