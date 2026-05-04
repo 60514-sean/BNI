@@ -733,7 +733,13 @@ let _adminPairs = [];
 
 function renderAdmin() {
   const cfg = getConfig();
-  _adminPairs = cfg.pairs.filter(p => p.consultant || p.speaker);
+  _adminPairs = cfg.pairs.filter(p => p.consultant || p.speaker)
+    .sort((a, b) => {
+      // 按簡報日期升序（早到晚），未填日期排最後
+      const da = a.presentationTime || '9999/99/99';
+      const db = b.presentationTime || '9999/99/99';
+      return da.localeCompare(db);
+    });
 
   if (_adminPairs.length === 0) {
     document.getElementById('mainContent').innerHTML = '<div class="card"><p style="color:#888;">尚未設定任何配對，請至設定頁面新增。</p></div>';
