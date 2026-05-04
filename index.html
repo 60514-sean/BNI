@@ -2272,11 +2272,9 @@ function onActivityChange(i) {
   const sel = document.getElementById(`act_${i}`);
   if (sel) sel.style.color = getActivityColor(act);
   const simple = isSimpleType(act);
-  // BOD 不需要繳交簡報 / 線上 RE 稿
-  const showSubmitDates = simple && act !== 'BOD';
   [1, 2].forEach(f => {
     const row = document.getElementById(`dateRow_${i}_${f}`);
-    if (row) row.style.display = showSubmitDates ? 'block' : 'none';
+    if (row) row.style.display = simple ? 'block' : 'none';
   });
   const row3 = document.getElementById(`dateRow_${i}_3`);
   if (row3) row3.style.display = 'block';
@@ -2388,8 +2386,8 @@ function showSettings() {
         <input type="text" placeholder="講者姓名" value="${p.speaker||''}" id="spk_${i}" style="flex:1;min-width:90px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;" />
         <button class="btn btn-sm btn-danger" onclick="removePair(${i})">刪除</button>
       </div>
-      ${makeDatePicker(i, 1, DATE_LABELS[0], p.submitDate1||'', !simple || act==='BOD')}
-      ${makeDatePicker(i, 2, DATE_LABELS[1], p.submitDate2||'', !simple || act==='BOD')}
+      ${makeDatePicker(i, 1, DATE_LABELS[0], p.submitDate1||'', !simple)}
+      ${makeDatePicker(i, 2, DATE_LABELS[1], p.submitDate2||'', !simple)}
       ${makeDatePicker(i, 3, DATE_LABELS[2], p.presentationTime||'', false)}
     </div>`;
   }).join('');
@@ -2479,14 +2477,12 @@ function readFormIntoCfg() {
   cfg.pairs = cfg.pairs.map((_, i) => {
     const act = document.getElementById(`act_${i}`)?.value || '主題簡報';
     const simple = isSimpleType(act);
-    // BOD 不需要繳交簡報、線上 RE 稿
-    const needSubmitDates = simple && act !== 'BOD';
     return {
       activityType: act,
       consultant: document.getElementById(`con_${i}`)?.value.trim() || '',
       speaker: document.getElementById(`spk_${i}`)?.value.trim() || '',
-      submitDate1: needSubmitDates ? (document.getElementById(`time1_${i}`)?.value.trim() || '') : '',
-      submitDate2: needSubmitDates ? (document.getElementById(`time2_${i}`)?.value.trim() || '') : '',
+      submitDate1: simple ? (document.getElementById(`time1_${i}`)?.value.trim() || '') : '',
+      submitDate2: simple ? (document.getElementById(`time2_${i}`)?.value.trim() || '') : '',
       presentationTime: document.getElementById(`time3_${i}`)?.value.trim() || '',
       presentationCount: document.getElementById(`cnt_${i}`)?.value || '',
     };
@@ -2551,10 +2547,8 @@ async function saveSettings() {
     if (!p.speaker) missing.push('講者姓名');
     if (p.activityType === '主題簡報') {
       if (!p.presentationCount) missing.push('簡報次數');
-    } else if (p.activityType === 'BOD') {
-      // BOD 不是簡報活動，不必填繳交簡報 / 線上 RE 稿
     } else {
-      // 主題日、共識會議仍要繳交簡報 / 線上 RE 稿
+      // 主題日、共識會議、BOD 都要繳交簡報 / 線上 RE 稿
       if (!p.submitDate1) missing.push(DATE_LABELS[0]);
       if (!p.submitDate2) missing.push(DATE_LABELS[1]);
     }
