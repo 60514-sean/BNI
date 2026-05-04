@@ -282,6 +282,9 @@ function _lsSave() {
 // 儲存佇列：Map 以 key 去重複，只保留最新值
 const _saveQueue = new Map();
 let _saveRunning = false;
+// 最近寫過的 key（避免 doRefresh / _bgRefresh 用 GAS 舊版覆蓋本地剛改的）
+const _recentSaves = new Map();
+const _SAVE_GRACE_MS = 30000;
 
 // 背景從 server 取得最新資料（防止重複同時觸發）
 let _bgRefreshing = false;
@@ -326,6 +329,7 @@ async function apiSave(key, data) {
   cache[key] = data;
   _lsSave();
   _saveQueue.set(key, data);
+  _recentSaves.set(key, Date.now());
   _drainSaveQueue();
 }
 
@@ -640,6 +644,8 @@ function _clearPairDotIfDone(ck, speaker) {
 
 async function doRefresh(silent = false) {
   if (!silent) showLoader(true, '更新中...');
+  // silent 模式（定時 polling）若有未完成 push 直接跳過，避免覆蓋本地剛改的修改
+  if (silent && (_saveQueue.size > 0 || _saveRunning)) return;
   const oldCache = _refreshBaseline;
   _updatedPairs = new Set();
   try {
@@ -2478,8 +2484,11 @@ async function addPair() {
   cfg.pairs.push({ activityType: '主題簡報', consultant: '', speaker: '' });
   cache['__config__'] = cfg;
   _lsSave();
-  // 立即 push 到 GAS，避免使用者按 + 後沒明確儲存就離開頁面導致新增的列丟失
-  saveConfig(cfg);
+  // 立即 push 到 GAS 並等完成，避免連按 + 時 race condition 造成資料覆蓋
+  await saveConfig(cfg);
+  while (_saveQueue.size > 0 || _saveRunning) {
+    await new Promise(r => setTimeout(r, 50));
+  }
   showSettings();
   const sec = document.getElementById('pairsSection');
   const arrow = document.getElementById('pairsSectionArrow');
