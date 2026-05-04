@@ -2507,23 +2507,19 @@ function removePair(i) {
 
 async function saveSettings() {
   const cfg = readFormIntoCfg();
-  // 視為「使用者尚未開始輸入」的完全空白列直接過濾
-  // 加上 activityType 判斷，避免使用者只選了非預設活動類型但其他都空白被誤刪
-  const nonEmpty = cfg.pairs.filter(p =>
-    p.consultant || p.speaker || p.submitDate1 || p.submitDate2 || p.presentationTime || p.presentationCount
-    || (p.activityType && p.activityType !== '主題簡報')
-  );
-  cfg.pairs = nonEmpty;
-  // 先儲存目前狀態（包含未填齊的列）以免使用者輸入流失
+  // 不再激進過濾空白列（使用者反映「第二筆消失」的根因）
+  // 改用：所有列都保留儲存，由使用者按「刪除」按鈕主動移除
   await saveConfig(cfg);
   // 等 push queue 完全清空（避免 alert 跳出後使用者重整時 GAS 還沒收到）
   while (_saveQueue.size > 0 || _saveRunning) {
     await new Promise(r => setTimeout(r, 50));
   }
 
-  // 必填欄位提醒（僅提示，不擋儲存）
+  // 必填欄位提醒（僅提示，不擋儲存；完全空白列略過提示）
   const issues = [];
-  nonEmpty.forEach((p, i) => {
+  cfg.pairs.forEach((p, i) => {
+    const isAllEmpty = !p.consultant && !p.speaker && !p.submitDate1 && !p.submitDate2 && !p.presentationTime && !p.presentationCount;
+    if (isAllEmpty) return;
     const missing = [];
     if (!p.consultant) missing.push('顧問');
     if (!p.speaker) missing.push('講者姓名');
