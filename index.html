@@ -436,6 +436,11 @@ const LOCK_WEEKS_THRESHOLD = 6;
 const getDisplayColor = (act, locked) => locked ? LOCKED_COLOR : getActivityColor(act);
 const DONE_COLOR = '#c0392b';
 const SIMPLE_TASKS = ['主題名稱確認', '一般引薦確認', '理想引薦確認', '夢幻引薦確認', '簡報繳交', 'RE稿完成'];
+// BOD 不需要一般 / 理想 / 夢幻引薦確認
+const _BOD_HIDDEN_SIMPLE_TI = new Set([1, 2, 3]);
+function visibleSimpleTaskIndices(act) {
+  return SIMPLE_TASKS.map((_, ti) => ti).filter(ti => !(act === 'BOD' && _BOD_HIDDEN_SIMPLE_TI.has(ti)));
+}
 const DATE_LABELS = ['繳交簡報', '線上RE稿', '簡報時間'];
 
 function simpleTaskKey(ti) { return `s_t${ti}`; }
@@ -1049,7 +1054,7 @@ function openAdminModal(pi) {
   ].filter(Boolean).join('　');
 
   const detail = isSimpleType(act)
-    ? renderSimpleReadonly(p.consultant, p.speaker, dispColor)
+    ? renderSimpleReadonly(p.consultant, p.speaker, dispColor, act)
     : renderWeeksReadonly(p.consultant, p.speaker, dispColor);
   const _admSlideUpd = _updatedPairs.has(`${pairId}\tslides`);
   const _admSlideDot = _admSlideUpd ? `<span id="adtSlidesDot_${pi}" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dispColor};margin-left:5px;vertical-align:middle;animation:dotPulse 1.4s ease-in-out infinite;"></span>` : '';
@@ -1115,11 +1120,12 @@ function adminTab(pi, tab, color) {
   }
 }
 
-function renderSimpleReadonly(ck, speaker, color) {
+function renderSimpleReadonly(ck, speaker, color, act) {
   const c = color || '#c0392b';
   const data = getData(ck, speaker);
   const hasUpd = _updatedPairs.has(`${ck}\t${speaker}\tsimple`);
-  const rows = SIMPLE_TASKS.map((t, ti) => {
+  const rows = visibleSimpleTaskIndices(act).map(ti => {
+    const t = SIMPLE_TASKS[ti];
     const checked = !!data[simpleTaskKey(ti)];
     const note = data[simpleNoteKey(ti)] || '';
     const noteUpd = _updatedPairs.has(`${ck}\t${speaker}\tsnote_${ti}`);
@@ -1311,7 +1317,8 @@ function renderConsultant(ck, speaker, canEdit) {
     // 簡化清單
     const _simpleUpd = _updatedPairs.has(`${ck}\t${speaker}\tsimple`);
     html += `<div class="week-card"><div class="week-header" style="background:${color}" onclick="toggleWeek('simple-body')"><div><h3>進度清單</h3><div class="week-sub">${act}</div></div><div style="display:flex;align-items:center;gap:6px;"><span>${done}/${total}</span>${_simpleUpd ? `<span id="weekDot_simple" class="week-update-dot" style="background:white;"></span>` : ''}</div></div><div class="week-body" id="simple-body">`;
-    html += SIMPLE_TASKS.map((t, ti) => {
+    html += visibleSimpleTaskIndices(act).map(ti => {
+      const t = SIMPLE_TASKS[ti];
       const checked = data[simpleTaskKey(ti)] ? 'checked' : '';
       const note = data[simpleNoteKey(ti)] || '';
       const cls = data[simpleTaskKey(ti)] ? 'checked' : '';
@@ -2014,8 +2021,9 @@ const _TOTAL_SIMPLE = SIMPLE_TASKS.length;
 
 function calcProgress(act, data) {
   if (isSimpleType(act)) {
-    const done = SIMPLE_TASKS.filter((_, ti) => data[simpleTaskKey(ti)]).length;
-    return { total: _TOTAL_SIMPLE, done };
+    const tis = visibleSimpleTaskIndices(act);
+    const done = tis.filter(ti => data[simpleTaskKey(ti)]).length;
+    return { total: tis.length, done };
   }
   const done = WEEKS.reduce((s, w, wi) => s + w.tasks.filter((_, ti) => data[taskKey(wi, ti)]).length, 0);
   return { total: _TOTAL_TASKS, done };
@@ -2078,7 +2086,7 @@ async function saveAllTasks(ck, speaker) {
   const data = getData(ck, speaker);
   const act = getPairByKeys(ck, speaker).activityType;
   if (isSimpleType(act)) {
-    SIMPLE_TASKS.forEach((_, ti) => {
+    visibleSimpleTaskIndices(act).forEach(ti => {
       const cb = document.getElementById(`scb_${ti}`);
       const note = document.getElementById(`snote_${ti}`);
       if (cb) data[simpleTaskKey(ti)] = cb.checked;
@@ -2713,7 +2721,7 @@ function buildReminderText(p) {
     lines.push('');
 
     if (isSimpleType(act)) {
-      const incompleteCount = SIMPLE_TASKS.filter((_, ti) => !data[simpleTaskKey(ti)]).length;
+      const incompleteCount = visibleSimpleTaskIndices(act).filter(ti => !data[simpleTaskKey(ti)]).length;
       if (incompleteCount > 0) lines.push(`${act} → 還差 ${incompleteCount} 項`);
     } else {
       // 只列當週之前（wi < currentWeekIdx）；未設日期則列全部
@@ -2786,7 +2794,7 @@ function buildGroupReminderText(consultant, pairs) {
     incompleteGroup.forEach(({ p, act, data, weekIdx }, idx) => {
       lines.push(`【講者】${speakerGivenName(p.speaker)}`);
       if (isSimpleType(act)) {
-        const cnt = SIMPLE_TASKS.filter((_, ti) => !data[simpleTaskKey(ti)]).length;
+        const cnt = visibleSimpleTaskIndices(act).filter(ti => !data[simpleTaskKey(ti)]).length;
         if (cnt > 0) lines.push(`${act} → 還差 ${cnt} 項`);
       } else {
         const limit = weekIdx >= 0 ? weekIdx : WEEKS.length;
