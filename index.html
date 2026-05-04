@@ -2473,11 +2473,13 @@ function readFormIntoCfg() {
   return cfg;
 }
 
-function addPair() {
+async function addPair() {
   const cfg = readFormIntoCfg();
-  cfg.pairs.push({ consultant: '', speaker: '' });
+  cfg.pairs.push({ activityType: '主題簡報', consultant: '', speaker: '' });
   cache['__config__'] = cfg;
   _lsSave();
+  // 立即 push 到 GAS，避免使用者按 + 後沒明確儲存就離開頁面導致新增的列丟失
+  saveConfig(cfg);
   showSettings();
   const sec = document.getElementById('pairsSection');
   const arrow = document.getElementById('pairsSectionArrow');
