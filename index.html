@@ -2504,12 +2504,18 @@ function removePair(i) {
 async function saveSettings() {
   const cfg = readFormIntoCfg();
   // 視為「使用者尚未開始輸入」的完全空白列直接過濾
+  // 加上 activityType 判斷，避免使用者只選了非預設活動類型但其他都空白被誤刪
   const nonEmpty = cfg.pairs.filter(p =>
     p.consultant || p.speaker || p.submitDate1 || p.submitDate2 || p.presentationTime || p.presentationCount
+    || (p.activityType && p.activityType !== '主題簡報')
   );
   cfg.pairs = nonEmpty;
   // 先儲存目前狀態（包含未填齊的列）以免使用者輸入流失
-  saveConfig(cfg);
+  await saveConfig(cfg);
+  // 等 push queue 完全清空（避免 alert 跳出後使用者重整時 GAS 還沒收到）
+  while (_saveQueue.size > 0 || _saveRunning) {
+    await new Promise(r => setTimeout(r, 50));
+  }
 
   // 必填欄位提醒（僅提示，不擋儲存）
   const issues = [];
@@ -2519,7 +2525,10 @@ async function saveSettings() {
     if (!p.speaker) missing.push('講者姓名');
     if (p.activityType === '主題簡報') {
       if (!p.presentationCount) missing.push('簡報次數');
+    } else if (p.activityType === 'BOD') {
+      // BOD 不是簡報活動，不必填繳交簡報 / 線上 RE 稿
     } else {
+      // 主題日、共識會議仍要繳交簡報 / 線上 RE 稿
       if (!p.submitDate1) missing.push(DATE_LABELS[0]);
       if (!p.submitDate2) missing.push(DATE_LABELS[1]);
     }
