@@ -1445,7 +1445,7 @@ function switchConsultantTab(tab) {
 }
 
 function switchCaseType(idx) {
-  const CASE_TYPES = ['第1次', '第2次+', '主題日'];
+  const CASE_TYPES = ['第1次', '第2次+', '主題日', 'BOD'];
   CASE_TYPES.forEach((_, i) => {
     const panel = document.getElementById('caseTypePanel_' + i);
     const btn = document.getElementById('caseTypeBtn_' + i);
@@ -1460,7 +1460,7 @@ function switchCaseType(idx) {
 
 function renderCasesAllTypes(color) {
   const c = color || '#c0392b';
-  const CASE_TYPES = ['第1次', '第2次+', '主題日'];
+  const CASE_TYPES = ['第1次', '第2次+', '主題日', 'BOD'];
 
   const btnHtml = CASE_TYPES.map((t, i) => `
     <button id="caseTypeBtn_${i}" onclick="switchCaseType(${i})"
@@ -1546,6 +1546,7 @@ async function saveCases(list) { await apiSave('__cases__', list); }
 
 function getCaseType(act, count) {
   if (act === '主題日') return '主題日';
+  if (act === 'BOD') return 'BOD';
   if (!count || count === '第1次') return '第1次';
   return '第2次+';
 }
@@ -1741,7 +1742,7 @@ function closeCaseModal() {
 
 function showCasesSettings() {
   const cases = getCases();
-  const CASE_TYPES = ['第1次', '第2次+', '主題日'];
+  const CASE_TYPES = ['第1次', '第2次+', '主題日', 'BOD'];
 
   const groupHtml = CASE_TYPES.map(type => {
     const group = cases.map((cs, i) => ({ cs, i })).filter(({ cs }) => cs.type === type);
