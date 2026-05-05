@@ -56,12 +56,10 @@ function renderCarousel(images, uid) {
     </div>`;
 }
 
-const _carouselSetup = new Set();
 function setupCarouselSwipe(uid) {
-  if (_carouselSetup.has(uid)) return;
   const wrap = document.getElementById('carWrap_' + uid);
-  if (!wrap) return;
-  _carouselSetup.add(uid);
+  if (!wrap || wrap.dataset.cwSetup === '1') return;
+  wrap.dataset.cwSetup = '1';
   let startX = 0;
   wrap.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, { passive: true });
   wrap.addEventListener('touchend', e => {
