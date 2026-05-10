@@ -76,7 +76,7 @@ function renderConsultantGuide() {
     </div>`;
 
   // 下一章引導（章節結尾，1-indexed，第 9 章後沒有下一章）
-  const chapterLabels = ['思考','為什麼','行動','選方向','主題','對象','架構','禮物','上台'];
+  const chapterLabels = ['誠實面對','為了誰','行動','選方向','主題','對象','架構','禮物','上台'];
   const nextHint = (n) => n >= 9 ? '' : `
     <div style="text-align:center;margin-top:60px;padding-top:30px;border-top:1px solid ${LINE};">
       <button onclick="scrollToChapter(${n+1})"
@@ -157,11 +157,20 @@ function renderConsultantGuide() {
     </section>`;
   }).join('');
 
-  // 三個行動
+  // 兩個行動（聽眾的「簡報當下」+「散會後」合併在第 2 點）
   const actions = [
-    { num: '01', when: '當你是講者', iconName: 'mic', text: '把主題簡報當成「寫給夥伴的銷售腳本」來準備，不是「介紹我的公司」。' },
-    { num: '02', when: '當你是聽眾', iconName: 'ear', text: '手機收起來，筆記拿出來。寫下「這個情境我可以幫他引薦」的那一刻。' },
-    { num: '03', when: '散會後', iconName: 'chat', text: '走過去跟今天的講者說一句：<br>「你剛剛講的那個 ___，我想到一個人可以介紹給你。」' },
+    {
+      num: '01',
+      when: '當你是講者',
+      iconName: 'mic',
+      text: '把主題簡報當成「寫給夥伴的銷售腳本」來準備，不是「介紹我的公司」。'
+    },
+    {
+      num: '02',
+      when: '當你是聽眾',
+      iconName: 'ear',
+      text: `<strong style="color:${NAVY};">簡報當下：</strong>手機收起來，筆記拿出來。寫下「這個情境我可以幫他引薦」的那一刻。<br><br><strong style="color:${NAVY};">散會後：</strong>走過去跟今天的講者說：<br>「你剛剛講的那個 ___，我想到一個人可以介紹給你。」`
+    },
   ];
   const actionRows = actions.map((a, i) => `
     <div style="display:flex;gap:20px;align-items:flex-start;padding:30px 0;${i < actions.length - 1 ? `border-bottom:1px solid ${LINE};` : ''}">
@@ -177,10 +186,18 @@ function renderConsultantGuide() {
   return `
   <style>
     @media (max-width: 380px) {
-      #tabConsultantGuide h1 { font-size: 24px !important; line-height: 1.5 !important; }
-      #tabConsultantGuide h2 { font-size: 22px !important; }
-      #tabConsultantGuide h3 { font-size: 19px !important; }
+      #simguide h1 { font-size: 24px !important; line-height: 1.5 !important; }
+      #simguide h2 { font-size: 22px !important; }
+      #simguide h3 { font-size: 19px !important; }
       #guideDots { padding: 10px 12px !important; gap: 12px !important; }
+    }
+    /* 目錄手機緊湊版：2 欄、隱藏副標、縮 padding */
+    @media (max-width: 540px) {
+      .toc-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+      .toc-item { padding: 18px 14px !important; }
+      .toc-item .toc-num { font-size: 22px !important; }
+      .toc-item .toc-title { font-size: 17px !important; }
+      .toc-item .toc-desc { display: none !important; }
     }
   </style>
   <div id="simguide" style="margin:-16px -20px 0;color:${INK};font-family:inherit;">
@@ -200,23 +217,52 @@ function renderConsultantGuide() {
       <!-- 預留：CTA 按鈕（例如「往下看」「立刻準備我的主題簡報」） -->
     </section>
 
-    <!-- ============ 區塊 2：開場提問（章節 1）============ -->
-    <section id="gchap1" data-chap="1" style="padding:90px 30px;background:white;border-top:4px solid ${RED};scroll-margin-top:120px;">
+    <!-- ============ 區塊 2：開場提問（章節 1，序章性質，放在目錄前）============ -->
+    <section id="gchap1" data-chap="1" style="padding:80px 30px 60px;background:white;border-top:4px solid ${RED};scroll-margin-top:120px;">
       ${chapterMark('一', '思考')}
       <div style="max-width:540px;margin:0 auto;text-align:center;">
-        <p style="font-size:22px;color:${NAVY};font-weight:700;line-height:2;margin:0;letter-spacing:.5px;">
+        <p style="font-size:26px;color:${NAVY};font-weight:700;line-height:2.2;margin:0;letter-spacing:.5px;">
           上週做主題簡報的是誰？<br>
           他講了什麼？<br>
           那再上一週呢？
         </p>
-        ${nextHint(1)}
+      </div>
+    </section>
+
+    <!-- ============ 目錄（章節 1 之後、章節 2 之前；列出章節 2-9 共 8 項）============ -->
+    <section style="background:white;padding:30px 24px 70px;">
+      <div class="toc-grid" style="max-width:880px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;">
+        ${[
+          { chap: 2, t: '為了誰',   d: '上台 5 分鐘，到底為了誰？' },
+          { chap: 3, t: '行動',     d: '從今天起，做這兩件事' },
+          { chap: 4, t: '選方向',   d: '引薦或合作，先選一個' },
+          { chap: 5, t: '主題',     d: '怎麼設定吸引人的主題' },
+          { chap: 6, t: '對象',     d: '把引薦對象說清楚' },
+          { chap: 7, t: '架構',     d: '怎麼安排你的 5 分鐘' },
+          { chap: 8, t: '禮物',     d: '別忘了你的抽獎禮物' },
+          { chap: 9, t: '上台',     d: '上台前記住這 7 件事' },
+        ].map((item, i) => `
+          <button class="toc-item" onclick="scrollToChapter(${item.chap})" onmouseover="this.style.borderColor='${RED}';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='${LINE}';this.style.transform=''"
+            style="background:white;padding:26px 24px;border:1px solid ${LINE};border-radius:10px;cursor:pointer;text-align:left;transition:all .2s;font-family:inherit;${CARD_FX}">
+            <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:10px;">
+              <div class="toc-num" style="font-size:30px;color:${NAVY};font-weight:800;line-height:1;letter-spacing:-1.5px;">0${i+1}</div>
+              <div class="toc-title" style="font-size:21px;color:${NAVY};font-weight:800;line-height:1.3;letter-spacing:-.5px;">${item.t}</div>
+            </div>
+            <div class="toc-desc" style="font-size:15px;color:${MUTE};line-height:1.7;">${item.d}</div>
+          </button>
+        `).join('')}
       </div>
     </section>
 
     <!-- ============ 區塊 3：三份禮物（章節 2）============ -->
     <section id="gchap2" data-chap="2" style="padding:80px 30px 60px;background:${CREAM};text-align:center;border-top:4px solid ${RED};scroll-margin-top:120px;">
       ${chapterMark('二', '為什麼')}
-      <h2 style="font-size:30px;color:${NAVY};margin:0;font-weight:800;letter-spacing:-1px;">主題簡報的三份禮物</h2>
+      <h2 style="font-size:30px;color:${NAVY};margin:0 0 16px;font-weight:800;letter-spacing:-1px;line-height:1.5;">
+        上台 5 分鐘，<br>到底為了誰？
+      </h2>
+      <p style="font-size:15px;color:${MUTE};margin:0;line-height:1.85;max-width:480px;margin-left:auto;margin-right:auto;">
+        答案是：你、夥伴、來賓 — 三個人。
+      </p>
       <div style="width:32px;height:1px;background:${NAVY};opacity:.3;margin:30px auto 0;"></div>
     </section>
     ${giftSections}
@@ -230,7 +276,7 @@ function renderConsultantGuide() {
       <div style="max-width:600px;margin:0 auto;">
         ${chapterMark('三', '行動')}
         <div style="text-align:center;margin-bottom:50px;">
-          <h2 style="font-size:30px;color:${NAVY};margin:0;font-weight:800;letter-spacing:-1px;">從今天起，做這三件事</h2>
+          <h2 style="font-size:30px;color:${NAVY};margin:0;font-weight:800;letter-spacing:-1px;">從今天起，做這兩件事</h2>
           <div style="width:32px;height:1px;background:${RED};margin:24px auto 0;"></div>
         </div>
         <div>
@@ -610,7 +656,7 @@ function setupGuideScroll() {
   window._guideScrollAttached = true;
   const RED = '#c0392b';
   const GREY = '#d8d8d8';
-  const labels = ['思考','為什麼','行動','選方向','主題','對象','架構','禮物','上台'];
+  const labels = ['誠實面對','為了誰','行動','選方向','主題','對象','架構','禮物','上台'];
 
   // 1) 底部 dots 指示器
   const dotsBar = document.createElement('div');
@@ -677,17 +723,20 @@ function setGuideUiVisible(visible) {
   if (tip) tip.style.opacity = visible ? '1' : '0';
 }
 
-// 自動隱藏：偵測 #tabConsultantGuide 是否還存在且可見，否則強制隱藏 dots/btn/tip
-// 處理「離開顧問首頁」「進詳細頁」「登出」等沒呼叫 switchConsultantTab 的場景
+// 自動隱藏：偵測任何 simguide section（[data-chap]）是否可見，否則強制隱藏 dots/btn/tip
+// 通用偵測，不綁定特定 ID（顧問首頁 #tabConsultantGuide、講者畫面 #tabGuide 都能 cover）
 function setupGuideUiAutoHide() {
   if (window._guideAutoHide) return;
   window._guideAutoHide = true;
   let raf = null;
   const check = () => {
     raf = null;
-    const tg = document.getElementById('tabConsultantGuide');
-    const isVisible = !!tg && tg.style.display !== 'none' && tg.offsetParent !== null;
-    if (!isVisible) setGuideUiVisible(false);
+    const sections = document.querySelectorAll('[data-chap]');
+    let anyVisible = false;
+    for (const s of sections) {
+      if (s.offsetParent !== null) { anyVisible = true; break; }
+    }
+    if (!anyVisible) setGuideUiVisible(false);
   };
   const observer = new MutationObserver(() => {
     if (raf) return;
@@ -799,7 +848,7 @@ function renderConsultant(ck, speaker, canEdit) {
       ${!isConsultantView ? `<button id="tabBtn_guide" class="speaker-tab-btn" onclick="switchSpeakerTab('guide')">簡報攻略</button>` : ''}
       ${!isConsultantView ? `<button id="tabBtn_cases" class="speaker-tab-btn" onclick="switchSpeakerTab('cases')">簡報案例</button>` : ''}
     </div>
-    ${!isConsultantView ? `<div id="tabGuide" style="display:none;">${renderGuide(act, color, pair)}</div>` : ''}
+    ${!isConsultantView ? `<div id="tabGuide" style="display:none;">${renderConsultantGuide()}</div>` : ''}
     ${!isConsultantView ? `<div id="tabCases" style="display:none;">${renderCasesTab(act, pair, color)}</div>` : ''}
     ${hasSlides(act) ? `<div id="tabSlides" style="display:none;">${renderSlidesTab(ck, speaker, pair, !locked)}</div>` : ''}
     <div id="tabProgress">`;
@@ -1046,6 +1095,15 @@ function switchSpeakerTab(tab) {
   document.querySelectorAll('.speaker-tab-btn').forEach(b => {
     b.classList.toggle('active', b.id === 'tabBtn_' + tab);
   });
+  // 切到簡報攻略時：建立 dots/btn（一次）、顯示 dots、立刻跑一次 scroll 偵測
+  if (tab === 'guide') {
+    if (typeof setupGuideScroll === 'function') setupGuideScroll();
+    if (typeof setupGuideUiAutoHide === 'function') setupGuideUiAutoHide();
+    if (typeof setGuideUiVisible === 'function') setGuideUiVisible(true);
+    setTimeout(() => window.dispatchEvent(new Event('scroll')), 50);
+  } else {
+    if (typeof setGuideUiVisible === 'function') setGuideUiVisible(false);
+  }
   // 更新 inline-style 內層分頁按鈕（進度/簡報內容）
   ['progress', 'slides'].forEach(t => {
     const btn = document.getElementById('tabBtn_' + t);
