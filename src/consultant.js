@@ -191,13 +191,12 @@ function renderConsultantGuide() {
       #simguide h3 { font-size: 19px !important; }
       #guideDots { padding: 10px 12px !important; gap: 12px !important; }
     }
-    /* 目錄手機緊湊版：2 欄、隱藏副標、縮 padding */
+    /* 目錄手機版：1 欄、padding 收斂 */
     @media (max-width: 540px) {
-      .toc-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
-      .toc-item { padding: 18px 14px !important; }
-      .toc-item .toc-num { font-size: 22px !important; }
-      .toc-item .toc-title { font-size: 17px !important; }
-      .toc-item .toc-desc { display: none !important; }
+      .toc-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
+      .toc-item { padding: 16px 18px !important; }
+      .toc-item .toc-num { font-size: 20px !important; }
+      .toc-item .toc-desc { font-size: 13px !important; }
     }
   </style>
   <div id="simguide" style="margin:-16px -20px 0;color:${INK};font-family:inherit;">
@@ -243,14 +242,12 @@ function renderConsultantGuide() {
           { chap: 9, t: '上台',     d: '上台前記住這 7 件事' },
         ].map((item, i) => `
           <button class="toc-item" onclick="scrollToChapter(${item.chap})" onmouseover="this.style.borderColor='${RED}';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='${LINE}';this.style.transform=''"
-            style="background:white;padding:26px 24px;border:1px solid ${LINE};border-radius:10px;cursor:pointer;text-align:left;transition:all .2s;font-family:inherit;${CARD_FX}">
-            <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:10px;">
-              <div class="toc-num" style="font-size:30px;color:${NAVY};font-weight:800;line-height:1;letter-spacing:-1.5px;">0${i+1}</div>
-              <div class="toc-title" style="font-size:21px;color:${NAVY};font-weight:800;line-height:1.3;letter-spacing:-.5px;">${item.t}</div>
+            style="background:white;padding:18px 20px;border:1px solid ${LINE};border-radius:10px;cursor:pointer;text-align:left;transition:all .2s;font-family:inherit;${CARD_FX}">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div class="toc-num" style="font-size:22px;color:${NAVY};font-weight:800;line-height:1;letter-spacing:-1px;flex-shrink:0;">0${i+1}</div>
+              <div class="toc-desc" style="font-size:14px;color:${MUTE};line-height:1.55;flex:1;">${item.d}</div>
             </div>
-            <div class="toc-desc" style="font-size:15px;color:${MUTE};line-height:1.7;">${item.d}</div>
-          </button>
-        `).join('')}
+          </button>`).join('')}
       </div>
     </section>
 
