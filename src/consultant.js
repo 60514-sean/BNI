@@ -677,6 +677,25 @@ function setGuideUiVisible(visible) {
   if (tip) tip.style.opacity = visible ? '1' : '0';
 }
 
+// 自動隱藏：偵測 #tabConsultantGuide 是否還存在且可見，否則強制隱藏 dots/btn/tip
+// 處理「離開顧問首頁」「進詳細頁」「登出」等沒呼叫 switchConsultantTab 的場景
+function setupGuideUiAutoHide() {
+  if (window._guideAutoHide) return;
+  window._guideAutoHide = true;
+  let raf = null;
+  const check = () => {
+    raf = null;
+    const tg = document.getElementById('tabConsultantGuide');
+    const isVisible = !!tg && tg.style.display !== 'none' && tg.offsetParent !== null;
+    if (!isVisible) setGuideUiVisible(false);
+  };
+  const observer = new MutationObserver(() => {
+    if (raf) return;
+    raf = requestAnimationFrame(check);
+  });
+  observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+}
+
 // 點擊章節 dot 跳轉
 function scrollToChapter(n) {
   const el = document.getElementById('gchap' + n);
@@ -946,8 +965,8 @@ function switchConsultantTab(tab) {
   // 切到簡報攻略時：建立 dots/btn（一次）、顯示 dots、立刻跑一次 scroll 偵測
   if (tab === 'guide') {
     if (typeof setupGuideScroll === 'function') setupGuideScroll();
+    if (typeof setupGuideUiAutoHide === 'function') setupGuideUiAutoHide();
     setGuideUiVisible(true);
-    // 立刻觸發 scroll handler（讓 dot 高亮初始化、按鈕視當前位置決定顯示）
     setTimeout(() => window.dispatchEvent(new Event('scroll')), 50);
   } else {
     setGuideUiVisible(false);
