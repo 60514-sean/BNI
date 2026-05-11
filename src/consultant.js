@@ -204,6 +204,10 @@ function renderConsultantGuide() {
       .toc-item .toc-num { font-size: 20px !important; }
       .toc-item .toc-desc { font-size: 13px !important; }
     }
+    /* LCD 科普手機 2 欄 */
+    @media (max-width: 540px) {
+      .lcd-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px 14px !important; }
+    }
     /* 整體手機 padding 收斂：section 上下留白縮小、左右增加避免貼邊 */
     @media (max-width: 540px) {
       #simguide > section { padding-top: 56px !important; padding-bottom: 56px !important; padding-left: 28px !important; padding-right: 28px !important; }
@@ -563,10 +567,10 @@ function renderConsultantGuide() {
               </div>
             `).join('')}
           </div>
-          <!-- LCD 科普（白底紅左線，跟規範/工具 banner 同 family；項目置中排）-->
-          <div style="margin-top:30px;background:white;border-left:3px solid ${RED};padding:22px 26px;border-radius:0 8px 8px 0;${CARD_FX}text-align:center;">
-            <div style="font-size:11px;color:${RED};letter-spacing:3px;font-weight:700;margin-bottom:14px;">LCD 科普</div>
-            <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:12px 22px;">
+          <!-- LCD 科普（白底紅左線；桌機 3 欄、手機 2 欄 grid，整齊不亂）-->
+          <div style="margin-top:30px;background:white;border-left:3px solid ${RED};padding:22px 26px;border-radius:0 8px 8px 0;${CARD_FX}">
+            <div style="font-size:11px;color:${RED};letter-spacing:3px;font-weight:700;margin-bottom:14px;text-align:center;">LCD 科普</div>
+            <div class="lcd-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px 20px;">
               ${['產品與服務項目','目標市場','客戶特定利潤','公司傲人事蹟','成功案例'].map(t => `
                 <div style="font-size:13px;color:${INK};line-height:1.7;padding-left:14px;position:relative;font-weight:600;">
                   <span style="position:absolute;left:0;top:.55em;width:6px;height:1px;background:${RED};"></span>${t}
