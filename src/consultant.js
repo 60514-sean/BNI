@@ -221,6 +221,10 @@ function renderConsultantGuide() {
     }
     /* simguide 內 section 限制橫向溢出（避免紅底滿版橫條超出 viewport 把 body 撐寬導致 header 看起來變寬）*/
     #simguide > section { overflow: hidden; }
+    /* 手機 .content padding 從 20px 改 12px（base.css ≤600px），simguide margin 要同步 -12px 才不會撐出 viewport */
+    @media (max-width: 600px) {
+      #simguide { margin-left: -12px !important; margin-right: -12px !important; }
+    }
     /* 顧問提問 <details> 樣式：隱藏預設箭頭、展開時 summary 變紅底白字 */
     #simguide .consultant-prompt summary { list-style: none; }
     #simguide .consultant-prompt summary::-webkit-details-marker { display: none; }
