@@ -30,7 +30,7 @@
 
   /* APP */
   .app { display: none; min-height: 100vh; }
-  .header { background: #c0392b; color: white; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .header { background: #c0392b; color: white; padding: calc(16px + env(safe-area-inset-top, 0px)) calc(20px + env(safe-area-inset-right, 0px)) 16px calc(20px + env(safe-area-inset-left, 0px)); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
   .header h2 { font-size: 18px; }
   .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .user-badge { background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 14px; }
