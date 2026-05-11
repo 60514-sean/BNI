@@ -43,12 +43,13 @@ function renderConsultantGuide() {
       ${icon(name, Math.round(size * 0.5))}
     </div>`;
 
-  // 規範 banner：講者要遵守的字數/數量規則
-  const ruleBanner = (text) => `
-    <div style="margin-top:46px;padding:14px 22px;background:${CREAM};border-left:3px solid ${RED};display:flex;align-items:center;gap:14px;border-radius:0 8px 8px 0;">
-      <div style="font-size:11px;color:${RED};font-weight:700;letter-spacing:3px;flex-shrink:0;">規範</div>
-      <div style="width:1px;height:14px;background:${LINE};flex-shrink:0;"></div>
-      <div style="font-size:14px;color:${NAVY};font-weight:700;line-height:1.6;">${text}</div>
+  // 規範 banner（大數字版）：左大字主要規範（如「18 字以內」）、右補充說明、右上角小 chip「規範」
+  const ruleBanner = (main, desc) => `
+    <div style="margin-top:46px;padding:22px 26px;background:${CREAM};border-left:3px solid ${RED};border-radius:0 8px 8px 0;display:flex;align-items:center;gap:22px;position:relative;">
+      <div style="flex-shrink:0;font-size:24px;color:${RED};font-weight:800;line-height:1.1;letter-spacing:-.5px;">${main}</div>
+      <div style="width:1px;height:24px;background:${LINE};flex-shrink:0;"></div>
+      <div style="flex:1;font-size:13px;color:${NAVY};font-weight:700;line-height:1.5;letter-spacing:.3px;">${desc}</div>
+      <div style="position:absolute;top:10px;right:16px;font-size:10px;color:${RED};font-weight:700;letter-spacing:3px;opacity:.7;">規範</div>
     </div>`;
 
   // 顧問提問區（用原生 <details>，鍵盤可用、無 JS 也可運作；展開時 summary 變紅底白字）
@@ -67,16 +68,27 @@ function renderConsultantGuide() {
       </div>
     </details>`;
 
-  // 章節封面（統一視覺：放大標題、紅色細線加粗加長、留白變寬）
-  const chapterCover = (title, sub) => `
-    <div style="text-align:center;margin-bottom:60px;padding-top:10px;">
-      <h2 style="font-size:34px;color:${NAVY};margin:0 0 16px;font-weight:800;letter-spacing:-1px;line-height:1.4;">${title}</h2>
-      ${sub ? `<p style="font-size:15px;color:${MUTE};margin:0 auto;line-height:1.9;max-width:520px;">${sub}</p>` : ''}
-      <div style="width:56px;height:2px;background:${RED};margin:36px auto 0;"></div>
-    </div>`;
+  // 章節封面（統一視覺；opts.red=true 紅底滿版橫條，給重點章節用）
+  const chapterCover = (title, sub, opts) => {
+    const red = opts && opts.red;
+    if (red) {
+      return `
+        <div style="background:${RED};color:white;margin:-90px -30px 60px;padding:80px 30px;text-align:center;">
+          <h2 style="font-size:34px;color:white;margin:0 0 16px;font-weight:800;letter-spacing:-1px;line-height:1.4;">${title}</h2>
+          ${sub ? `<p style="font-size:15px;color:white;opacity:.9;margin:0 auto;line-height:1.9;max-width:520px;">${sub}</p>` : ''}
+          <div style="width:56px;height:2px;background:white;opacity:.5;margin:36px auto 0;"></div>
+        </div>`;
+    }
+    return `
+      <div style="text-align:center;margin-bottom:60px;padding-top:10px;">
+        <h2 style="font-size:34px;color:${NAVY};margin:0 0 16px;font-weight:800;letter-spacing:-1px;line-height:1.4;">${title}</h2>
+        ${sub ? `<p style="font-size:15px;color:${MUTE};margin:0 auto;line-height:1.9;max-width:520px;">${sub}</p>` : ''}
+        <div style="width:56px;height:2px;background:${RED};margin:36px auto 0;"></div>
+      </div>`;
+  };
 
-  // 步驟章節 section header（共用，內部用 chapterCover）
-  const stepHeader = (chapNum, chapShort, lead, subtitle) => chapterCover(lead, subtitle);
+  // 步驟章節 section header（共用，可帶 opts 傳給 chapterCover）
+  const stepHeader = (chapNum, chapShort, lead, subtitle, opts) => chapterCover(lead, subtitle, opts);
 
   // 下一章引導（章節結尾，1-indexed，第 9 章後沒有下一章）
   const nextHint = (n) => n >= 9 ? '' : `
@@ -260,7 +272,7 @@ function renderConsultantGuide() {
           { chap: 5, t: '主題',     d: '主題選對 就贏一半' },
           { chap: 6, t: '對象',     d: '你越具體 越多人能幫你' },
           { chap: 7, t: '架構',     d: '5 分鐘 怎麼講最有力？' },
-          { chap: 8, t: '禮物',     d: '抽獎禮物 是邀約的鋪路' },
+          { chap: 8, t: '禮物',     d: '選對禮物 能讓會員記得你' },
           { chap: 9, t: '上台',     d: '上台那刻 準備就是底氣' },
         ].map((item, i) => `
           <button class="toc-item" onclick="scrollToChapter(${item.chap})" onmouseover="this.style.borderColor='${RED}';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='${LINE}';this.style.transform=''"
@@ -311,10 +323,10 @@ function renderConsultantGuide() {
       </div>
     </section>
 
-    <!-- ============ 區塊 7：方向選擇（章節 4）============ -->
-    <section id="gchap4" data-chap="4" style="padding:90px 30px;background:white;border-top:4px solid ${RED};scroll-margin-top:120px;">
+    <!-- ============ 區塊 7：方向選擇（章節 4，紅底封面）============ -->
+    <section id="gchap4" data-chap="4" style="padding:90px 30px;background:white;scroll-margin-top:120px;">
+      ${chapterCover('準備前<br>先回答這一題', '你的事業現在最缺的，是什麼？', { red: true })}
       <div style="max-width:880px;margin:0 auto;">
-        ${chapterCover('準備前<br>先回答這一題', '你的事業現在最缺的，是什麼？')}
 
         <!-- 強調語：一次只選一個（純紅字大字，無框）-->
         <div style="max-width:560px;margin:38px auto 56px;text-align:center;">
@@ -449,7 +461,7 @@ function renderConsultantGuide() {
           `).join('')}
         </div>
 
-        ${ruleBanner('標題字數：18 字以內')}
+        ${ruleBanner('18 字以內', '標題字數')}
         ${consultantPrompt([
           '你想要在簡報後得到什麼樣的引薦？',
           '你的目標客群有什麼共通的痛點？',
@@ -488,7 +500,7 @@ function renderConsultantGuide() {
           <div style="font-size:14px;color:${INK};font-weight:700;line-height:1.6;">把 9981 宮格攤開來，你就知道自己想要哪些行業的引薦了</div>
         </div>
 
-        ${ruleBanner('每項描述：16 字以內')}
+        ${ruleBanner('16 字以內', '每項描述')}
         ${consultantPrompt([
           '你最近一筆賺最多的客戶長什麼樣？',
           '你有沒有想合作但一直沒機會接觸的對象？',
@@ -569,10 +581,10 @@ function renderConsultantGuide() {
 
     <!-- ============ 區塊 11：步驟九・抽獎禮物（章節 8）============ -->
     <section id="gchap8" data-chap="8" style="background:${CREAM};padding:90px 30px;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${stepHeader('八', '禮物', '抽獎禮物<br>是邀約的鋪路', '兩份禮物，三個準備方向。')}
+      ${stepHeader('八', '禮物', '選對禮物<br>能讓會員記得你', '兩份禮物，三個準備方向。')}
       <div style="max-width:780px;margin:0 auto;">
 
-        ${ruleBanner('兩份禮物，價值抓 500 元以上')}
+        ${ruleBanner('500 元以上', '兩份禮物每份價值')}
 
         <!-- 3 個方向卡 -->
         <div style="display:flex;flex-direction:column;gap:18px;margin-top:36px;">
@@ -600,9 +612,9 @@ function renderConsultantGuide() {
       </div>
     </section>
 
-    <!-- ============ 區塊 12：步驟十・上台技巧（章節 9）============ -->
-    <section id="gchap9" data-chap="9" style="background:white;padding:90px 30px;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${stepHeader('九', '上台', '上台那刻<br>準備就是底氣', '7 件事，把緊張變成穩定。')}
+    <!-- ============ 區塊 12：步驟十・上台技巧（章節 9，紅底封面）============ -->
+    <section id="gchap9" data-chap="9" style="background:white;padding:90px 30px;scroll-margin-top:120px;">
+      ${stepHeader('九', '上台', '上台那刻<br>準備就是底氣', '7 件事，把緊張變成穩定。', { red: true })}
       <div style="max-width:680px;margin:0 auto;">
 
         <!-- 7 件事條列 -->
