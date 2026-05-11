@@ -76,12 +76,11 @@ function renderConsultantGuide() {
     </div>`;
 
   // 下一章引導（章節結尾，1-indexed，第 9 章後沒有下一章）
-  const chapterLabels = ['誠實面對','為了誰','行動','選方向','主題','對象','架構','禮物','上台'];
   const nextHint = (n) => n >= 9 ? '' : `
     <div style="text-align:center;margin-top:60px;padding-top:30px;border-top:1px solid ${LINE};">
       <button onclick="scrollToChapter(${n+1})"
         style="background:none;border:none;color:${RED};font-size:13px;font-weight:700;cursor:pointer;letter-spacing:2px;padding:8px 20px;">
-        下一章 ・ ${chapterLabels[n]} →
+        下一章 →
       </button>
     </div>`;
 
@@ -136,7 +135,7 @@ function renderConsultantGuide() {
         `).join('')}
       </div>` : '';
     return `
-    <section style="background:${g.bg};padding:90px 24px;">
+    <section class="gift-section" style="background:${g.bg};padding:90px 24px;">
       <div style="max-width:640px;margin:0 auto;">
         <div style="display:flex;align-items:baseline;gap:18px;margin-bottom:30px;">
           <div style="font-size:48px;font-weight:800;color:${NAVY};line-height:1;letter-spacing:-2px;">${g.num}</div>
@@ -198,6 +197,15 @@ function renderConsultantGuide() {
       .toc-item .toc-num { font-size: 20px !important; }
       .toc-item .toc-desc { font-size: 13px !important; }
     }
+    /* 整體手機 padding 收斂：section 上下留白縮小 */
+    @media (max-width: 540px) {
+      #simguide > section { padding-top: 56px !important; padding-bottom: 56px !important; padding-left: 20px !important; padding-right: 20px !important; }
+      #simguide > section[id="gchap1"] { padding-top: 56px !important; padding-bottom: 40px !important; }
+    }
+    /* 桌機微調：禮物個別卡片 section 間距收斂 */
+    @media (min-width: 541px) {
+      #simguide .gift-section { padding-top: 70px !important; padding-bottom: 70px !important; }
+    }
   </style>
   <div id="simguide" style="margin:-16px -20px 0;color:${INK};font-family:inherit;">
 
@@ -232,9 +240,9 @@ function renderConsultantGuide() {
     <section style="background:white;padding:30px 24px 70px;">
       <div class="toc-grid" style="max-width:880px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;">
         ${[
-          { chap: 2, t: '為了誰',   d: '上台 5 分鐘，到底為了誰？' },
-          { chap: 3, t: '行動',     d: '從今天起，做這兩件事' },
-          { chap: 4, t: '選方向',   d: '引薦或合作，先選一個' },
+          { chap: 2, t: '為了誰',   d: '上台 5 分鐘，是給誰看的？' },
+          { chap: 3, t: '行動',     d: '不只是講者的事' },
+          { chap: 4, t: '選方向',   d: '準備前，先回答這一題' },
           { chap: 5, t: '主題',     d: '怎麼設定吸引人的主題' },
           { chap: 6, t: '對象',     d: '把引薦對象說清楚' },
           { chap: 7, t: '架構',     d: '怎麼安排你的 5 分鐘' },
@@ -255,7 +263,7 @@ function renderConsultantGuide() {
     <section id="gchap2" data-chap="2" style="padding:80px 30px 60px;background:${CREAM};text-align:center;border-top:4px solid ${RED};scroll-margin-top:120px;">
       ${chapterMark('二', '為什麼')}
       <h2 style="font-size:30px;color:${NAVY};margin:0 0 16px;font-weight:800;letter-spacing:-1px;line-height:1.5;">
-        上台 5 分鐘，<br>到底為了誰？
+        上台 5 分鐘，<br>是給誰看的？
       </h2>
       <p style="font-size:15px;color:${MUTE};margin:0;line-height:1.85;max-width:480px;margin-left:auto;margin-right:auto;">
         答案是：你、夥伴、來賓 — 三個人。
@@ -273,14 +281,17 @@ function renderConsultantGuide() {
       <div style="max-width:600px;margin:0 auto;">
         ${chapterMark('三', '行動')}
         <div style="text-align:center;margin-bottom:50px;">
-          <h2 style="font-size:30px;color:${NAVY};margin:0;font-weight:800;letter-spacing:-1px;">從今天起，做這兩件事</h2>
+          <h2 style="font-size:30px;color:${NAVY};margin:0 0 14px;font-weight:800;letter-spacing:-1px;line-height:1.5;">不只是講者的事</h2>
+          <p style="font-size:15px;color:${MUTE};margin:0;line-height:1.85;">
+            主題簡報能不能發揮價值，講者只負責一半。
+          </p>
           <div style="width:32px;height:1px;background:${RED};margin:24px auto 0;"></div>
         </div>
         <div>
           ${actionRows}
         </div>
         <!-- 預留：行動檢核表 / 下載資源按鈕 -->
-        ${nextHint(3)}
+        <!-- 注：章節 3 的「下一章」放在下方 Footer 金句段內，不在這裡 -->
       </div>
     </section>
 
@@ -288,14 +299,15 @@ function renderConsultantGuide() {
     <section style="background:${CREAM};padding:90px 30px;text-align:center;">
       <div style="max-width:520px;margin:0 auto;">
         <p style="font-size:26px;color:${NAVY};font-weight:800;line-height:1.8;margin:0;letter-spacing:-.5px;">
-          這三件事做到，<br>
+          這兩件事做到，<br>
           分會的引薦量<span style="color:${RED};">絕對翻倍</span>。
         </p>
         <div style="width:32px;height:1px;background:${NAVY};opacity:.3;margin:36px auto 24px;"></div>
-        <p style="font-size:13px;color:${MUTE};margin:0;line-height:1.85;font-weight:600;letter-spacing:1px;">
+        <p style="font-size:13px;color:${MUTE};margin:0 0 18px;line-height:1.85;font-weight:600;letter-spacing:1px;">
           那如果輪到你上台講主題簡報？<br>
           往下看，七個步驟把你帶到上場
         </p>
+        ${nextHint(3)}
       </div>
     </section>
 
@@ -304,9 +316,12 @@ function renderConsultantGuide() {
       ${chapterMark('四', '選方向')}
       <div style="max-width:880px;margin:0 auto;">
 
-        <h2 style="text-align:center;font-size:30px;color:${NAVY};margin:0;font-weight:800;letter-spacing:-1px;line-height:1.5;">
-          開始做簡報前<br>先選一個方向
+        <h2 style="text-align:center;font-size:30px;color:${NAVY};margin:0 0 14px;font-weight:800;letter-spacing:-1px;line-height:1.5;">
+          準備前，<br>先回答這一題
         </h2>
+        <p style="text-align:center;font-size:15px;color:${MUTE};margin:0;line-height:1.85;">
+          你的事業現在最缺的，是什麼？
+        </p>
 
         <!-- 強調語：一次只選一個（純紅字大字，無框）-->
         <div style="max-width:560px;margin:38px auto 56px;text-align:center;">
