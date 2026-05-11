@@ -233,6 +233,8 @@ function renderConsultantGuide() {
     /* 隱藏瀏覽器 scrollbar（簡報攻略長頁，右側懸浮條視覺干擾，仍可正常捲動）*/
     html { scrollbar-width: none !important; -ms-overflow-style: none !important; }
     html::-webkit-scrollbar, body::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+    /* 禁止橫向捲動：簡報攻略內某些元素（紅底滿版橫條、章節 chip）可能造成水平 overflow */
+    html, body { overflow-x: hidden !important; max-width: 100vw !important; }
     /* scroll-triggered fade-in：section 進入視窗時淡入 */
     #simguide .sg-fade { opacity: 0; transform: translateY(20px); transition: opacity .55s ease-out, transform .55s ease-out; }
     #simguide .sg-fade.sg-in { opacity: 1; transform: translateY(0); }
