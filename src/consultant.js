@@ -164,30 +164,31 @@ function renderConsultantGuide() {
     </section>`;
   }).join('');
 
-  // 兩個行動（聽眾的「簡報當下」+「散會後」合併在第 2 點）
-  const actions = [
-    {
-      num: '01',
-      when: '當你是講者',
-      iconName: 'mic',
-      text: '把主題簡報當成「寫給夥伴的銷售腳本」來準備，不是「介紹我的公司」。'
-    },
-    {
-      num: '02',
-      when: '當你是聽眾',
-      iconName: 'ear',
-      text: `<strong style="color:${NAVY};">簡報當下：</strong>手機收起來，筆記拿出來。寫下「這個情境我可以幫他引薦」的那一刻。<br><br><strong style="color:${NAVY};">散會後：</strong>走過去跟今天的講者說：<br>「你剛剛講的那個 ___，我想到一個人可以介紹給你。」`
-    },
-  ];
-  const actionRows = actions.map((a, i) => `
-    <div style="display:flex;gap:22px;align-items:flex-start;padding:30px 0;${i < actions.length - 1 ? `border-bottom:1px solid ${LINE};` : ''}">
-      <div style="font-size:36px;color:${NAVY};font-weight:200;line-height:1;letter-spacing:-1.5px;width:42px;flex-shrink:0;text-align:right;">${a.num}</div>
+  // 兩件事行動（聽眾的 02 內含兩張 sub-card：簡報當下 + 散會後）
+  const actionRows = `
+    <div style="display:flex;gap:22px;align-items:flex-start;padding:30px 0;border-bottom:1px solid ${LINE};">
+      <div style="font-size:36px;color:${NAVY};font-weight:200;line-height:1;letter-spacing:-1.5px;width:42px;flex-shrink:0;text-align:right;">01</div>
       <div style="flex:1;">
-        <div style="font-size:17px;color:${NAVY};font-weight:800;margin-bottom:10px;letter-spacing:-.3px;">${a.when}</div>
-        <div style="font-size:15px;color:${INK};line-height:1.9;">${a.text}</div>
+        <div style="font-size:17px;color:${NAVY};font-weight:800;margin-bottom:10px;letter-spacing:-.3px;">當你是講者</div>
+        <div style="font-size:15px;color:${INK};line-height:1.9;">把主題簡報當成「寫給夥伴的銷售腳本」來準備，不是「介紹我的公司」。</div>
       </div>
     </div>
-  `).join('');
+    <div style="display:flex;gap:22px;align-items:flex-start;padding:30px 0;">
+      <div style="font-size:36px;color:${NAVY};font-weight:200;line-height:1;letter-spacing:-1.5px;width:42px;flex-shrink:0;text-align:right;">02</div>
+      <div style="flex:1;">
+        <div style="font-size:17px;color:${NAVY};font-weight:800;margin-bottom:16px;letter-spacing:-.3px;">當你是聽眾</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+          <div style="background:${CREAM};padding:18px 18px;border-radius:8px;">
+            <div style="font-size:11px;color:${RED};font-weight:700;letter-spacing:2px;margin-bottom:8px;">簡報當下</div>
+            <div style="font-size:14px;color:${INK};line-height:1.85;">手機收起來，筆記拿出來。寫下「這個情境我可以幫他引薦」的那一刻。</div>
+          </div>
+          <div style="background:${CREAM};padding:18px 18px;border-radius:8px;">
+            <div style="font-size:11px;color:${RED};font-weight:700;letter-spacing:2px;margin-bottom:8px;">散會後</div>
+            <div style="font-size:14px;color:${INK};line-height:1.85;">走過去跟今天的講者說：「你剛剛講的那個 ___，我想到一個人可以介紹給你。」</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
 
   return `
   <style>
@@ -203,10 +204,6 @@ function renderConsultantGuide() {
       .toc-item { padding: 16px 18px !important; }
       .toc-item .toc-num { font-size: 20px !important; }
       .toc-item .toc-desc { font-size: 13px !important; }
-    }
-    /* LCD 科普手機 2 欄 */
-    @media (max-width: 540px) {
-      .lcd-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px 14px !important; }
     }
     /* 整體手機 padding 收斂：section 上下留白縮小、左右增加避免貼邊 */
     @media (max-width: 540px) {
@@ -297,7 +294,7 @@ function renderConsultantGuide() {
 
     <!-- ============ 區塊 3：三份禮物（章節 2）============ -->
     <section id="gchap2" data-chap="2" style="padding:80px 30px 40px;background:${CREAM};text-align:center;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${chapterCover('上台 5 分鐘<br>是給誰看的？', '自己｜夥伴｜來賓')}
+      ${chapterCover('上台 5 分鐘<br>是給誰看的？', '夥伴 ｜ 來賓 ｜ 自己')}
     </section>
     ${giftSections}
     <!-- 章節 2 結尾下一章引導（padding-top:1px 防 margin collapse 漏 body 灰底）-->
@@ -567,16 +564,11 @@ function renderConsultantGuide() {
               </div>
             `).join('')}
           </div>
-          <!-- LCD 科普（白底紅左線；桌機 3 欄、手機 2 欄 grid，整齊不亂）-->
-          <div style="margin-top:30px;background:white;border-left:3px solid ${RED};padding:22px 26px;border-radius:0 8px 8px 0;${CARD_FX}">
-            <div style="font-size:11px;color:${RED};letter-spacing:3px;font-weight:700;margin-bottom:14px;text-align:center;">LCD 科普</div>
-            <div class="lcd-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px 20px;">
-              ${['產品與服務項目','目標市場','客戶特定利潤','公司傲人事蹟','成功案例'].map(t => `
-                <div style="font-size:13px;color:${INK};line-height:1.7;padding-left:14px;position:relative;font-weight:600;">
-                  <span style="position:absolute;left:0;top:.55em;width:6px;height:1px;background:${RED};"></span>${t}
-                </div>
-              `).join('')}
-            </div>
+          <!-- LCD 科普（單行 banner，跟 9981 工具同 family）-->
+          <div style="margin-top:30px;padding:14px 22px;background:white;border-left:3px solid ${RED};display:flex;align-items:center;gap:14px;border-radius:0 8px 8px 0;${CARD_FX}">
+            <div style="font-size:11px;color:${RED};letter-spacing:3px;font-weight:700;flex-shrink:0;">LCD 科普</div>
+            <div style="width:1px;height:14px;background:${LINE};flex-shrink:0;"></div>
+            <div style="font-size:14px;color:${INK};font-weight:600;line-height:1.6;">產品與服務項目 ・ 目標市場 ・ 客戶特定利潤 ・ 公司傲人事蹟 ・ 成功案例</div>
           </div>
         </div>
 
@@ -721,6 +713,17 @@ function setupGuideScroll() {
       d.style.background = isActive ? RED : GREY;
       d.style.transform = isActive ? 'scale(1.5)' : 'scale(1)';
     });
+    // 紅底章節（4、9）按鈕切換為白底紅 icon，避免跟紅底融合
+    const inRedChap = (activeChap === 4 || activeChap === 9);
+    if (inRedChap) {
+      topBtn.style.background = 'white';
+      topBtn.style.color = RED;
+      topBtn.style.boxShadow = '0 4px 14px rgba(0,0,0,0.18)';
+    } else {
+      topBtn.style.background = RED;
+      topBtn.style.color = 'white';
+      topBtn.style.boxShadow = '0 4px 14px rgba(192,57,43,0.4)';
+    }
   };
   window.addEventListener('scroll', onScroll, { passive: true });
 }
