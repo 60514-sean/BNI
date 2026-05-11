@@ -219,6 +219,8 @@ function renderConsultantGuide() {
     @media (min-width: 541px) {
       #simguide .gift-section { padding-top: 70px !important; padding-bottom: 70px !important; }
     }
+    /* simguide 內 section 限制橫向溢出（避免紅底滿版橫條超出 viewport 把 body 撐寬導致 header 看起來變寬）*/
+    #simguide > section { overflow: hidden; }
     /* 顧問提問 <details> 樣式：隱藏預設箭頭、展開時 summary 變紅底白字 */
     #simguide .consultant-prompt summary { list-style: none; }
     #simguide .consultant-prompt summary::-webkit-details-marker { display: none; }
