@@ -51,21 +51,21 @@ function renderConsultantGuide() {
       <div style="font-size:14px;color:${NAVY};font-weight:700;line-height:1.6;">${text}</div>
     </div>`;
 
-  // 顧問提問區（可收合，紅色框）
+  // 顧問提問區（用原生 <details>，鍵盤可用、無 JS 也可運作；展開時 summary 變紅底白字）
   const consultantPrompt = (qs) => `
-    <div class="consultant-prompt" style="margin-top:40px;border:1.5px solid ${RED};border-radius:8px;overflow:hidden;background:white;">
-      <div onclick="toggleConsultantPrompt(this)" style="padding:14px 20px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;color:${RED};">
+    <details class="consultant-prompt" style="margin-top:40px;border:1.5px solid ${RED};border-radius:8px;overflow:hidden;background:white;">
+      <summary style="padding:14px 20px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;color:${RED};list-style:none;transition:background .2s, color .2s;" aria-label="給顧問引導提問">
         <span style="font-size:13px;font-weight:700;letter-spacing:3px;">給顧問・引導提問</span>
         <span class="cp-toggle" style="font-size:20px;font-weight:300;line-height:1;transition:transform .2s;">+</span>
-      </div>
-      <div class="cp-body" style="display:none;padding:6px 22px 22px;border-top:1px solid #fdecea;">
+      </summary>
+      <div class="cp-body" style="padding:6px 22px 22px;border-top:1px solid #fdecea;">
         <ul style="list-style:none;padding:0;margin:14px 0 0;display:flex;flex-direction:column;gap:12px;">
           ${qs.map(q => `<li style="font-size:14px;line-height:1.85;color:${INK};padding-left:20px;position:relative;">
             <span style="position:absolute;left:0;top:.5em;color:${RED};font-weight:700;">→</span>${q}
           </li>`).join('')}
         </ul>
       </div>
-    </div>`;
+    </details>`;
 
   // 步驟章節 section header（共用）
   const stepHeader = (chapNum, chapShort, lead, subtitle) => `
@@ -201,6 +201,22 @@ function renderConsultantGuide() {
     @media (min-width: 541px) {
       #simguide .gift-section { padding-top: 70px !important; padding-bottom: 70px !important; }
     }
+    /* 顧問提問 <details> 樣式：隱藏預設箭頭、展開時 summary 變紅底白字 */
+    #simguide .consultant-prompt summary { list-style: none; }
+    #simguide .consultant-prompt summary::-webkit-details-marker { display: none; }
+    #simguide .consultant-prompt summary::marker { display: none; }
+    #simguide .consultant-prompt[open] summary { background: #c0392b; color: white; }
+    #simguide .consultant-prompt[open] summary .cp-toggle { display: none; }
+    #simguide .consultant-prompt[open] summary::after {
+      content: '−'; font-size: 20px; font-weight: 300; line-height: 1; color: white;
+    }
+    #simguide .consultant-prompt[open] .cp-body { border-top-color: transparent !important; }
+    /* scroll-triggered fade-in：section 進入視窗時淡入 */
+    #simguide .sg-fade { opacity: 0; transform: translateY(20px); transition: opacity .55s ease-out, transform .55s ease-out; }
+    #simguide .sg-fade.sg-in { opacity: 1; transform: translateY(0); }
+    @media (prefers-reduced-motion: reduce) {
+      #simguide .sg-fade { opacity: 1 !important; transform: none !important; transition: none !important; }
+    }
   </style>
   <div id="simguide" style="margin:-16px -20px 0;color:${INK};font-family:inherit;">
 
@@ -238,11 +254,11 @@ function renderConsultantGuide() {
           { chap: 2, t: '為了誰',   d: '上台 5 分鐘，是給誰看的？' },
           { chap: 3, t: '行動',     d: '不只是講者的事' },
           { chap: 4, t: '選方向',   d: '準備前，先回答這一題' },
-          { chap: 5, t: '主題',     d: '怎麼設定吸引人的主題' },
-          { chap: 6, t: '對象',     d: '把引薦對象說清楚' },
-          { chap: 7, t: '架構',     d: '怎麼安排你的 5 分鐘' },
-          { chap: 8, t: '禮物',     d: '別忘了你的抽獎禮物' },
-          { chap: 9, t: '上台',     d: '上台前記住這 7 件事' },
+          { chap: 5, t: '主題',     d: '主題選對，就贏一半' },
+          { chap: 6, t: '對象',     d: '你越具體，越多人能幫你' },
+          { chap: 7, t: '架構',     d: '5 分鐘，怎麼講最有力？' },
+          { chap: 8, t: '禮物',     d: '抽獎禮物，是邀約的鋪路' },
+          { chap: 9, t: '上台',     d: '上台那刻，準備就是底氣' },
         ].map((item, i) => `
           <button class="toc-item" onclick="scrollToChapter(${item.chap})" onmouseover="this.style.borderColor='${RED}';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='${LINE}';this.style.transform=''"
             style="background:white;padding:18px 20px;border:1px solid ${LINE};border-radius:10px;cursor:pointer;text-align:left;transition:all .2s;font-family:inherit;${CARD_FX}">
@@ -334,7 +350,7 @@ function renderConsultantGuide() {
           <!-- 方向一：引薦 -->
           <div style="background:white;padding:38px 30px;display:flex;flex-direction:column;border-top:6px solid ${NAVY};${CARD_FX}">
             <div style="margin-bottom:22px;">
-              <div style="font-size:11px;letter-spacing:5px;color:${NAVY};font-weight:700;">方向一</div>
+              <div style="font-size:11px;letter-spacing:4px;color:${NAVY};font-weight:700;">方向一 ・ 引薦</div>
               <h3 style="font-size:23px;color:${NAVY};margin:6px 0 0;font-weight:800;letter-spacing:-.5px;">我想要「引薦」</h3>
             </div>
 
@@ -369,7 +385,7 @@ function renderConsultantGuide() {
           <!-- 方向二：合作夥伴（樣式跟方向一一致） -->
           <div style="background:white;padding:38px 30px;display:flex;flex-direction:column;border-top:6px solid ${NAVY};${CARD_FX}">
             <div style="margin-bottom:22px;">
-              <div style="font-size:11px;letter-spacing:5px;color:${NAVY};font-weight:700;">方向二</div>
+              <div style="font-size:11px;letter-spacing:4px;color:${NAVY};font-weight:700;">方向二 ・ 合作</div>
               <h3 style="font-size:23px;color:${NAVY};margin:6px 0 0;font-weight:800;letter-spacing:-.5px;">我想要「合作夥伴」</h3>
             </div>
 
@@ -430,7 +446,7 @@ function renderConsultantGuide() {
 
     <!-- ============ 區塊 8：步驟六・主題設定（章節 5）============ -->
     <section id="gchap5" data-chap="5" style="background:white;padding:90px 30px;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${stepHeader('五', '主題', '怎麼設定吸引人的主題？', '好的主題，從「對的角度」開始')}
+      ${stepHeader('五', '主題', '主題選對，<br>就贏一半', '好的主題，從「對的角度」開始。')}
       <div style="max-width:780px;margin:0 auto;">
 
         <!-- 4 個角度卡（上下排列） -->
@@ -463,7 +479,7 @@ function renderConsultantGuide() {
 
     <!-- ============ 區塊 9：步驟七・引薦對象（章節 6）============ -->
     <section id="gchap6" data-chap="6" style="background:${CREAM};padding:90px 30px;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${stepHeader('六', '對象', '你想要誰？<br>把引薦對象說清楚', '講者越具體，夥伴越好幫忙')}
+      ${stepHeader('六', '對象', '你越具體，<br>越多人能幫你', '夥伴的引薦，藏在你的描述細節裡。')}
       <div style="max-width:780px;margin:0 auto;">
 
         <!-- 3 種引薦對象 -->
@@ -502,7 +518,7 @@ function renderConsultantGuide() {
 
     <!-- ============ 區塊 10：步驟八・簡報架構（章節 7，Tab 切換）============ -->
     <section id="gchap7" data-chap="7" style="background:white;padding:90px 30px;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${stepHeader('七', '架構', '怎麼安排你的 5 分鐘？', '第一次跟老手節奏不同')}
+      ${stepHeader('七', '架構', '5 分鐘，<br>怎麼講最有力？', '第一次跟老手，節奏不一樣。')}
       <div style="max-width:780px;margin:0 auto;">
 
         <!-- 第一次（333 架構） -->
@@ -571,7 +587,7 @@ function renderConsultantGuide() {
 
     <!-- ============ 區塊 11：步驟九・抽獎禮物（章節 8）============ -->
     <section id="gchap8" data-chap="8" style="background:${CREAM};padding:90px 30px;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${stepHeader('八', '禮物', '別忘了你的抽獎禮物', '主題簡報禮物準備技巧')}
+      ${stepHeader('八', '禮物', '抽獎禮物，<br>是邀約的鋪路', '兩份禮物，三個準備方向。')}
       <div style="max-width:780px;margin:0 auto;">
 
         ${ruleBanner('兩份禮物，價值抓 500 元以上')}
@@ -586,7 +602,7 @@ function renderConsultantGuide() {
             <div style="background:white;padding:26px 28px;display:flex;gap:22px;align-items:flex-start;border-left:3px solid ${NAVY};${CARD_FX}">
               <div style="font-size:32px;font-weight:200;color:${NAVY};line-height:1;letter-spacing:-1px;flex-shrink:0;">${d.num}</div>
               <div style="flex:1;min-width:0;">
-                <div style="font-size:17px;color:${NAVY};font-weight:800;margin-bottom:8px;letter-spacing:-.3px;white-space:nowrap;">${d.title}</div>
+                <div style="font-size:17px;color:${NAVY};font-weight:800;margin-bottom:8px;letter-spacing:-.3px;line-height:1.4;">${d.title}</div>
                 <div style="font-size:14px;color:${INK};line-height:1.85;">${d.desc}</div>
               </div>
             </div>
@@ -604,7 +620,7 @@ function renderConsultantGuide() {
 
     <!-- ============ 區塊 12：步驟十・上台技巧（章節 9）============ -->
     <section id="gchap9" data-chap="9" style="background:white;padding:90px 30px;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${stepHeader('九', '上台', '上台前，記住這 7 件事', '在台上，你就是最棒的')}
+      ${stepHeader('九', '上台', '上台那刻，<br>準備就是底氣', '7 件事，把緊張變成穩定。')}
       <div style="max-width:680px;margin:0 auto;">
 
         <!-- 7 件事條列 -->
@@ -670,7 +686,7 @@ function setupGuideScroll() {
   dotsBar.id = 'guideDots';
   dotsBar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,0.96);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);padding:14px 20px;border-top:1px solid #eee;z-index:88;display:none;justify-content:center;gap:18px;box-shadow:0 -2px 12px rgba(0,0,0,0.04);';
   dotsBar.innerHTML = labels.map((label, i) => `
-    <button class="gd-dot" data-chap="${i+1}" onclick="scrollToChapter(${i+1})" title="${label}"
+    <button class="gd-dot" data-chap="${i+1}" onclick="scrollToChapter(${i+1})" title="${label}" aria-label="跳到${label}章節"
       style="width:9px;height:9px;border-radius:50%;background:${GREY};border:none;cursor:pointer;padding:0;transition:background .25s, transform .25s;"></button>
   `).join('');
   document.body.appendChild(dotsBar);
@@ -758,13 +774,28 @@ function scrollToChapter(n) {
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// 顧問提問區收合切換
-function toggleConsultantPrompt(headerEl) {
-  const body = headerEl.parentElement.querySelector('.cp-body');
-  const toggle = headerEl.querySelector('.cp-toggle');
-  const isOpen = body.style.display !== 'none';
-  body.style.display = isOpen ? 'none' : '';
-  if (toggle) toggle.textContent = isOpen ? '+' : '−';
+// scroll-triggered fade-in：simguide 內 section 進入視窗時淡入
+// 每次呼叫都重新 observe（因為 mainContent 重 render 後元素會變）
+function setupGuideFadeIn() {
+  const targets = document.querySelectorAll('#simguide > section, #simguide .gift-section, .toc-item');
+  if (!targets.length) return;
+  if (!('IntersectionObserver' in window)) {
+    targets.forEach(el => el.classList.add('sg-in'));
+    return;
+  }
+  // 先把舊 observer 清掉，再為新元素套樣式 + 監聽
+  if (window._guideFadeObs) window._guideFadeObs.disconnect();
+  targets.forEach(el => { if (!el.classList.contains('sg-in')) el.classList.add('sg-fade'); });
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('sg-in');
+        obs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+  window._guideFadeObs = obs;
+  targets.forEach(el => obs.observe(el));
 }
 
 
@@ -1022,6 +1053,7 @@ function switchConsultantTab(tab) {
   if (tab === 'guide') {
     if (typeof setupGuideScroll === 'function') setupGuideScroll();
     if (typeof setupGuideUiAutoHide === 'function') setupGuideUiAutoHide();
+    if (typeof setupGuideFadeIn === 'function') setTimeout(setupGuideFadeIn, 0);
     setGuideUiVisible(true);
     setTimeout(() => window.dispatchEvent(new Event('scroll')), 50);
   } else {
@@ -1106,6 +1138,7 @@ function switchSpeakerTab(tab) {
   if (tab === 'guide') {
     if (typeof setupGuideScroll === 'function') setupGuideScroll();
     if (typeof setupGuideUiAutoHide === 'function') setupGuideUiAutoHide();
+    if (typeof setupGuideFadeIn === 'function') setTimeout(setupGuideFadeIn, 0);
     if (typeof setGuideUiVisible === 'function') setGuideUiVisible(true);
     setTimeout(() => window.dispatchEvent(new Event('scroll')), 50);
   } else {
