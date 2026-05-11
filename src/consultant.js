@@ -67,13 +67,16 @@ function renderConsultantGuide() {
       </div>
     </details>`;
 
-  // 步驟章節 section header（共用）
-  const stepHeader = (chapNum, chapShort, lead, subtitle) => `
-    ${chapterMark(chapNum, chapShort)}
-    <div style="text-align:center;margin-bottom:50px;">
-      <h2 style="font-size:30px;color:${NAVY};margin:0 0 14px;font-weight:800;letter-spacing:-1px;line-height:1.5;">${lead}</h2>
-      ${subtitle ? `<p style="font-size:15px;color:${MUTE};margin:0;line-height:1.85;">${subtitle}</p>` : ''}
+  // 章節封面（統一視覺：放大標題、紅色細線加粗加長、留白變寬）
+  const chapterCover = (title, sub) => `
+    <div style="text-align:center;margin-bottom:60px;padding-top:10px;">
+      <h2 style="font-size:34px;color:${NAVY};margin:0 0 16px;font-weight:800;letter-spacing:-1px;line-height:1.4;">${title}</h2>
+      ${sub ? `<p style="font-size:15px;color:${MUTE};margin:0 auto;line-height:1.9;max-width:520px;">${sub}</p>` : ''}
+      <div style="width:56px;height:2px;background:${RED};margin:36px auto 0;"></div>
     </div>`;
+
+  // 步驟章節 section header（共用，內部用 chapterCover）
+  const stepHeader = (chapNum, chapShort, lead, subtitle) => chapterCover(lead, subtitle);
 
   // 下一章引導（章節結尾，1-indexed，第 9 章後沒有下一章）
   const nextHint = (n) => n >= 9 ? '' : `
@@ -271,15 +274,8 @@ function renderConsultantGuide() {
     </section>
 
     <!-- ============ 區塊 3：三份禮物（章節 2）============ -->
-    <section id="gchap2" data-chap="2" style="padding:80px 30px 60px;background:${CREAM};text-align:center;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${chapterMark('二', '為什麼')}
-      <h2 style="font-size:30px;color:${NAVY};margin:0 0 16px;font-weight:800;letter-spacing:-1px;line-height:1.5;">
-        上台 5 分鐘 是給誰看的？
-      </h2>
-      <p style="font-size:15px;color:${MUTE};margin:0;line-height:1.85;max-width:480px;margin-left:auto;margin-right:auto;">
-        答案是：你、夥伴、來賓 — 三個人。
-      </p>
-      <div style="width:32px;height:1px;background:${NAVY};opacity:.3;margin:30px auto 0;"></div>
+    <section id="gchap2" data-chap="2" style="padding:80px 30px 40px;background:${CREAM};text-align:center;border-top:4px solid ${RED};scroll-margin-top:120px;">
+      ${chapterCover('上台 5 分鐘<br>是給誰看的？', '答案是：你、夥伴、來賓 — 三個人。')}
     </section>
     ${giftSections}
     <!-- 章節 2 結尾下一章引導（padding-top:1px 防 margin collapse 漏 body 灰底）-->
@@ -290,14 +286,7 @@ function renderConsultantGuide() {
     <!-- ============ 區塊 4：行動呼籲（章節 3）============ -->
     <section id="gchap3" data-chap="3" style="padding:90px 30px;background:white;border-top:4px solid ${RED};scroll-margin-top:120px;">
       <div style="max-width:600px;margin:0 auto;">
-        ${chapterMark('三', '行動')}
-        <div style="text-align:center;margin-bottom:50px;">
-          <h2 style="font-size:30px;color:${NAVY};margin:0 0 14px;font-weight:800;letter-spacing:-1px;line-height:1.5;">不只是講者的事</h2>
-          <p style="font-size:15px;color:${MUTE};margin:0;line-height:1.85;">
-            主題簡報能不能發揮價值，講者只負責一半。
-          </p>
-          <div style="width:32px;height:1px;background:${RED};margin:24px auto 0;"></div>
-        </div>
+        ${chapterCover('不只是講者的事', '主題簡報能不能發揮價值，講者只負責一半。')}
         <div>
           ${actionRows}
         </div>
@@ -324,15 +313,8 @@ function renderConsultantGuide() {
 
     <!-- ============ 區塊 7：方向選擇（章節 4）============ -->
     <section id="gchap4" data-chap="4" style="padding:90px 30px;background:white;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${chapterMark('四', '選方向')}
       <div style="max-width:880px;margin:0 auto;">
-
-        <h2 style="text-align:center;font-size:30px;color:${NAVY};margin:0 0 14px;font-weight:800;letter-spacing:-1px;line-height:1.5;">
-          準備前 先回答這一題
-        </h2>
-        <p style="text-align:center;font-size:15px;color:${MUTE};margin:0;line-height:1.85;">
-          你的事業現在最缺的，是什麼？
-        </p>
+        ${chapterCover('準備前<br>先回答這一題', '你的事業現在最缺的，是什麼？')}
 
         <!-- 強調語：一次只選一個（純紅字大字，無框）-->
         <div style="max-width:560px;margin:38px auto 56px;text-align:center;">
@@ -446,7 +428,7 @@ function renderConsultantGuide() {
 
     <!-- ============ 區塊 8：步驟六・主題設定（章節 5）============ -->
     <section id="gchap5" data-chap="5" style="background:white;padding:90px 30px;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${stepHeader('五', '主題', '主題選對 就贏一半', '好的主題，從「對的角度」開始。')}
+      ${stepHeader('五', '主題', '主題選對<br>就贏一半', '好的主題，從「對的角度」開始。')}
       <div style="max-width:780px;margin:0 auto;">
 
         <!-- 4 個角度卡（上下排列） -->
@@ -479,7 +461,7 @@ function renderConsultantGuide() {
 
     <!-- ============ 區塊 9：步驟七・引薦對象（章節 6）============ -->
     <section id="gchap6" data-chap="6" style="background:${CREAM};padding:90px 30px;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${stepHeader('六', '對象', '你越具體 越多人能幫你', '夥伴的引薦，藏在你的描述細節裡。')}
+      ${stepHeader('六', '對象', '你越具體<br>越多人能幫你', '夥伴的引薦，藏在你的描述細節裡。')}
       <div style="max-width:780px;margin:0 auto;">
 
         <!-- 3 種引薦對象 -->
@@ -518,7 +500,7 @@ function renderConsultantGuide() {
 
     <!-- ============ 區塊 10：步驟八・簡報架構（章節 7，Tab 切換）============ -->
     <section id="gchap7" data-chap="7" style="background:white;padding:90px 30px;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${stepHeader('七', '架構', '5 分鐘 怎麼講最有力？', '第一次跟老手，節奏不一樣。')}
+      ${stepHeader('七', '架構', '5 分鐘<br>怎麼講最有力？', '第一次跟老手，節奏不一樣。')}
       <div style="max-width:780px;margin:0 auto;">
 
         <!-- 第一次（333 架構） -->
@@ -587,7 +569,7 @@ function renderConsultantGuide() {
 
     <!-- ============ 區塊 11：步驟九・抽獎禮物（章節 8）============ -->
     <section id="gchap8" data-chap="8" style="background:${CREAM};padding:90px 30px;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${stepHeader('八', '禮物', '抽獎禮物 是邀約的鋪路', '兩份禮物，三個準備方向。')}
+      ${stepHeader('八', '禮物', '抽獎禮物<br>是邀約的鋪路', '兩份禮物，三個準備方向。')}
       <div style="max-width:780px;margin:0 auto;">
 
         ${ruleBanner('兩份禮物，價值抓 500 元以上')}
@@ -620,7 +602,7 @@ function renderConsultantGuide() {
 
     <!-- ============ 區塊 12：步驟十・上台技巧（章節 9）============ -->
     <section id="gchap9" data-chap="9" style="background:white;padding:90px 30px;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${stepHeader('九', '上台', '上台那刻 準備就是底氣', '7 件事，把緊張變成穩定。')}
+      ${stepHeader('九', '上台', '上台那刻<br>準備就是底氣', '7 件事，把緊張變成穩定。')}
       <div style="max-width:680px;margin:0 auto;">
 
         <!-- 7 件事條列 -->
