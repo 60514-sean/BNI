@@ -205,6 +205,11 @@ function renderConsultantGuide() {
       .toc-item .toc-num { font-size: 20px !important; }
       .toc-item .toc-desc { font-size: 13px !important; }
     }
+    /* LCD 科普手機強制 3 行（每兩個項目一行、最後一個自己一行）*/
+    @media (max-width: 540px) {
+      .lcd-line { display: block; }
+      .lcd-sep { display: none; }
+    }
     /* 整體手機 padding 收斂：section 上下留白縮小、左右增加避免貼邊 */
     @media (max-width: 540px) {
       #simguide > section { padding-top: 56px !important; padding-bottom: 56px !important; padding-left: 28px !important; padding-right: 28px !important; }
@@ -568,7 +573,7 @@ function renderConsultantGuide() {
           <div style="margin-top:30px;padding:14px 22px;background:white;border-left:3px solid ${RED};display:flex;align-items:center;gap:14px;border-radius:0 8px 8px 0;${CARD_FX}">
             <div style="font-size:11px;color:${RED};letter-spacing:3px;font-weight:700;flex-shrink:0;">LCD 科普</div>
             <div style="width:1px;height:14px;background:${LINE};flex-shrink:0;"></div>
-            <div style="font-size:14px;color:${INK};font-weight:600;line-height:1.6;">產品與服務項目 ・ 目標市場 ・ 客戶特定利潤 ・ 公司傲人事蹟 ・ 成功案例</div>
+            <div style="font-size:14px;color:${INK};font-weight:600;line-height:1.6;"><span class="lcd-line">產品與服務項目 ・ 目標市場</span><span class="lcd-sep"> ・ </span><span class="lcd-line">客戶特定利潤 ・ 成功案例</span><span class="lcd-sep"> ・ </span><span class="lcd-line">公司傲人事蹟</span></div>
           </div>
         </div>
 
@@ -736,27 +741,40 @@ function setGuideUiVisible(visible) {
   if (btn) btn.style.display = 'none';  // 由 onScroll 在捲動時決定要不要顯示
 }
 
-// 自動隱藏：偵測任何 simguide section（[data-chap]）是否可見，否則強制隱藏 dots/btn/tip
-// 通用偵測，不綁定特定 ID（顧問首頁 #tabConsultantGuide、講者畫面 #tabGuide 都能 cover）
+// 自動隱藏：偵測 #simguide 是否可見，否則強制隱藏 dots/btn
+// 改用 IIFE 立即執行（不等 setupGuideScroll 才掛 observer），並用 #simguide 而非 [data-chap]
 function setupGuideUiAutoHide() {
-  if (window._guideAutoHide) return;
-  window._guideAutoHide = true;
-  let raf = null;
-  const check = () => {
-    raf = null;
-    const sections = document.querySelectorAll('[data-chap]');
-    let anyVisible = false;
-    for (const s of sections) {
-      if (s.offsetParent !== null) { anyVisible = true; break; }
-    }
-    if (!anyVisible) setGuideUiVisible(false);
-  };
-  const observer = new MutationObserver(() => {
-    if (raf) return;
-    raf = requestAnimationFrame(check);
-  });
-  observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+  // 已被 IIFE 自動啟動，此函式保留為向後相容（呼叫無副作用）
+  return;
 }
+
+(function autoHideGuideUiInit() {
+  const setup = () => {
+    if (window._guideAutoHide) return;
+    window._guideAutoHide = true;
+    let raf = null;
+    const check = () => {
+      raf = null;
+      const sim = document.getElementById('simguide');
+      const visible = !!sim && sim.offsetParent !== null;
+      if (!visible && typeof setGuideUiVisible === 'function') {
+        setGuideUiVisible(false);
+      }
+    };
+    const observer = new MutationObserver(() => {
+      if (raf) return;
+      raf = requestAnimationFrame(check);
+    });
+    if (document.body) {
+      observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+      check();  // 立即跑一次
+    }
+  };
+  if (typeof document !== 'undefined') {
+    if (document.readyState && document.readyState !== 'loading') setup();
+    else document.addEventListener('DOMContentLoaded', setup);
+  }
+})();
 
 // 點擊章節 dot 跳轉
 function scrollToChapter(n) {
