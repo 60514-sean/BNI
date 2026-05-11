@@ -45,7 +45,7 @@ function renderConsultantGuide() {
 
   // 規範 banner（大數字版）：左大字主要規範（如「18 字以內」）、右補充說明、右上角小 chip「規範」
   const ruleBanner = (main, desc) => `
-    <div style="margin-top:46px;padding:22px 26px;background:${CREAM};border-left:3px solid ${RED};border-radius:0 8px 8px 0;display:flex;align-items:center;gap:22px;position:relative;">
+    <div style="margin-top:46px;padding:22px 26px;background:white;border:1px solid ${LINE};border-left:3px solid ${RED};border-radius:0 8px 8px 0;display:flex;align-items:center;gap:22px;position:relative;">
       <div style="flex-shrink:0;font-size:24px;color:${RED};font-weight:800;line-height:1.1;letter-spacing:-.5px;">${main}</div>
       <div style="width:1px;height:24px;background:${LINE};flex-shrink:0;"></div>
       <div style="flex:1;font-size:13px;color:${NAVY};font-weight:700;line-height:1.5;letter-spacing:.3px;">${desc}</div>
@@ -106,8 +106,7 @@ function renderConsultantGuide() {
       title: '送給夥伴',
       sub: '讓夥伴真的會引薦你',
       iconName: 'handover',
-      body: `夥伴不是不想引薦你，是不知道怎麼介紹你。<br>
-        主題簡報就是你親手寫好的「推薦腳本」，讓夥伴拿著就能賣。`,
+      body: `夥伴不是不想引薦你，是不知道怎麼介紹你。主題簡報就是你親手寫好的「推薦腳本」，讓夥伴拿著就能賣。`,
       compare: [
         { tag: '沒做好', text: '「他是做保險的啦，你要不要找他？」', muted: true },
         { tag: '做好了', text: '「我認識一個保險顧問，專門幫科技業老闆規劃稅務，我朋友找他省了 80 萬。」', muted: false },
@@ -120,7 +119,7 @@ function renderConsultantGuide() {
       title: '送給來賓',
       sub: '展現分會的專業門面',
       iconName: 'badge',
-      body: `來賓那天看到的分會，就是「他想不想加入」的全部判斷。30 秒簡報像名片，主題簡報像作品集。`,
+      body: `來賓那天看到的分會，就是「他想不想加入」的全部判斷。每週簡報像名片，主題簡報像作品集。`,
       compare: null,
       quote: '你的簡報，就是分會的門面',
       bg: CREAM,
@@ -128,11 +127,9 @@ function renderConsultantGuide() {
     {
       num: '03',
       title: '送給自己',
-      sub: '我獨自升級',
+      sub: '讓老闆們獨自升級',
       iconName: 'growth',
-      body: `老闆們每天忙著做生意，但有多久沒好好整理過自己的事業了？<br>
-        主題簡報是 BNI 半強迫送你的禮物——<br>
-        一年一兩次，逼自己停下來想：我的核心價值是什麼？我的客戶是誰？`,
+      body: `老闆們每天忙著做生意，但有多久沒好好整理過自己的事業了？主題簡報是 BNI 送你的禮物，一年一兩次，讓自己停下來再次復盤：我的核心價值是什麼？我的客戶是誰？`,
       compare: null,
       quote: '講得清楚的人，事業才走得遠',
       bg: 'white',
@@ -150,7 +147,7 @@ function renderConsultantGuide() {
         `).join('')}
       </div>` : '';
     return `
-    <section class="gift-section" style="background:${g.bg};padding:90px 24px;">
+    <section class="gift-section" style="background:${g.bg};padding:90px 32px;">
       <div style="max-width:640px;margin:0 auto;">
         <div style="display:flex;align-items:baseline;gap:18px;margin-bottom:30px;">
           <div style="font-size:48px;font-weight:800;color:${NAVY};line-height:1;letter-spacing:-2px;">${g.num}</div>
@@ -207,9 +204,9 @@ function renderConsultantGuide() {
       .toc-item .toc-num { font-size: 20px !important; }
       .toc-item .toc-desc { font-size: 13px !important; }
     }
-    /* 整體手機 padding 收斂：section 上下留白縮小 */
+    /* 整體手機 padding 收斂：section 上下留白縮小、左右增加避免貼邊 */
     @media (max-width: 540px) {
-      #simguide > section { padding-top: 56px !important; padding-bottom: 56px !important; padding-left: 20px !important; padding-right: 20px !important; }
+      #simguide > section { padding-top: 56px !important; padding-bottom: 56px !important; padding-left: 28px !important; padding-right: 28px !important; }
       #simguide > section[id="gchap1"] { padding-top: 56px !important; padding-bottom: 40px !important; }
     }
     /* 桌機微調：禮物個別卡片 section 間距收斂 */
@@ -220,7 +217,8 @@ function renderConsultantGuide() {
     #simguide .consultant-prompt summary { list-style: none; }
     #simguide .consultant-prompt summary::-webkit-details-marker { display: none; }
     #simguide .consultant-prompt summary::marker { display: none; }
-    #simguide .consultant-prompt[open] summary { background: #c0392b; color: white; }
+    #simguide .consultant-prompt[open] summary { background: #c0392b !important; color: white !important; }
+    #simguide .consultant-prompt[open] summary span { color: white !important; }
     #simguide .consultant-prompt[open] summary .cp-toggle { display: none; }
     #simguide .consultant-prompt[open] summary::after {
       content: '−'; font-size: 20px; font-weight: 300; line-height: 1; color: white;
@@ -262,6 +260,11 @@ function renderConsultantGuide() {
           他講了什麼？<br>
           那再上一週呢？
         </p>
+        <div style="width:32px;height:1px;background:${LINE};margin:40px auto;"></div>
+        <p style="font-size:14px;color:${MUTE};line-height:2.1;margin:0;letter-spacing:.3px;">
+          如果你還記得 這就是主題簡報的價值所在<br>
+          大家會記得你 引薦自然也會流向你
+        </p>
       </div>
     </section>
 
@@ -290,7 +293,7 @@ function renderConsultantGuide() {
 
     <!-- ============ 區塊 3：三份禮物（章節 2）============ -->
     <section id="gchap2" data-chap="2" style="padding:80px 30px 40px;background:${CREAM};text-align:center;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${chapterCover('上台 5 分鐘<br>是給誰看的？', '答案是：你、夥伴、來賓 — 三個人。')}
+      ${chapterCover('上台 5 分鐘<br>是給誰看的？', '自己｜夥伴｜來賓')}
     </section>
     ${giftSections}
     <!-- 章節 2 結尾下一章引導（padding-top:1px 防 margin collapse 漏 body 灰底）-->
@@ -301,7 +304,7 @@ function renderConsultantGuide() {
     <!-- ============ 區塊 4：行動呼籲（章節 3）============ -->
     <section id="gchap3" data-chap="3" style="padding:90px 30px;background:white;border-top:4px solid ${RED};scroll-margin-top:120px;">
       <div style="max-width:600px;margin:0 auto;">
-        ${chapterCover('不只是講者的事', '主題簡報能不能發揮價值，講者只負責一半。')}
+        ${chapterCover('不只是講者的事', '主題簡報能不能發揮價值，講者只負責一半')}
         <div>
           ${actionRows}
         </div>
@@ -314,8 +317,8 @@ function renderConsultantGuide() {
     <section style="background:${CREAM};padding:90px 30px;text-align:center;">
       <div style="max-width:520px;margin:0 auto;">
         <p style="font-size:26px;color:${NAVY};font-weight:800;line-height:1.8;margin:0;letter-spacing:-.5px;">
-          這兩件事做到，<br>
-          分會的引薦量<span style="color:${RED};">絕對翻倍</span>。
+          這兩件事做到<br>
+          分會的引薦量<span style="color:${RED};">絕對翻倍</span>
         </p>
         <div style="width:32px;height:1px;background:${NAVY};opacity:.3;margin:36px auto 24px;"></div>
         <p style="font-size:13px;color:${MUTE};margin:0 0 18px;line-height:1.85;font-weight:600;letter-spacing:1px;">
@@ -334,10 +337,10 @@ function renderConsultantGuide() {
         <!-- 強調語：一次只選一個（純紅字大字，無框）-->
         <div style="max-width:560px;margin:38px auto 56px;text-align:center;">
           <p style="font-size:24px;color:${RED};font-weight:800;margin:0 0 14px;line-height:1.6;letter-spacing:-.3px;">
-            一次只選一個。
+            一次只選一個
           </p>
           <p style="font-size:15px;color:${MUTE};margin:0;line-height:1.95;letter-spacing:.5px;">
-            兩個都想要，結果通常是兩個都做不好。
+            兩個都想要，結果通常是兩個都做不好
           </p>
         </div>
 
@@ -347,7 +350,7 @@ function renderConsultantGuide() {
           <!-- 方向一：引薦 -->
           <div style="background:white;padding:38px 30px;display:flex;flex-direction:column;border-top:6px solid ${NAVY};${CARD_FX}">
             <div style="margin-bottom:22px;">
-              <div style="font-size:11px;letter-spacing:4px;color:${NAVY};font-weight:700;">方向一 ・ 引薦</div>
+              <div style="font-size:11px;letter-spacing:4px;color:${NAVY};font-weight:700;">方向一</div>
               <h3 style="font-size:23px;color:${NAVY};margin:6px 0 0;font-weight:800;letter-spacing:-.5px;">我想要「引薦」</h3>
             </div>
 
@@ -382,7 +385,7 @@ function renderConsultantGuide() {
           <!-- 方向二：合作夥伴（樣式跟方向一一致） -->
           <div style="background:white;padding:38px 30px;display:flex;flex-direction:column;border-top:6px solid ${NAVY};${CARD_FX}">
             <div style="margin-bottom:22px;">
-              <div style="font-size:11px;letter-spacing:4px;color:${NAVY};font-weight:700;">方向二 ・ 合作</div>
+              <div style="font-size:11px;letter-spacing:4px;color:${NAVY};font-weight:700;">方向二</div>
               <h3 style="font-size:23px;color:${NAVY};margin:6px 0 0;font-weight:800;letter-spacing:-.5px;">我想要「合作夥伴」</h3>
             </div>
 
@@ -425,12 +428,12 @@ function renderConsultantGuide() {
             我的事業現在最缺的，<br>
             是「更多客戶」還是「更好的夥伴」？
           </p>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;max-width:480px;margin:0 auto;">
-            <div style="border:1px solid rgba(255,255,255,.25);padding:18px 16px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:480px;margin:0 auto;">
+            <div style="border:1px solid rgba(255,255,255,.25);padding:18px 12px;">
               <div style="font-size:13px;color:white;opacity:.7;margin-bottom:6px;">缺客戶</div>
               <div style="font-size:16px;font-weight:700;color:white;">→ 選引薦</div>
             </div>
-            <div style="border:1px solid rgba(255,255,255,.25);padding:18px 16px;">
+            <div style="border:1px solid rgba(255,255,255,.25);padding:18px 12px;">
               <div style="font-size:13px;color:white;opacity:.7;margin-bottom:6px;">缺通路</div>
               <div style="font-size:16px;font-weight:700;color:white;">→ 選合作</div>
             </div>
@@ -443,7 +446,7 @@ function renderConsultantGuide() {
 
     <!-- ============ 區塊 8：步驟六・主題設定（章節 5）============ -->
     <section id="gchap5" data-chap="5" style="background:white;padding:90px 30px;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${stepHeader('五', '主題', '主題選對<br>就贏一半', '好的主題，從「對的角度」開始。')}
+      ${stepHeader('五', '主題', '主題選對<br>就贏一半', '好的主題，從「對的角度」開始')}
       <div style="max-width:780px;margin:0 auto;">
 
         <!-- 4 個角度卡（上下排列） -->
@@ -476,7 +479,7 @@ function renderConsultantGuide() {
 
     <!-- ============ 區塊 9：步驟七・引薦對象（章節 6）============ -->
     <section id="gchap6" data-chap="6" style="background:${CREAM};padding:90px 30px;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${stepHeader('六', '對象', '你越具體<br>越多人能幫你', '夥伴的引薦，藏在你的描述細節裡。')}
+      ${stepHeader('六', '對象', '你越具體<br>越多人能幫你', '夥伴的引薦，藏在你的描述細節裡')}
       <div style="max-width:780px;margin:0 auto;">
 
         <!-- 3 種引薦對象 -->
@@ -515,7 +518,7 @@ function renderConsultantGuide() {
 
     <!-- ============ 區塊 10：步驟八・簡報架構（章節 7，Tab 切換）============ -->
     <section id="gchap7" data-chap="7" style="background:white;padding:90px 30px;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${stepHeader('七', '架構', '5 分鐘<br>怎麼講最有力？', '第一次跟老手，節奏不一樣。')}
+      ${stepHeader('七', '架構', '5 分鐘<br>怎麼講最有力？', '第一次跟老手，節奏不一樣')}
       <div style="max-width:780px;margin:0 auto;">
 
         <!-- 第一次（333 架構） -->
@@ -560,10 +563,10 @@ function renderConsultantGuide() {
               </div>
             `).join('')}
           </div>
-          <!-- LCD 科普（白底紅左線，跟規範/工具 banner 同 family）-->
-          <div style="margin-top:30px;background:white;border-left:3px solid ${RED};padding:22px 26px;border-radius:0 8px 8px 0;${CARD_FX}">
+          <!-- LCD 科普（白底紅左線，跟規範/工具 banner 同 family；項目置中排）-->
+          <div style="margin-top:30px;background:white;border-left:3px solid ${RED};padding:22px 26px;border-radius:0 8px 8px 0;${CARD_FX}text-align:center;">
             <div style="font-size:11px;color:${RED};letter-spacing:3px;font-weight:700;margin-bottom:14px;">LCD 科普</div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px 22px;">
+            <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:12px 22px;">
               ${['產品與服務項目','目標市場','客戶特定利潤','公司傲人事蹟','成功案例'].map(t => `
                 <div style="font-size:13px;color:${INK};line-height:1.7;padding-left:14px;position:relative;font-weight:600;">
                   <span style="position:absolute;left:0;top:.55em;width:6px;height:1px;background:${RED};"></span>${t}
@@ -584,7 +587,7 @@ function renderConsultantGuide() {
 
     <!-- ============ 區塊 11：步驟九・抽獎禮物（章節 8）============ -->
     <section id="gchap8" data-chap="8" style="background:${CREAM};padding:90px 30px;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${stepHeader('八', '禮物', '選對禮物<br>能讓會員記得你', '兩份禮物，三個準備方向。')}
+      ${stepHeader('八', '禮物', '選對禮物<br>能讓會員記得你', '兩份禮物，三個準備方向')}
       <div style="max-width:780px;margin:0 auto;">
 
         ${ruleBanner('500 元以上', '兩份禮物每份價值')}
@@ -617,7 +620,7 @@ function renderConsultantGuide() {
 
     <!-- ============ 區塊 12：步驟十・上台技巧（章節 9，紅底封面）============ -->
     <section id="gchap9" data-chap="9" style="background:white;padding:90px 30px;scroll-margin-top:120px;">
-      ${stepHeader('九', '上台', '上台那刻<br>準備就是底氣', '7 件事，把緊張變成穩定。', { red: true })}
+      ${stepHeader('九', '上台', '上台那刻<br>準備就是底氣', '7 件事，把緊張變成穩定', { red: true })}
       <div style="max-width:680px;margin:0 auto;">
 
         <!-- 7 件事條列 -->
@@ -652,16 +655,16 @@ function renderConsultantGuide() {
     <!-- ============ 區塊 13：Footer 鼓勵段（紅底，BNI 給予者文化）============ -->
     <section style="background:${RED};color:white;padding:80px 30px 60px;text-align:center;">
       <div style="max-width:560px;margin:0 auto;">
-        <div style="font-size:11px;color:white;opacity:.7;letter-spacing:5px;font-weight:700;margin-bottom:24px;">給予者・收獲者</div>
+        <div style="font-size:13px;color:white;opacity:.7;letter-spacing:5px;font-weight:700;margin-bottom:24px;">Givers Gain</div>
         <p style="font-size:30px;font-weight:800;line-height:1.6;margin:0 0 26px;letter-spacing:-.5px;">
-          你給出去的，<br>會回到你身上。
+          你給出去的<br>會回到你身上
         </p>
         <div style="width:32px;height:1px;background:white;opacity:.5;margin:30px auto;"></div>
         <p style="font-size:15px;line-height:2;margin:0 0 14px;opacity:.92;letter-spacing:.5px;font-weight:500;">
-          講好這場主題簡報——<br>引薦，會自然找上你。
+          講好這場主題簡報<br>引薦 會自然找上你
         </p>
         <p style="font-size:13px;line-height:1.85;margin:30px 0 0;opacity:.7;font-weight:400;">
-          現在輪到你了。
+          現在輪到你了
         </p>
       </div>
     </section>
@@ -687,12 +690,6 @@ function setupGuideScroll() {
       style="width:9px;height:9px;border-radius:50%;background:${GREY};border:none;cursor:pointer;padding:0;transition:background .25s, transform .25s;"></button>
   `).join('');
   document.body.appendChild(dotsBar);
-
-  // 2) active dot tooltip（顯示當前章節名）
-  const tip = document.createElement('div');
-  tip.id = 'gdTip';
-  tip.style.cssText = 'position:fixed;background:rgba(0,0,0,0.85);color:white;padding:5px 14px;border-radius:14px;font-size:12px;font-weight:700;letter-spacing:2px;pointer-events:none;z-index:89;opacity:0;transition:opacity .25s, left .2s;transform:translateX(-50%);white-space:nowrap;';
-  document.body.appendChild(tip);
 
   // 3) 跳到目錄按鈕
   const topBtn = document.createElement('button');
@@ -720,27 +717,16 @@ function setupGuideScroll() {
       d.style.background = isActive ? RED : GREY;
       d.style.transform = isActive ? 'scale(1.5)' : 'scale(1)';
     });
-    // 更新 tooltip：定位在 active dot 正上方
-    const activeDot = document.querySelector(`.gd-dot[data-chap="${activeChap}"]`);
-    if (activeDot) {
-      const rect = activeDot.getBoundingClientRect();
-      tip.style.left = (rect.left + rect.width / 2) + 'px';
-      tip.style.bottom = (window.innerHeight - rect.top + 12) + 'px';
-      tip.textContent = labels[activeChap - 1];
-      tip.style.opacity = '1';
-    }
   };
   window.addEventListener('scroll', onScroll, { passive: true });
 }
 
-// 顯示/隱藏 dots + backToTop + tip（在 switchConsultantTab 切換 tab 時呼叫）
+// 顯示/隱藏 dots + backToTop（在 switchConsultantTab 切換 tab 時呼叫）
 function setGuideUiVisible(visible) {
   const dots = document.getElementById('guideDots');
   const btn = document.getElementById('guideBackToTop');
-  const tip = document.getElementById('gdTip');
   if (dots) dots.style.display = visible ? 'flex' : 'none';
   if (btn) btn.style.display = 'none';  // 由 onScroll 在捲動時決定要不要顯示
-  if (tip) tip.style.opacity = visible ? '1' : '0';
 }
 
 // 自動隱藏：偵測任何 simguide section（[data-chap]）是否可見，否則強制隱藏 dots/btn/tip
