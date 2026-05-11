@@ -251,14 +251,14 @@ function renderConsultantGuide() {
     <section id="gchap1" data-chap="1" style="background:white;padding:30px 24px 70px;scroll-margin-top:120px;">
       <div class="toc-grid" style="max-width:880px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;">
         ${[
-          { chap: 2, t: '為了誰',   d: '上台 5 分鐘，是給誰看的？' },
+          { chap: 2, t: '為了誰',   d: '上台 5 分鐘 是給誰看的？' },
           { chap: 3, t: '行動',     d: '不只是講者的事' },
-          { chap: 4, t: '選方向',   d: '準備前，先回答這一題' },
-          { chap: 5, t: '主題',     d: '主題選對，就贏一半' },
-          { chap: 6, t: '對象',     d: '你越具體，越多人能幫你' },
-          { chap: 7, t: '架構',     d: '5 分鐘，怎麼講最有力？' },
-          { chap: 8, t: '禮物',     d: '抽獎禮物，是邀約的鋪路' },
-          { chap: 9, t: '上台',     d: '上台那刻，準備就是底氣' },
+          { chap: 4, t: '選方向',   d: '準備前 先回答這一題' },
+          { chap: 5, t: '主題',     d: '主題選對 就贏一半' },
+          { chap: 6, t: '對象',     d: '你越具體 越多人能幫你' },
+          { chap: 7, t: '架構',     d: '5 分鐘 怎麼講最有力？' },
+          { chap: 8, t: '禮物',     d: '抽獎禮物 是邀約的鋪路' },
+          { chap: 9, t: '上台',     d: '上台那刻 準備就是底氣' },
         ].map((item, i) => `
           <button class="toc-item" onclick="scrollToChapter(${item.chap})" onmouseover="this.style.borderColor='${RED}';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='${LINE}';this.style.transform=''"
             style="background:white;padding:18px 20px;border:1px solid ${LINE};border-radius:10px;cursor:pointer;text-align:left;transition:all .2s;font-family:inherit;${CARD_FX}">
@@ -274,7 +274,7 @@ function renderConsultantGuide() {
     <section id="gchap2" data-chap="2" style="padding:80px 30px 60px;background:${CREAM};text-align:center;border-top:4px solid ${RED};scroll-margin-top:120px;">
       ${chapterMark('二', '為什麼')}
       <h2 style="font-size:30px;color:${NAVY};margin:0 0 16px;font-weight:800;letter-spacing:-1px;line-height:1.5;">
-        上台 5 分鐘，<br>是給誰看的？
+        上台 5 分鐘 是給誰看的？
       </h2>
       <p style="font-size:15px;color:${MUTE};margin:0;line-height:1.85;max-width:480px;margin-left:auto;margin-right:auto;">
         答案是：你、夥伴、來賓 — 三個人。
@@ -328,7 +328,7 @@ function renderConsultantGuide() {
       <div style="max-width:880px;margin:0 auto;">
 
         <h2 style="text-align:center;font-size:30px;color:${NAVY};margin:0 0 14px;font-weight:800;letter-spacing:-1px;line-height:1.5;">
-          準備前，<br>先回答這一題
+          準備前 先回答這一題
         </h2>
         <p style="text-align:center;font-size:15px;color:${MUTE};margin:0;line-height:1.85;">
           你的事業現在最缺的，是什麼？
@@ -446,7 +446,7 @@ function renderConsultantGuide() {
 
     <!-- ============ 區塊 8：步驟六・主題設定（章節 5）============ -->
     <section id="gchap5" data-chap="5" style="background:white;padding:90px 30px;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${stepHeader('五', '主題', '主題選對，<br>就贏一半', '好的主題，從「對的角度」開始。')}
+      ${stepHeader('五', '主題', '主題選對 就贏一半', '好的主題，從「對的角度」開始。')}
       <div style="max-width:780px;margin:0 auto;">
 
         <!-- 4 個角度卡（上下排列） -->
@@ -479,7 +479,7 @@ function renderConsultantGuide() {
 
     <!-- ============ 區塊 9：步驟七・引薦對象（章節 6）============ -->
     <section id="gchap6" data-chap="6" style="background:${CREAM};padding:90px 30px;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${stepHeader('六', '對象', '你越具體，<br>越多人能幫你', '夥伴的引薦，藏在你的描述細節裡。')}
+      ${stepHeader('六', '對象', '你越具體 越多人能幫你', '夥伴的引薦，藏在你的描述細節裡。')}
       <div style="max-width:780px;margin:0 auto;">
 
         <!-- 3 種引薦對象 -->
@@ -518,7 +518,7 @@ function renderConsultantGuide() {
 
     <!-- ============ 區塊 10：步驟八・簡報架構（章節 7，Tab 切換）============ -->
     <section id="gchap7" data-chap="7" style="background:white;padding:90px 30px;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${stepHeader('七', '架構', '5 分鐘，<br>怎麼講最有力？', '第一次跟老手，節奏不一樣。')}
+      ${stepHeader('七', '架構', '5 分鐘 怎麼講最有力？', '第一次跟老手，節奏不一樣。')}
       <div style="max-width:780px;margin:0 auto;">
 
         <!-- 第一次（333 架構） -->
@@ -587,7 +587,7 @@ function renderConsultantGuide() {
 
     <!-- ============ 區塊 11：步驟九・抽獎禮物（章節 8）============ -->
     <section id="gchap8" data-chap="8" style="background:${CREAM};padding:90px 30px;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${stepHeader('八', '禮物', '抽獎禮物，<br>是邀約的鋪路', '兩份禮物，三個準備方向。')}
+      ${stepHeader('八', '禮物', '抽獎禮物 是邀約的鋪路', '兩份禮物，三個準備方向。')}
       <div style="max-width:780px;margin:0 auto;">
 
         ${ruleBanner('兩份禮物，價值抓 500 元以上')}
@@ -620,7 +620,7 @@ function renderConsultantGuide() {
 
     <!-- ============ 區塊 12：步驟十・上台技巧（章節 9）============ -->
     <section id="gchap9" data-chap="9" style="background:white;padding:90px 30px;border-top:4px solid ${RED};scroll-margin-top:120px;">
-      ${stepHeader('九', '上台', '上台那刻，<br>準備就是底氣', '7 件事，把緊張變成穩定。')}
+      ${stepHeader('九', '上台', '上台那刻 準備就是底氣', '7 件事，把緊張變成穩定。')}
       <div style="max-width:680px;margin:0 auto;">
 
         <!-- 7 件事條列 -->
