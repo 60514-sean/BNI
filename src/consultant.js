@@ -527,20 +527,34 @@ function renderConsultantGuide() {
       ${stepHeader('七', '架構', '5 分鐘<br>怎麼講最有力？', '第一次跟老手，節奏不一樣')}
       <div style="max-width:780px;margin:0 auto;">
 
-        <!-- 第一次（333 架構） -->
+        <!-- 第一次（333 架構，分 3 組 + 時間標示）-->
         <div>
           <div style="text-align:center;margin-bottom:24px;">
             <div style="display:inline-block;background:${RED};color:white;font-size:11px;letter-spacing:3px;font-weight:700;padding:5px 14px;border-radius:99px;margin-bottom:10px;">第一次上台</div>
             <div style="font-size:18px;color:${NAVY};font-weight:800;letter-spacing:.5px;">333 架構</div>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
-            ${['封面','我在做什麼','我為什麼做這個事業','成功案例 1','成功案例 2','成功案例 3','總結','要求引薦 CTA','記憶口號']
-              .map((t, i) => `
-                <div style="background:${CREAM};padding:22px 12px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:80px;border-radius:8px;">
-                  <div style="font-size:11px;color:${RED};font-weight:700;letter-spacing:2px;margin-bottom:6px;">0${i+1}</div>
-                  <div style="font-size:13px;color:${NAVY};font-weight:700;line-height:1.5;">${t}</div>
+          <div style="display:flex;flex-direction:column;gap:18px;">
+            ${[
+              { time: '1 分鐘', label: '開場', items: [{ t: '封面', i: 0 }, { t: '我在做什麼', i: 1 }, { t: '我為什麼做這個事業', i: 2 }] },
+              { time: '3 分鐘', label: '主體', items: [{ t: '成功案例 1', i: 3 }, { t: '成功案例 2', i: 4 }, { t: '成功案例 3', i: 5 }] },
+              { time: '1 分鐘', label: '收尾', items: [{ t: '總結', i: 6 }, { t: '要求引薦 CTA', i: 7 }, { t: '記憶口號', i: 8 }] },
+            ].map(g => `
+              <div>
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                  <span style="font-size:12px;color:${RED};letter-spacing:3px;font-weight:700;">${g.time}</span>
+                  <span style="height:1px;flex:1;background:${LINE};"></span>
+                  <span style="font-size:11px;color:${MUTE};font-weight:600;letter-spacing:3px;">${g.label}</span>
                 </div>
-              `).join('')}
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+                  ${g.items.map(it => `
+                    <div style="background:${CREAM};padding:22px 12px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:80px;border-radius:8px;">
+                      <div style="font-size:11px;color:${RED};font-weight:700;letter-spacing:2px;margin-bottom:6px;">0${it.i+1}</div>
+                      <div style="font-size:13px;color:${NAVY};font-weight:700;line-height:1.5;">${it.t}</div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `).join('')}
           </div>
         </div>
 
@@ -550,22 +564,39 @@ function renderConsultantGuide() {
             <div style="display:inline-block;background:${RED};color:white;font-size:11px;letter-spacing:3px;font-weight:700;padding:5px 14px;border-radius:99px;margin-bottom:10px;">第二次以上</div>
             <div style="font-size:18px;color:${NAVY};font-weight:800;letter-spacing:.5px;">主題簡報架構（呼應 DanceCard）</div>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+          <div style="display:flex;flex-direction:column;gap:18px;">
             ${[
-              { t: '封面', sub: '' },
-              { t: '自我介紹／我在做什麼', sub: '' },
-              { t: '獨特銷售主張', sub: '針對目標客群' },
-              { t: '最佳 LCD', sub: '描述 + 案例 + 總結' },
-              { t: '如何開啟交易對話', sub: '聽到 xxx，告訴他 ooo' },
-              { t: '如何掌握引薦流程', sub: '常見 QA 2~3 個' },
-              { t: '整體總結', sub: '' },
-              { t: '要求引薦 CTA', sub: '' },
-              { t: '記憶口號', sub: '' },
-            ].map((s, i) => `
-              <div style="background:${CREAM};padding:18px 10px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:90px;border-radius:8px;">
-                <div style="font-size:11px;color:${RED};font-weight:700;letter-spacing:2px;margin-bottom:6px;">0${i+1}</div>
-                <div style="font-size:13px;color:${NAVY};font-weight:700;line-height:1.45;">${s.t}</div>
-                ${s.sub ? `<div style="font-size:10px;color:${MUTE};margin-top:4px;line-height:1.5;">${s.sub}</div>` : ''}
+              { time: '1 分鐘', label: '開場', items: [
+                { t: '封面', sub: '', i: 0 },
+                { t: '自我介紹／我在做什麼', sub: '', i: 1 },
+                { t: '獨特銷售主張', sub: '針對目標客群', i: 2 },
+              ]},
+              { time: '3 分鐘', label: '主體', items: [
+                { t: '最佳 LCD', sub: '描述 + 案例 + 總結', i: 3 },
+                { t: '如何開啟交易對話', sub: '聽到 xxx，告訴他 ooo', i: 4 },
+                { t: '如何掌握引薦流程', sub: '常見 QA 2~3 個', i: 5 },
+              ]},
+              { time: '1 分鐘', label: '收尾', items: [
+                { t: '整體總結', sub: '', i: 6 },
+                { t: '要求引薦 CTA', sub: '', i: 7 },
+                { t: '記憶口號', sub: '', i: 8 },
+              ]},
+            ].map(g => `
+              <div>
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                  <span style="font-size:12px;color:${RED};letter-spacing:3px;font-weight:700;">${g.time}</span>
+                  <span style="height:1px;flex:1;background:${LINE};"></span>
+                  <span style="font-size:11px;color:${MUTE};font-weight:600;letter-spacing:3px;">${g.label}</span>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+                  ${g.items.map(s => `
+                    <div style="background:${CREAM};padding:18px 10px;text-align:center;display:flex;flex-direction:column;justify-content:center;min-height:90px;border-radius:8px;">
+                      <div style="font-size:11px;color:${RED};font-weight:700;letter-spacing:2px;margin-bottom:6px;">0${s.i+1}</div>
+                      <div style="font-size:13px;color:${NAVY};font-weight:700;line-height:1.45;">${s.t}</div>
+                      ${s.sub ? `<div style="font-size:10px;color:${MUTE};margin-top:4px;line-height:1.5;">${s.sub}</div>` : ''}
+                    </div>
+                  `).join('')}
+                </div>
               </div>
             `).join('')}
           </div>
