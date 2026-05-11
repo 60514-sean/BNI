@@ -148,10 +148,6 @@ function renderConsultantGuide() {
         <div style="margin-top:50px;padding:30px 0 0;border-top:1px solid ${LINE};text-align:center;">
           <div style="font-size:20px;color:${NAVY};font-weight:700;line-height:1.6;letter-spacing:.5px;">「${g.quote}」</div>
         </div>
-        <!-- 預留位置：之後可填入會員真實案例 / 引薦數據 -->
-        <div style="margin-top:24px;padding:14px 16px;border:1px dashed #d8d8d8;border-radius:6px;background:#fafafa;text-align:center;font-size:11px;color:#bbb;letter-spacing:.5px;line-height:1.6;">
-          ＋ 此處可填入會員真實案例 / 引薦數據
-        </div>
       </div>
     </section>`;
   }).join('');
@@ -172,11 +168,10 @@ function renderConsultantGuide() {
     },
   ];
   const actionRows = actions.map((a, i) => `
-    <div style="display:flex;gap:20px;align-items:flex-start;padding:30px 0;${i < actions.length - 1 ? `border-bottom:1px solid ${LINE};` : ''}">
-      ${iconCircle(a.iconName, 56)}
+    <div style="display:flex;gap:22px;align-items:flex-start;padding:30px 0;${i < actions.length - 1 ? `border-bottom:1px solid ${LINE};` : ''}">
+      <div style="font-size:36px;color:${NAVY};font-weight:200;line-height:1;letter-spacing:-1.5px;width:42px;flex-shrink:0;text-align:right;">${a.num}</div>
       <div style="flex:1;">
-        <div style="font-size:11px;color:${MUTE};font-weight:700;letter-spacing:3px;margin-bottom:4px;">${a.num}</div>
-        <div style="font-size:16px;color:${NAVY};font-weight:800;margin-bottom:10px;">${a.when}</div>
+        <div style="font-size:17px;color:${NAVY};font-weight:800;margin-bottom:10px;letter-spacing:-.3px;">${a.when}</div>
         <div style="font-size:15px;color:${INK};line-height:1.9;">${a.text}</div>
       </div>
     </div>
@@ -224,8 +219,8 @@ function renderConsultantGuide() {
       <!-- 預留：CTA 按鈕（例如「往下看」「立刻準備我的主題簡報」） -->
     </section>
 
-    <!-- ============ 區塊 2：開場提問（章節 1，序章性質，放在目錄前）============ -->
-    <section id="gchap1" data-chap="1" style="padding:80px 30px 60px;background:white;border-top:4px solid ${RED};scroll-margin-top:120px;">
+    <!-- ============ 區塊 2：開場提問（序章，不在 dot 統計內，沒有 data-chap）============ -->
+    <section style="padding:80px 30px 60px;background:white;border-top:4px solid ${RED};">
       ${chapterMark('一', '思考')}
       <div style="max-width:540px;margin:0 auto;text-align:center;">
         <p style="font-size:26px;color:${NAVY};font-weight:700;line-height:2.2;margin:0;letter-spacing:.5px;">
@@ -236,8 +231,8 @@ function renderConsultantGuide() {
       </div>
     </section>
 
-    <!-- ============ 目錄（章節 1 之後、章節 2 之前；列出章節 2-9 共 8 項）============ -->
-    <section style="background:white;padding:30px 24px 70px;">
+    <!-- ============ 目錄（章節 1，dot 1 對應目錄；列出章節 2-9 共 8 項）============ -->
+    <section id="gchap1" data-chap="1" style="background:white;padding:30px 24px 70px;scroll-margin-top:120px;">
       <div class="toc-grid" style="max-width:880px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;">
         ${[
           { chap: 2, t: '為了誰',   d: '上台 5 分鐘，是給誰看的？' },
@@ -271,8 +266,8 @@ function renderConsultantGuide() {
       <div style="width:32px;height:1px;background:${NAVY};opacity:.3;margin:30px auto 0;"></div>
     </section>
     ${giftSections}
-    <!-- 章節 2 結尾下一章引導 -->
-    <section style="background:white;padding:0 24px 70px;">
+    <!-- 章節 2 結尾下一章引導（padding-top:1px 防 margin collapse 漏 body 灰底）-->
+    <section style="background:white;padding:1px 24px 70px;">
       <div style="max-width:640px;margin:0 auto;">${nextHint(2)}</div>
     </section>
 
@@ -668,7 +663,7 @@ function setupGuideScroll() {
   window._guideScrollAttached = true;
   const RED = '#c0392b';
   const GREY = '#d8d8d8';
-  const labels = ['誠實面對','為了誰','行動','選方向','主題','對象','架構','禮物','上台'];
+  const labels = ['目錄','禮物','行動','定位','主題','對象','架構','抽獎','上台'];
 
   // 1) 底部 dots 指示器
   const dotsBar = document.createElement('div');
@@ -686,11 +681,11 @@ function setupGuideScroll() {
   tip.style.cssText = 'position:fixed;background:rgba(0,0,0,0.85);color:white;padding:5px 14px;border-radius:14px;font-size:12px;font-weight:700;letter-spacing:2px;pointer-events:none;z-index:89;opacity:0;transition:opacity .25s, left .2s;transform:translateX(-50%);white-space:nowrap;';
   document.body.appendChild(tip);
 
-  // 3) 回到頂部按鈕
+  // 3) 跳到目錄按鈕
   const topBtn = document.createElement('button');
   topBtn.id = 'guideBackToTop';
-  topBtn.setAttribute('aria-label', '回到頂部');
-  topBtn.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  topBtn.setAttribute('aria-label', '跳到目錄');
+  topBtn.onclick = () => { if (typeof scrollToChapter === 'function') scrollToChapter(1); };
   topBtn.style.cssText = `position:fixed;bottom:74px;right:24px;width:48px;height:48px;border-radius:50%;background:${RED};color:white;border:none;box-shadow:0 4px 14px rgba(192,57,43,0.4);cursor:pointer;display:none;align-items:center;justify-content:center;z-index:88;`;
   topBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>`;
   document.body.appendChild(topBtn);
