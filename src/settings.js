@@ -13,7 +13,7 @@ function toggleSection(id) {
   }
 }
 
-function addConsultant() {
+async function addConsultant() {
   const input = document.getElementById('newConsultantInput');
   const name = input?.value.trim();
   if (!name) return;
@@ -22,6 +22,11 @@ function addConsultant() {
   if (cfg.consultants.includes(name)) { showToast('已存在相同名稱'); return; }
   cfg.consultants.push(name);
   cache['__config__'] = cfg;
+  _lsSave();
+  await saveConfig(cfg);
+  while (_saveQueue.size > 0 || _saveRunning) {
+    await new Promise(r => setTimeout(r, 50));
+  }
   showSettings();
   const sec = document.getElementById('consultantSection');
   const arrow = document.getElementById('consultantSectionArrow');
@@ -30,7 +35,7 @@ function addConsultant() {
   if (newRow) { newRow.style.border = '2px solid #c0392b'; newRow.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
 }
 
-function removeConsultant(i) {
+async function removeConsultant(i) {
   const cfg = readFormIntoCfg();
   if (!cfg.consultants) return;
   const name = cfg.consultants[i];
@@ -40,6 +45,11 @@ function removeConsultant(i) {
   if (keys.length) apiDelete(keys);
   cfg.consultants.splice(i, 1);
   cache['__config__'] = cfg;
+  _lsSave();
+  await saveConfig(cfg);
+  while (_saveQueue.size > 0 || _saveRunning) {
+    await new Promise(r => setTimeout(r, 50));
+  }
   showSettings();
   const sec = document.getElementById('consultantSection');
   const arrow = document.getElementById('consultantSectionArrow');
@@ -73,8 +83,6 @@ function showSettings() {
     : '<div style="color:#bbb;font-size:13px;margin-bottom:8px;">尚未新增顧問</div>';
 
   // 顧問與講者配對
-  const conOptions = consultants.map(c => `<option value="${c}">${c}</option>`).join('');
-
   let pairsHtml = cfg.pairs.map((p, i) => {
     const act = p.activityType || '主題簡報';
     const color = getActivityColor(act);
@@ -82,7 +90,10 @@ function showSettings() {
     const pData = getData(p.consultant, p.speaker);
     const { total: pTotal, done: pDone } = calcProgress(act, pData);
     const isDone = pTotal > 0 && pDone === pTotal;
-    const conSelectOpts = `<option value="">選擇顧問</option>${conOptions}` +
+    const conOptions = consultants.map(c =>
+      `<option value="${c}" ${p.consultant === c ? 'selected' : ''}>${c}</option>`
+    ).join('');
+    const conSelectOpts = `<option value="" ${p.consultant ? '' : 'selected'}>選擇顧問</option>${conOptions}` +
       (p.consultant && !consultants.includes(p.consultant) ? `<option value="${p.consultant}" selected>${p.consultant}</option>` : '');
     const conSelectHtml = `<select id="con_${i}" style="flex:1;min-width:90px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;cursor:pointer;">${conSelectOpts}</select>`;
     const cnt = p.presentationCount || '';
@@ -178,11 +189,6 @@ function showSettings() {
     </div>
   `;
 
-  // 選中既有顧問（select 需在 DOM 插入後再設定）
-  cfg.pairs.forEach((p, i) => {
-    const sel = document.getElementById('con_' + i);
-    if (sel && p.consultant) sel.value = p.consultant;
-  });
 }
 
 function readFormIntoCfg() {

@@ -1,4 +1,7 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  /* 隱藏 scrollbar：讓長頁面（簡報攻略）跟短頁面（講者追蹤）的 viewport 寬度一致，header 不會縮窄 */
+  html { scrollbar-width: none; -ms-overflow-style: none; }
+  html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; width: 0; height: 0; }
   body { font-family: 'Microsoft JhengHei', Arial, sans-serif; background: #f5f5f5; color: #333; }
 
   /* LOADER */
