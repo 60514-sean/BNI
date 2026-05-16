@@ -61,6 +61,13 @@ function showSettings() {
   const cfg = getConfig();
   const consultants = cfg.consultants || [];
 
+  // 依簡報時間升序排列（近的在上面，沒日期的排最後）
+  cfg.pairs.sort((a, b) => {
+    const da = a.presentationTime || '9999/99/99';
+    const db = b.presentationTime || '9999/99/99';
+    return da.localeCompare(db);
+  });
+
   // 簡報顧問名單
   const consultantListHtml = consultants.length
     ? consultants.map((c, i) => {
