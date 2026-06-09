@@ -212,6 +212,7 @@ function showCasesSettings() {
               <div style="flex:1;min-width:0;">
                 <input id="editTopic_${i}" value="${(cs.topic||'').replace(/"/g,'&quot;')}" placeholder="簡報主題" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;font-weight:600;outline:none;margin-bottom:4px;" />
                 <input id="editSpeaker_${i}" value="${(cs.speaker||'').replace(/"/g,'&quot;')}" placeholder="講者姓名" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;color:#888;outline:none;margin-bottom:4px;" />
+                <div style="font-size:11px;color:#aaa;margin-bottom:2px;">演講日期</div>
                 <input id="editDate_${i}" type="date" value="${cs.date||''}" style="width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;color:#555;outline:none;margin-bottom:4px;" />
                 ${type === '主題日' ? `<input id="editThemeDayName_${i}" value="${(cs.themeDayName||'').replace(/"/g,'&quot;')}" placeholder="主題日名稱（群組用）" style="width:100%;padding:6px 8px;border:1px solid #e0a0a0;border-radius:6px;font-size:12px;color:#c0392b;outline:none;" />` : ''}
               </div>
@@ -252,6 +253,7 @@ function showCasesSettings() {
       <div id="themeDayNameRow" style="display:none;margin-bottom:8px;">
         <input type="text" id="newCaseThemeDayName" placeholder="主題日名稱（相同名稱的兩位講者會合併為群組）" style="width:100%;padding:7px 10px;border:1px solid #e0a0a0;border-radius:6px;font-size:13px;outline:none;" />
       </div>
+      <div style="font-size:12px;color:#888;margin-bottom:4px;">演講日期</div>
       <input type="date" id="newCaseDate" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;margin-bottom:8px;color:#555;" />
       <textarea id="newCaseNote" placeholder="案例說明（可留空）" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;resize:vertical;min-height:50px;font-family:inherit;margin-bottom:8px;"></textarea>
       <input type="text" id="newCaseFolderLink" placeholder="Google Drive 資料夾連結" style="width:100%;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;font-family:monospace;" />
