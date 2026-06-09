@@ -261,3 +261,26 @@ let currentConsultantKey = null;
 let currentSpeaker = null;
 let _pendingUserEntry = null;
 
+
+// ===== 量測 header 高度，提供 .speaker-tabs sticky 定位用 =====
+(function () {
+  function syncHeaderHeight() {
+    const h = document.querySelector('.header');
+    if (!h) return;
+    document.documentElement.style.setProperty('--header-h', h.offsetHeight + 'px');
+  }
+  window.addEventListener('load', syncHeaderHeight);
+  window.addEventListener('resize', syncHeaderHeight);
+  window.addEventListener('orientationchange', syncHeaderHeight);
+  if (document.readyState !== 'loading') syncHeaderHeight();
+  else document.addEventListener('DOMContentLoaded', syncHeaderHeight);
+  // header 內容（身份徽章、按鈕）可能延後出現而改變高度
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(syncHeaderHeight);
+    const tryObserve = () => {
+      const h = document.querySelector('.header');
+      if (h) ro.observe(h); else setTimeout(tryObserve, 300);
+    };
+    tryObserve();
+  }
+})();
