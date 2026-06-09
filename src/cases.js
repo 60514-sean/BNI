@@ -201,7 +201,8 @@ function showCasesSettings() {
   const CASE_TYPES = ['第1次', '第2次+', '主題日', 'BOD'];
 
   const groupHtml = CASE_TYPES.map(type => {
-    const group = cases.map((cs, i) => ({ cs, i })).filter(({ cs }) => cs.type === type);
+    const group = cases.map((cs, i) => ({ cs, i })).filter(({ cs }) => cs.type === type)
+      .sort((a, b) => (b.cs.date || '').localeCompare(a.cs.date || ''));
     const itemsHtml = group.length
       ? group.map(({ cs, i }) => {
           const imgCount = caseImgList(cs).length;
