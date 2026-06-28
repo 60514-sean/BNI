@@ -861,10 +861,8 @@ function renderConsultantOverview(ck) {
       isSimpleType(act) && p.submitDate2 ? `${DATE_LABELS[1]}：${p.submitDate2}` : '',
       p.presentationTime ? `${DATE_LABELS[2]}：${p.presentationTime}` : '',
     ].filter(Boolean).join('　');
-    const _hasUpd2 = _updatedPairs.has(`${ck}\t${p.speaker}`);
     cardsHtml += `
       <div class="pair-card" style="cursor:pointer;${pct === 100 ? `border:2px solid ${color};background:white;` : ''}" onclick="renderConsultant('${ck}','${p.speaker}',true)">
-        ${_hasUpd2 ? `<div class="update-dot" id="covDot_${p.speaker}" style="background:${color};box-shadow:0 0 6px ${color}80;top:12px;right:12px;"></div>` : ''}
         <div class="pair-header">
           <span class="pair-title">${p.speaker||'—'}${activityBadge(act, color)}${countBadge(p, color)}</span>
         </div>
@@ -918,13 +916,11 @@ function renderConsultant(ck, speaker, canEdit) {
     const weeksLeft = _presWeeksDiff - LOCK_WEEKS_THRESHOLD;
     html += `<div style="background:#f7f7f7;border:1.5px dashed #ccc;border-radius:10px;padding:10px 16px;margin-bottom:14px;text-align:center;color:#999;font-size:13px;">目前為預覽模式，約 ${weeksLeft} 週後（倒數${LOCK_WEEKS_THRESHOLD}週起）開放編輯</div>`;
   }
-  const _slidesUpd = _updatedPairs.has(`${ck}\t${speaker}\tslides`);
-  const _slideDot = `<span id="slidesDot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-left:5px;vertical-align:middle;animation:dotPulse 1.4s ease-in-out infinite;"></span>`;
   if (!canEdit) {
     const isConsultantView = currentRole === 'consultant';
     html += `<div class="speaker-tabs" style="--tab-color:${color}">
       <button id="tabBtn_progress" class="speaker-tab-btn active" onclick="switchSpeakerTab('progress')">我的進度</button>
-      ${hasSlides(act) ? `<button id="tabBtn_slides" class="speaker-tab-btn" onclick="switchSpeakerTab('slides')">我的簡報${_slidesUpd ? _slideDot : ''}</button>` : ''}
+      ${hasSlides(act) ? `<button id="tabBtn_slides" class="speaker-tab-btn" onclick="switchSpeakerTab('slides')">我的簡報</button>` : ''}
       ${!isConsultantView ? `<button id="tabBtn_guide" class="speaker-tab-btn" onclick="switchSpeakerTab('guide')">簡報攻略</button>` : ''}
       ${!isConsultantView ? `<button id="tabBtn_cases" class="speaker-tab-btn" onclick="switchSpeakerTab('cases')">簡報案例</button>` : ''}
     </div>
@@ -946,7 +942,7 @@ function renderConsultant(ck, speaker, canEdit) {
           <button id="tabBtn_progress" data-color="${color}" onclick="switchSpeakerTab('progress')"
             style="padding:8px 16px;border:none;background:none;font-size:13px;cursor:pointer;font-weight:bold;color:${color};border-bottom:2px solid ${color};margin-bottom:-2px;">進度</button>
           <button id="tabBtn_slides" data-color="${color}" onclick="switchSpeakerTab('slides')"
-            style="padding:8px 16px;border:none;background:none;font-size:13px;cursor:pointer;color:#aaa;border-bottom:2px solid transparent;margin-bottom:-2px;">簡報內容${_slidesUpd ? _slideDot : ''}</button>
+            style="padding:8px 16px;border:none;background:none;font-size:13px;cursor:pointer;color:#aaa;border-bottom:2px solid transparent;margin-bottom:-2px;">簡報內容</button>
         </div>
         <div id="tabSlides" style="display:none;">${renderSlidesTab(ck, speaker, pair, true)}</div>
       ` : ''}
@@ -955,25 +951,20 @@ function renderConsultant(ck, speaker, canEdit) {
 
   if (isSimpleType(act)) {
     // 簡化清單
-    const _simpleUpd = _updatedPairs.has(`${ck}\t${speaker}\tsimple`);
-    html += `<div class="week-card"><div class="week-header" style="background:${color}" onclick="toggleWeek('simple-body')"><div><h3>進度清單</h3><div class="week-sub">${act}</div></div><div style="display:flex;align-items:center;gap:6px;"><span>${done}/${total}</span>${_simpleUpd ? `<span id="weekDot_simple" class="week-update-dot" style="background:white;"></span>` : ''}</div></div><div class="week-body" id="simple-body">`;
+    html += `<div class="week-card"><div class="week-header" style="background:${color}" onclick="toggleWeek('simple-body')"><div><h3>進度清單</h3><div class="week-sub">${act}</div></div><div style="display:flex;align-items:center;gap:6px;"><span>${done}/${total}</span></div></div><div class="week-body" id="simple-body">`;
     html += visibleSimpleTaskIndices(act).map(ti => {
       const t = SIMPLE_TASKS[ti];
       const checked = data[simpleTaskKey(ti)] ? 'checked' : '';
       const note = data[simpleNoteKey(ti)] || '';
       const cls = data[simpleTaskKey(ti)] ? 'checked' : '';
       const dis = canEdit ? '' : 'disabled';
-      const noteUpd = _updatedPairs.has(`${ck}\t${speaker}\tsnote_${ti}`);
-      const noteDot = noteUpd ? `<span id="snoteDot_${ti}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${color};margin-left:5px;flex-shrink:0;animation:dotPulse 1.4s ease-in-out infinite;vertical-align:middle;"></span>` : '';
-      const noteFocus = noteUpd ? `clearSimpleNoteDot('${ck}','${speaker}',${ti});` : '';
       return `<div class="task-item">
         <input type="checkbox" class="task-check" id="scb_${ti}" ${checked} ${dis} style="accent-color:${color}" onchange="toggleTaskSimple('${ck}','${speaker}',${ti},this)">
         <div class="task-content">
           <div class="task-label ${cls}" id="slbl_${ti}" style="${cls ? `text-decoration-color:${color}` : ''}">${t}</div>
-          ${noteUpd ? `<div style="display:flex;align-items:center;gap:3px;margin-top:2px;"><span style="font-size:10px;color:${color};font-weight:600;">備註更新</span>${noteDot}</div>` : ''}
           <textarea class="task-note" id="snote_${ti}" placeholder=""
             onchange="saveNoteSimple('${ck}','${speaker}',${ti},this.value)"
-            onfocus="${noteFocus}this.style.borderColor='${color}'" onblur="this.style.borderColor=''">${note}</textarea>
+            onfocus="this.style.borderColor='${color}'" onblur="this.style.borderColor=''">${note}</textarea>
         </div>
       </div>`;
     }).join('');
@@ -993,23 +984,16 @@ function renderConsultant(ck, speaker, canEdit) {
         const note = data[noteKey(wi, ti)] || '';
         const cls = data[taskKey(wi, ti)] ? 'checked' : '';
         const dis = canEdit ? '' : 'disabled';
-        const taskUpd2 = _updatedPairs.has(`${ck}\t${speaker}\ttask_${wi}_${ti}`);
-        const taskDot2 = taskUpd2 ? `<span id="taskDot_${wi}_${ti}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${color};margin-left:5px;flex-shrink:0;animation:dotPulse 1.4s ease-in-out infinite;vertical-align:middle;"></span>` : '';
-        const noteUpd = _updatedPairs.has(`${ck}\t${speaker}\tnote_${wi}_${ti}`);
-        const noteDot = noteUpd ? `<span id="noteDot_${wi}_${ti}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${color};margin-left:5px;flex-shrink:0;animation:dotPulse 1.4s ease-in-out infinite;vertical-align:middle;"></span>` : '';
-        const noteFocus = noteUpd ? `clearNoteDot('${ck}','${speaker}',${wi},${ti});` : '';
         return `<div class="task-item">
           <input type="checkbox" class="task-check" id="cb_${wi}_${ti}" ${checked} ${dis} style="accent-color:${color}" onchange="toggleTask('${ck}','${speaker}',${wi},${ti},this)">
           <div class="task-content">
-            <div class="task-label ${cls}" id="lbl_${wi}_${ti}" style="${cls ? `text-decoration-color:${color}` : ''}">${t}${taskDot2}</div>
-            ${noteUpd ? `<div style="display:flex;align-items:center;gap:3px;margin-top:2px;"><span style="font-size:10px;color:${color};font-weight:600;">備註更新</span>${noteDot}</div>` : ''}
+            <div class="task-label ${cls}" id="lbl_${wi}_${ti}" style="${cls ? `text-decoration-color:${color}` : ''}">${t}</div>
             <textarea class="task-note" id="note_${wi}_${ti}" placeholder="${WEEK_HINTS[wi]?.[ti] || ''}"
               onchange="saveNote('${ck}','${speaker}',${wi},${ti},this.value)"
-              onfocus="${noteFocus}this.style.borderColor='${color}'" onblur="this.style.borderColor=''">${note}</textarea>
+              onfocus="this.style.borderColor='${color}'" onblur="this.style.borderColor=''">${note}</textarea>
           </div>
         </div>`;
       }).join('');
-      const _wkUpd = _updatedPairs.has(`${ck}\t${speaker}\tweek_${wi}`);
       html += `<div class="week-card" ${isCurWeek ? `style="border:2px solid ${color};"` : ''}>
         <div class="week-header" style="background:${color}" onclick="toggleWeek('wb_${wi}')">
           <div>
@@ -1018,7 +1002,6 @@ function renderConsultant(ck, speaker, canEdit) {
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
             <span id="wcount_${wi}">${wD}/${wT}</span>
-            ${_wkUpd ? `<span id="weekDot_${wi}" class="week-update-dot" style="background:white;"></span>` : ''}
           </div>
         </div>
         <div class="week-body" id="wb_${wi}">${tasks}</div>
@@ -1044,41 +1027,7 @@ function toggleWeek(id) {
   const el = document.getElementById(id);
   if (!el) return;
   el.classList.toggle('open');
-  if (el.classList.contains('open')) {
-    logAction('week_open');
-    if (_viewingCk && _viewingSpeaker) {
-      let dotId, dotKey;
-      if (id === 'simple-body') {
-        dotId = 'weekDot_simple';
-        dotKey = `${_viewingCk}\t${_viewingSpeaker}\tsimple`;
-      } else {
-        const m = id.match(/^wb_(\d+)$/);
-        if (m) { dotId = `weekDot_${m[1]}`; dotKey = `${_viewingCk}\t${_viewingSpeaker}\tweek_${m[1]}`; }
-      }
-      if (dotKey && _updatedPairs.has(dotKey)) {
-        _updatedPairs.delete(dotKey);
-        const dot = document.getElementById(dotId);
-        if (dot) dot.remove();
-        _clearPairDotIfDone(_viewingCk, _viewingSpeaker);
-      }
-    }
-  } else {
-    if (_viewingCk && _viewingSpeaker) {
-      const m = id.match(/^wb_(\d+)$/);
-      if (m) {
-        const wi = parseInt(m[1]);
-        WEEKS[wi]?.tasks.forEach((_, ti) => {
-          const k = `${_viewingCk}\t${_viewingSpeaker}\ttask_${wi}_${ti}`;
-          if (_updatedPairs.has(k)) {
-            _updatedPairs.delete(k);
-            const d = document.getElementById(`taskDot_${wi}_${ti}`);
-            if (d) d.remove();
-          }
-        });
-        _clearPairDotIfDone(_viewingCk, _viewingSpeaker);
-      }
-    }
-  }
+  if (el.classList.contains('open')) logAction('week_open');
 }
 
 function switchConsultantTab(tab) {
@@ -1196,15 +1145,6 @@ function switchSpeakerTab(tab) {
     btn.style.color = active ? color : '#aaa';
     btn.style.borderBottom = active ? `2px solid ${color}` : '2px solid transparent';
   });
-  if (tab === 'slides' && _viewingCk && _viewingSpeaker) {
-    const sKey = `${_viewingCk}\t${_viewingSpeaker}\tslides`;
-    if (_updatedPairs.has(sKey)) {
-      _updatedPairs.delete(sKey);
-      const dot = document.getElementById('slidesDot');
-      if (dot) dot.remove();
-      _clearPairDotIfDone(_viewingCk, _viewingSpeaker);
-    }
-  }
   if (tab === 'guide') logAction('view_guide');
   if (tab === 'cases') logAction('view_cases');
 }

@@ -9,9 +9,6 @@ let cache = {};
 // 頁面載入：從 localStorage 還原（毫秒級）
 try { const s = localStorage.getItem(LS_KEY); if (s) cache = JSON.parse(s); } catch {}
 
-// 比較基準：記錄上次 doRefresh 後的狀態，_bgRefresh 不動它
-// 跨帳號切換時，比對基準依舊是「上次看過的資料」
-let _refreshBaseline = JSON.parse(JSON.stringify(cache));
 
 function _lsSave() {
   try {

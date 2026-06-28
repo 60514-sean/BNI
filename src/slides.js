@@ -61,7 +61,6 @@ function renderSlidesTab(ck, speaker, pair, canWrite) {
   const pairId = `${ck}\t${speaker}`;
   const fields = slides.map((s, i) => {
     let rawVal;
-    const fieldKeys = i === 0 ? ['s0', 's1'] : [keys[i]];
     if (i === 0) {
       const v0 = data['s0'] || '';
       const v1 = data['s1'] || '';
@@ -71,19 +70,11 @@ function renderSlidesTab(ck, speaker, pair, canWrite) {
     }
     const val = rawVal.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     const hintText = s.hint ? ` — ${s.hint}` : '';
-    const hasUpdate = fieldKeys.some(k => _updatedPairs.has(`${pairId}\tslide_${k}`));
-    const updBadge = hasUpdate
-      ? `<span id="slideDot_${i}" style="display:inline-flex;align-items:center;gap:4px;margin-left:8px;cursor:pointer;" onclick="clearSlideDot('${ck}','${speaker}',${i},'${fieldKeys.join(',')}')">
-          <span style="font-size:10px;font-weight:600;color:${color};">已更新</span>
-          <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${color};animation:dotPulse 1.4s ease-in-out infinite;flex-shrink:0;"></span>
-        </span>`
-      : '';
-    const clearDotFn = hasUpdate ? `clearSlideDot('${ck}','${speaker}',${i},'${fieldKeys.join(',')}');` : '';
     return `<div style="margin-bottom:14px;">
-      <div style="font-size:13px;font-weight:600;color:${color};margin-bottom:4px;display:flex;align-items:center;flex-wrap:wrap;">${i+1}. ${s.title}<span style="font-weight:400;color:#999;font-size:12px;">${hintText}</span>${updBadge}</div>
-      <textarea id="slide_${i}" ${canWrite?'':'disabled'} onchange="saveSlide('${ck}','${speaker}','${keys[i]}',this.value)" onfocus="${clearDotFn}"
+      <div style="font-size:13px;font-weight:600;color:${color};margin-bottom:4px;display:flex;align-items:center;flex-wrap:wrap;">${i+1}. ${s.title}<span style="font-weight:400;color:#999;font-size:12px;">${hintText}</span></div>
+      <textarea id="slide_${i}" ${canWrite?'':'disabled'} onchange="saveSlide('${ck}','${speaker}','${keys[i]}',this.value)"
         placeholder="${s.placeholder||''}"
-        style="width:100%;border:1px solid ${hasUpdate?color:'#e0e0e0'};border-radius:6px;padding:8px 10px;font-size:13px;resize:vertical;min-height:60px;outline:none;font-family:inherit;${canWrite?'':'background:#fafafa;color:#888;'}">${val}</textarea>
+        style="width:100%;border:1px solid #e0e0e0;border-radius:6px;padding:8px 10px;font-size:13px;resize:vertical;min-height:60px;outline:none;font-family:inherit;${canWrite?'':'background:#fafafa;color:#888;'}">${val}</textarea>
     </div>`;
   }).join('');
   return `<div style="font-size:12px;color:#888;margin-bottom:10px;">架構：${archName}</div>
@@ -107,15 +98,4 @@ async function saveAllSlides(ck, speaker, keysStr) {
   showToast('簡報內容已儲存！');
 }
 
-function clearDot(ck, speaker, keys, dotId) {
-  keys.forEach(k => _updatedPairs.delete(`${ck}\t${speaker}\t${k}`));
-  const dot = document.getElementById(dotId);
-  if (dot) dot.remove();
-  _clearPairDotIfDone(ck, speaker);
-}
-function clearSlideDot(ck, speaker, i, keysStr) { clearDot(ck, speaker, keysStr.split(',').map(k => `slide_${k}`), `slideDot_${i}`); }
-function clearNoteDot(ck, speaker, wi, ti) { clearDot(ck, speaker, [`note_${wi}_${ti}`], `noteDot_${wi}_${ti}`); }
-function clearRNoteDot(ck, speaker, wi, ti) { clearDot(ck, speaker, [`note_${wi}_${ti}`], `rnoteDot_${wi}_${ti}`); }
-function clearSimpleNoteDot(ck, speaker, ti) { clearDot(ck, speaker, [`snote_${ti}`], `snoteDot_${ti}`); }
-function ackSimpleNoteDot(ck, speaker, ti) { clearDot(ck, speaker, [`snote_${ti}`], `rsnoteDot_${ti}`); }
 

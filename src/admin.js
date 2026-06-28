@@ -45,11 +45,9 @@ function renderAdmin() {
         : `已過${Math.abs(countdown)}天`
       : '';
 
-    const _hasUpd = _updatedPairs.has(`${p.consultant}\t${p.speaker}`);
     html += `
       <div class="admin-sq-card" id="sqCard_${pi}" onclick="openAdminModal(${pi})"
         style="${done100 ? `border:2px solid ${dispColor};` : ''}">
-        ${_hasUpd ? `<div class="update-dot" id="updDot_${pi}" style="background:${dispColor};box-shadow:0 0 6px ${dispColor}80;"></div>` : ''}
         <div>
           <div style="font-size:10px;font-weight:700;letter-spacing:0.3px;color:${dispColor};margin-bottom:4px;">${act}${p.presentationCount ? ' · ' + p.presentationCount : ''}</div>
           <div style="font-size:14px;font-weight:700;color:#222;line-height:1.3;">${p.speaker || '—'}</div>
@@ -321,14 +319,12 @@ function openAdminModal(pi) {
   const detail = isSimpleType(act)
     ? renderSimpleReadonly(p.consultant, p.speaker, dispColor, act)
     : renderWeeksReadonly(p.consultant, p.speaker, dispColor);
-  const _admSlideUpd = _updatedPairs.has(`${pairId}\tslides`);
-  const _admSlideDot = _admSlideUpd ? `<span id="adtSlidesDot_${pi}" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dispColor};margin-left:5px;vertical-align:middle;animation:dotPulse 1.4s ease-in-out infinite;"></span>` : '';
   const detailInner = hasSlides(act)
     ? `<div style="display:flex;gap:0;border-bottom:2px solid #f0f0f0;margin-bottom:14px;">
          <button id="adt_${pi}_p" onclick="adminTab(${pi},'p','${dispColor}')"
            style="padding:8px 16px;border:none;background:none;font-size:13px;cursor:pointer;font-weight:bold;color:${dispColor};border-bottom:2px solid ${dispColor};margin-bottom:-2px;">進度</button>
          <button id="adt_${pi}_s" onclick="adminTab(${pi},'s','${dispColor}')"
-           style="padding:8px 16px;border:none;background:none;font-size:13px;cursor:pointer;color:#aaa;border-bottom:2px solid transparent;margin-bottom:-2px;">簡報內容${_admSlideDot}</button>
+           style="padding:8px 16px;border:none;background:none;font-size:13px;cursor:pointer;color:#aaa;border-bottom:2px solid transparent;margin-bottom:-2px;">簡報內容</button>
        </div>
        <div id="adp_${pi}_p">${detail}</div>
        <div id="adp_${pi}_s" style="display:none;">${renderSlidesTab(p.consultant, p.speaker, p, false)}</div>`
@@ -372,35 +368,20 @@ function adminTab(pi, tab, color) {
     btn.style.borderBottom = active ? `2px solid ${color}` : '2px solid transparent';
     btn.style.marginBottom = '-2px';
   });
-  if (tab === 's') {
-    const p = _adminPairs[pi];
-    if (!p) return;
-    const ck = p.consultant, speaker = p.speaker;
-    const pairId = `${ck}\t${speaker}`;
-    // 清除 slides tab-level dot（僅清除分頁按鈕的提示，各欄位 dot 保留直到個別點擊）
-    _updatedPairs.delete(`${pairId}\tslides`);
-    const sDot = document.getElementById(`adtSlidesDot_${pi}`);
-    if (sDot) sDot.remove();
-    _clearPairDotIfDone(ck, speaker);
-  }
 }
 
 function renderSimpleReadonly(ck, speaker, color, act) {
   const c = color || '#c0392b';
   const data = getData(ck, speaker);
-  const hasUpd = _updatedPairs.has(`${ck}\t${speaker}\tsimple`);
   const rows = visibleSimpleTaskIndices(act).map(ti => {
     const t = SIMPLE_TASKS[ti];
     const checked = !!data[simpleTaskKey(ti)];
     const note = data[simpleNoteKey(ti)] || '';
-    const noteUpd = _updatedPairs.has(`${ck}\t${speaker}\tsnote_${ti}`);
-    const noteDotHtml = noteUpd ? `<span id="rsnoteDot_${ti}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${c};margin-left:5px;flex-shrink:0;animation:dotPulse 1.4s ease-in-out infinite;vertical-align:middle;"></span>` : '';
     return `<div style="display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px solid #f5f5f5;">
       <input type="checkbox" disabled ${checked?'checked':''} style="accent-color:${c};margin-top:3px;flex-shrink:0;">
       <div>
         <span style="font-size:13px;${checked?'color:#aaa;text-decoration:line-through;':'color:#333;'}">${t}</span>
-        ${note?`<div style="font-size:11px;color:#888;margin-top:2px;padding-left:2px;display:flex;align-items:center;${noteUpd?'cursor:pointer;':''}" ${noteUpd?`onclick="ackSimpleNoteDot('${ck}','${speaker}',${ti})"`:''} title="${noteUpd?'點擊標記為已讀':''}">
-          ${note}${noteDotHtml}</div>`:(noteUpd?`<div style="display:flex;align-items:center;gap:3px;margin-top:1px;cursor:pointer;" onclick="ackSimpleNoteDot('${ck}','${speaker}',${ti})"><span style="font-size:10px;color:${c};font-weight:600;">備註已清除</span>${noteDotHtml}</div>`:'')}
+        ${note?`<div style="font-size:11px;color:#888;margin-top:2px;padding-left:2px;">${note}</div>`:''}
       </div>
     </div>`;
   }).join('');
@@ -413,58 +394,30 @@ function renderWeeksReadonly(ck, speaker, color) {
   return WEEKS.map((w, wi) => {
     const wD = w.tasks.filter((_,ti) => data[taskKey(wi,ti)]).length;
     const allDone = wD === w.tasks.length;
-    const hasUpd = _updatedPairs.has(`${ck}\t${speaker}\tweek_${wi}`);
     const rows = w.tasks.map((t, ti) => {
       const checked = !!data[taskKey(wi,ti)];
       const note = data[noteKey(wi,ti)] || '';
-      const taskUpd = _updatedPairs.has(`${ck}\t${speaker}\ttask_${wi}_${ti}`);
-      const taskDotHtml = taskUpd ? `<span id="rtaskDot_${wi}_${ti}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${c};margin-left:5px;flex-shrink:0;animation:dotPulse 1.4s ease-in-out infinite;vertical-align:middle;"></span>` : '';
-      const noteUpd = _updatedPairs.has(`${ck}\t${speaker}\tnote_${wi}_${ti}`);
-      const noteDotHtml = noteUpd ? `<span id="rnoteDot_${wi}_${ti}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${c};margin-left:5px;flex-shrink:0;animation:dotPulse 1.4s ease-in-out infinite;vertical-align:middle;cursor:pointer;" onclick="clearRNoteDot('${ck}','${speaker}',${wi},${ti})" title="點擊標記已讀"></span>` : '';
       return `<div style="display:flex;gap:8px;align-items:flex-start;padding:4px 0;border-bottom:1px solid #f5f5f5;">
         <input type="checkbox" disabled ${checked?'checked':''} style="accent-color:${c};margin-top:3px;flex-shrink:0;">
         <div>
-          <span style="font-size:13px;${checked?'color:#aaa;text-decoration:line-through;':'color:#333;'}">${t}</span>${taskDotHtml}
-          ${note?`<div style="font-size:11px;color:#888;margin-top:1px;display:flex;align-items:center;${noteUpd?'cursor:pointer;':''}" ${noteUpd?`onclick="clearRNoteDot('${ck}','${speaker}',${wi},${ti})"`:''} title="${noteUpd?'點擊標記已讀':''}">
-            ${note}${noteDotHtml}</div>`:(noteUpd?`<div style="display:flex;align-items:center;gap:3px;margin-top:1px;cursor:pointer;" onclick="clearRNoteDot('${ck}','${speaker}',${wi},${ti})"><span style="font-size:10px;color:${c};font-weight:600;">備註已清除</span>${noteDotHtml}</div>`:'')}
+          <span style="font-size:13px;${checked?'color:#aaa;text-decoration:line-through;':'color:#333;'}">${t}</span>
+          ${note?`<div style="font-size:11px;color:#888;margin-top:1px;">${note}</div>`:''}
         </div>
       </div>`;
     }).join('');
     return `<div style="margin-bottom:6px;border:1px solid #f0f0f0;border-radius:8px;overflow:hidden;">
-      <div onclick="toggleReadonlyWeek(this,'${ck}','${speaker}',${wi})"
+      <div onclick="toggleReadonlyWeek(this)"
         style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;cursor:pointer;background:${allDone?c+'18':'#fafafa'};">
         <span style="font-size:13px;font-weight:bold;color:${allDone?c:'#555'};">${w.label}｜${w.theme}</span>
-        <div style="display:flex;align-items:center;gap:6px;">
-          ${hasUpd ? `<span id="rdotWk_${wi}" class="week-update-dot" style="background:${c};box-shadow:0 0 0 1.5px rgba(0,0,0,0.12);"></span>` : ''}
-          <span style="font-size:12px;padding:2px 8px;border-radius:10px;background:${allDone?c:'#eee'};color:${allDone?'white':'#888'};">${wD}/${w.tasks.length}</span>
-        </div>
+        <span style="font-size:12px;padding:2px 8px;border-radius:10px;background:${allDone?c:'#eee'};color:${allDone?'white':'#888'};">${wD}/${w.tasks.length}</span>
       </div>
       <div style="display:none;padding:6px 12px 8px;">${rows}</div>
     </div>`;
   }).join('');
 }
 
-function toggleReadonlyWeek(el, ck, speaker, wi) {
+function toggleReadonlyWeek(el) {
   const body = el.nextElementSibling;
   body.style.display = body.style.display === 'none' ? '' : 'none';
-  if (body.style.display !== 'none') {
-    const dotKey = `${ck}\t${speaker}\tweek_${wi}`;
-    if (_updatedPairs.has(dotKey)) {
-      _updatedPairs.delete(dotKey);
-      const dot = document.getElementById(`rdotWk_${wi}`);
-      if (dot) dot.remove();
-    }
-    _clearPairDotIfDone(ck, speaker);
-  } else {
-    WEEKS[wi]?.tasks.forEach((_, ti) => {
-      const k = `${ck}\t${speaker}\ttask_${wi}_${ti}`;
-      if (_updatedPairs.has(k)) {
-        _updatedPairs.delete(k);
-        const d = document.getElementById(`rtaskDot_${wi}_${ti}`);
-        if (d) d.remove();
-      }
-    });
-    _clearPairDotIfDone(ck, speaker);
-  }
 }
 
