@@ -223,21 +223,23 @@ function _scaleImageReminderCard() {
   const body = document.getElementById('imageReminderBody');
   if (!card || !body) return;
   const CARD_W = 900;
-  const availW = body.offsetWidth || window.innerWidth;
-  const scale = Math.min(1, availW / CARD_W);
+  const availW = body.clientWidth || body.offsetWidth || window.innerWidth - 40;
+  const scale = availW >= CARD_W ? 1 : availW / CARD_W;
   card.style.transform = scale < 1 ? `scale(${scale})` : '';
-  // 9:16 最小高度（未縮放尺寸），讓 body 容器高度跟著縮放後的卡片
+  card.style.transformOrigin = 'top left';
+  // 9:16 最小高度（未縮放），body 高度配合縮放後尺寸
   const minH = Math.round(CARD_W * 16 / 9);
   card.style.minHeight = minH + 'px';
-  body.style.height = Math.round(Math.max(card.offsetHeight, minH) * scale) + 'px';
-  body.style.overflow = 'hidden';
+  body.style.height = Math.ceil(Math.max(card.offsetHeight, minH) * scale) + 'px';
 }
 
 function showImageReminder() {
-  document.getElementById('imageReminderBody').innerHTML = buildImageReminderCard();
+  const body = document.getElementById('imageReminderBody');
+  body.innerHTML = buildImageReminderCard();
   document.getElementById('imageReminderModal').classList.add('open');
   document.body.style.overflow = 'hidden';
-  requestAnimationFrame(_scaleImageReminderCard);
+  // 雙 rAF 確保 DOM 完全 layout 後再計算 scale
+  requestAnimationFrame(() => requestAnimationFrame(_scaleImageReminderCard));
 }
 
 function closeImageReminderModal() {
