@@ -129,7 +129,7 @@ function buildImageReminderCard() {
         let h = `<div style="font-size:18px;font-weight:600;color:${ic};line-height:1.5;white-space:nowrap;">．${item.t}</div>`;
         if (item.subs) {
           h += item.subs.map(s =>
-            `<div style="font-size:17px;font-weight:500;color:${ic};line-height:1.5;padding-left:18px;white-space:nowrap;">　${s}</div>`
+            `<div style="font-size:18px;font-weight:500;color:${ic};line-height:1.5;padding-left:18px;white-space:nowrap;">　${s}</div>`
           ).join('');
           h += `<div style="height:8px;"></div>`;
         }
@@ -138,7 +138,7 @@ function buildImageReminderCard() {
     }
 
     const collabHtml = collab.map(c =>
-      `<div style="font-size:15px;font-weight:700;color:${isPast ? GRAY : '#444'};white-space:nowrap;line-height:2;">→${c}</div>`
+      `<div style="font-size:18px;font-weight:700;color:${isPast ? GRAY : '#444'};white-space:nowrap;line-height:2;">→${c}</div>`
     ).join('');
 
     const BR = '1px solid #e2e2e2';
@@ -149,7 +149,7 @@ function buildImageReminderCard() {
       <tr>
         <td colspan="6" style="padding:10px 16px 5px;">
           <div style="display:flex;align-items:center;gap:10px;">
-            <span style="font-size:16px;font-weight:800;color:${actColor};letter-spacing:0.5px;">${act}</span>
+            <span style="font-size:18px;font-weight:800;color:${actColor};letter-spacing:0.5px;">${act}</span>
             <div style="flex:1;height:1.5px;background:${actColor};opacity:0.5;"></div>
           </div>
         </td>
