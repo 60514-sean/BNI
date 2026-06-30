@@ -120,7 +120,7 @@ function buildImageReminderCard() {
     const weekLabelColor = weekGray ? GRAY : RED;
 
     const speakerStr = group.map(p => p.speaker).join('\n');
-    const consultantStr = group.map(p => '▶' + p.consultant).join('\n');
+    const consultantStr = group.map(p => '▶︎' + p.consultant).join('\n');
 
     let taskHtml = '';
     if (content) {
