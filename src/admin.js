@@ -67,7 +67,8 @@ function renderAdmin() {
   html += '</div>';
   document.getElementById('mainContent').innerHTML =
     `<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px;">
-       <button class="btn btn-sm" onclick="showReminders()">追蹤提醒</button>
+       <button class="btn btn-sm" onclick="showImageReminder()">周提醒/圖</button>
+       <button class="btn btn-sm" onclick="showReminders()">周提醒/文</button>
        <button class="btn btn-sm" onclick="showUsageModal()">使用率</button>
      </div>` + html;
   _prefetchUsageLogs();
