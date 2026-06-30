@@ -183,7 +183,7 @@ function buildImageReminderCard() {
   const todayStr = `${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
 
   return `
-    <div id="imageReminderCard" style="background:white;padding:22px 22px 0;font-family:'Microsoft JhengHei','PingFang TC','Noto Sans TC',sans-serif;width:100%;box-sizing:border-box;">
+    <div id="imageReminderCard" style="background:white;padding:22px 22px 0;font-family:'Microsoft JhengHei','PingFang TC','Noto Sans TC',sans-serif;width:900px;box-sizing:border-box;transform-origin:top left;">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:0px;">
         <div style="font-size:25px;font-weight:900;color:#C00000;-webkit-text-stroke:0.4px #C00000;">未來6周主題簡報</div>
         <div style="font-size:25px;font-weight:900;color:#C00000;-webkit-text-stroke:0.4px #C00000;">億展白金分會</div>
@@ -218,15 +218,26 @@ function buildImageReminderCard() {
     </div>`;
 }
 
+function _scaleImageReminderCard() {
+  const card = document.getElementById('imageReminderCard');
+  const body = document.getElementById('imageReminderBody');
+  if (!card || !body) return;
+  const CARD_W = 900;
+  const availW = body.offsetWidth || window.innerWidth;
+  const scale = Math.min(1, availW / CARD_W);
+  card.style.transform = scale < 1 ? `scale(${scale})` : '';
+  // 9:16 最小高度（未縮放尺寸），讓 body 容器高度跟著縮放後的卡片
+  const minH = Math.round(CARD_W * 16 / 9);
+  card.style.minHeight = minH + 'px';
+  body.style.height = Math.round(Math.max(card.offsetHeight, minH) * scale) + 'px';
+  body.style.overflow = 'hidden';
+}
+
 function showImageReminder() {
   document.getElementById('imageReminderBody').innerHTML = buildImageReminderCard();
   document.getElementById('imageReminderModal').classList.add('open');
   document.body.style.overflow = 'hidden';
-  // 9:16 最小高度：依卡片實際寬度計算
-  requestAnimationFrame(() => {
-    const card = document.getElementById('imageReminderCard');
-    if (card) card.style.minHeight = Math.round(card.offsetWidth * 16 / 9) + 'px';
-  });
+  requestAnimationFrame(_scaleImageReminderCard);
 }
 
 function closeImageReminderModal() {
@@ -240,6 +251,10 @@ async function exportImageReminderJPG() {
   if (typeof html2canvas === 'undefined') { showToast('匯出模組載入中，請稍後再試'); return; }
   const btn = document.getElementById('imgExportBtn');
   if (btn) { btn.textContent = '匯出中...'; btn.disabled = true; }
+  // 暫時移除 scale 以確保截圖為原始 900px 尺寸
+  const prevTransform = card.style.transform;
+  card.style.transform = '';
+  await new Promise(r => requestAnimationFrame(r));
   try {
     const canvas = await html2canvas(card, {
       scale: 2,
@@ -262,5 +277,6 @@ async function exportImageReminderJPG() {
   } catch(e) {
     showToast('匯出失敗，請重試');
   }
+  card.style.transform = prevTransform;
   if (btn) { btn.textContent = '另存JPG'; btn.disabled = false; }
 }
