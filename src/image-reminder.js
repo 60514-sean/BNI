@@ -62,6 +62,7 @@ function buildImageReminderCard() {
   const cfg = getConfig();
   const pairs = cfg.pairs
     .filter(p => p.consultant && p.speaker && p.presentationTime)
+    .filter(p => getPresentationInfo(p.presentationTime).currentWeekIdx >= 0)
     .sort((a, b) => (a.presentationTime||'').localeCompare(b.presentationTime||''));
 
   if (pairs.length === 0) {
