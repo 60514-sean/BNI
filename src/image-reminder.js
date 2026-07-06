@@ -184,7 +184,7 @@ function buildImageReminderCard() {
   const todayStr = `${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
 
   return `
-    <div id="imageReminderCard" style="background:white;padding:22px 22px 0;font-family:'Microsoft JhengHei','PingFang TC','Noto Sans TC',sans-serif;width:900px;box-sizing:border-box;transform-origin:top left;">
+    <div id="imageReminderCard" style="background:white;padding:22px 22px 0;font-family:'Microsoft JhengHei','PingFang TC','Noto Sans TC',sans-serif;width:900px;box-sizing:border-box;transform-origin:top left;display:flex;flex-direction:column;">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:0px;">
         <div style="font-size:25px;font-weight:900;color:#C00000;-webkit-text-stroke:0.4px #C00000;">未來6周主題簡報</div>
         <div style="font-size:25px;font-weight:900;color:#C00000;-webkit-text-stroke:0.4px #C00000;">億展白金分會</div>
@@ -213,7 +213,7 @@ function buildImageReminderCard() {
         <tbody>${rows}</tbody>
       </table>
 
-      <div style="background:${RED};color:white;padding:12px 22px;font-size:15px;font-weight:700;letter-spacing:0.3px;margin:0 -22px;">
+      <div style="background:${RED};color:white;padding:12px 22px;font-size:15px;font-weight:700;letter-spacing:0.3px;margin:auto -22px 0;">
         ＊主題簡報檢核表-每周更新　${todayStr}
       </div>
     </div>`;
@@ -228,7 +228,7 @@ function _scaleImageReminderCard() {
   const scale = availW >= CARD_W ? 1 : availW / CARD_W;
   card.style.transform = scale < 1 ? `scale(${scale})` : '';
   card.style.transformOrigin = 'top left';
-  // 9:16 最小高度（未縮放），body 高度配合縮放後尺寸
+  // 9:16 固定高度，內容用 flex 撐開、footer 貼底，避免留白
   const minH = Math.round(CARD_W * 16 / 9);
   card.style.minHeight = minH + 'px';
   body.style.height = Math.ceil(Math.max(card.offsetHeight, minH) * scale) + 'px';
