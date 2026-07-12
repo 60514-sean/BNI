@@ -20,6 +20,8 @@ function _lsSave() {
 // 儲存佇列：Map 以 key 去重複，只保留最新值
 const _saveQueue = new Map();
 let _saveRunning = false;
+// 是否正在設定頁編輯中（true 時，自動輪詢不重繪畫面，避免蓋掉未儲存的輸入）
+let _onSettingsPage = false;
 // 最近寫過的 key（避免 doRefresh / _bgRefresh 用 GAS 舊版覆蓋本地剛改的）
 const _recentSaves = new Map();
 const _SAVE_GRACE_MS = 30000;

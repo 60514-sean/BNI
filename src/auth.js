@@ -84,7 +84,7 @@ function _startAutoPoll() {
 
 function doLogout() {
   currentUser = null; currentRole = null; currentConsultantKey = null;
-  currentSpeaker = null; _pendingUserEntry = null;
+  currentSpeaker = null; _pendingUserEntry = null; _onSettingsPage = false;
   if (_autoPollTimer) { clearInterval(_autoPollTimer); _autoPollTimer = null; }
   document.getElementById('refreshBtn').style.display = 'none';
   document.getElementById('roleSelectPage').style.display = 'none';
@@ -99,8 +99,8 @@ let _viewingSpeaker = null;
 
 async function doRefresh(silent = false) {
   if (!silent) showLoader(true, '更新中...');
-  // silent 模式（定時 polling）若有未完成 push 直接跳過，避免覆蓋本地剛改的修改
-  if (silent && (_saveQueue.size > 0 || _saveRunning)) return;
+  // silent 模式（定時 polling）若有未完成 push 或使用者正在設定頁編輯，直接跳過，避免覆蓋本地剛改的修改
+  if (silent && (_saveQueue.size > 0 || _saveRunning || _onSettingsPage)) return;
   try {
     const res = await fetch(API_URL);
     const json = await res.json();
@@ -119,6 +119,7 @@ document.getElementById('nameInput').addEventListener('keydown', e => { if (e.ke
 
 // ===== RENDER =====
 function renderApp() {
+  _onSettingsPage = false;
   if (currentRole === 'admin') {
     document.getElementById('headerTitle').textContent = '進度總覽';
     renderAdmin();

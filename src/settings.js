@@ -57,6 +57,7 @@ async function removeConsultant(i) {
 }
 
 function showSettings() {
+  _onSettingsPage = true;
   document.getElementById('headerTitle').textContent = '系統設定';
   const cfg = getConfig();
   const consultants = cfg.consultants || [];
