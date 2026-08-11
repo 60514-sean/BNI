@@ -108,7 +108,11 @@ async function doRefresh(silent = false) {
       const prevStr = JSON.stringify(cache);
       cache = json.data;
       _lsSave();
-      if (!silent || JSON.stringify(cache) !== prevStr) renderApp();
+      if (!silent || JSON.stringify(cache) !== prevStr) {
+        const openIds = Array.from(document.querySelectorAll('.week-body.open')).map(el => el.id);
+        renderApp();
+        openIds.forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('open'); });
+      }
     }
   } catch {}
   if (!silent) showLoader(false);
