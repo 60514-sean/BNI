@@ -162,7 +162,8 @@ function onActivityChange(i) {
   const act = document.getElementById(`act_${i}`)?.value || '主題簡報';
   const sel = document.getElementById(`act_${i}`);
   if (sel) sel.style.color = getActivityColor(act);
-  const simple = isSimpleType(act);
+  const isHoliday = act === '放假';
+  const simple = isSimpleType(act) && !isHoliday;
   [1, 2].forEach(f => {
     const row = document.getElementById(`dateRow_${i}_${f}`);
     if (row) row.style.display = simple ? 'block' : 'none';
@@ -171,5 +172,7 @@ function onActivityChange(i) {
   if (row3) row3.style.display = 'block';
   const cntSel = document.getElementById(`cnt_${i}`);
   if (cntSel) cntSel.style.display = act === '主題簡報' ? '' : 'none';
+  const peopleRow = document.getElementById(`pairPeople_${i}`);
+  if (peopleRow) peopleRow.style.display = isHoliday ? 'none' : 'flex';
 }
 

@@ -167,9 +167,14 @@ const WEEK_HINTS = [
 ];
 
 // ===== ACTIVITY TYPES =====
-const ACTIVITY_TYPES = ['主題簡報', '主題日', '共識會議', 'BOD'];
+const ACTIVITY_TYPES = ['主題簡報', '主題日', '共識會議', 'BOD', '放假'];
 const PRESENTATION_COUNTS = ['第1次', '第2次', '第2次+'];
-const ACTIVITY_COLORS = { '主題簡報': '#c0392b', '主題日': '#e67e22', '共識會議': '#2980b9', 'BOD': '#8e44ad' };
+const ACTIVITY_COLORS = { '主題簡報': '#c0392b', '主題日': '#e67e22', '共識會議': '#2980b9', 'BOD': '#8e44ad', '放假': '#888888' };
+// 標記卡片：放假一律視為標記；共識會議若未指派顧問/講者，也視為單純標記（不追蹤進度）
+function isPlaceholderPair(p) {
+  const act = p.activityType || '主題簡報';
+  return (act === '放假' || act === '共識會議') && !p.consultant && !p.speaker;
+}
 const getActivityColor = act => ACTIVITY_COLORS[act || '主題簡報'] || '#c0392b';
 const LOCKED_COLOR = '#aaaaaa';
 const LOCK_WEEKS_THRESHOLD = 6;

@@ -109,21 +109,24 @@ function showSettings() {
       <option value="">選擇次數</option>
       ${PRESENTATION_COUNTS.map(c => `<option value="${c}" ${cnt===c?'selected':''}>${c}</option>`).join('')}
     </select>`;
+    const isHoliday = act === '放假';
     return `
     <div style="border:${isDone?'2px solid '+color:'1px solid '+color};border-radius:8px;padding:12px;margin-bottom:10px;" id="pairRow_${i}">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
         <select id="act_${i}" onchange="onActivityChange(${i})" style="padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;color:${color};font-weight:bold;outline:none;cursor:pointer;">
           ${ACTIVITY_TYPES.map(t => `<option value="${t}" ${act===t?'selected':''}>${t}</option>`).join('')}
         </select>
-        ${conSelectHtml}
-        <span style="color:#c0392b;font-weight:bold;">↔</span>
-        ${cntSelectHtml}
-        <input type="text" placeholder="講者姓名" value="${p.speaker||''}" id="spk_${i}" style="flex:1;min-width:90px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;" />
+        <div id="pairPeople_${i}" style="display:${isHoliday?'none':'flex'};align-items:center;gap:8px;flex:1;flex-wrap:wrap;">
+          ${conSelectHtml}
+          <span style="color:#c0392b;font-weight:bold;">↔</span>
+          ${cntSelectHtml}
+          <input type="text" placeholder="講者姓名" value="${p.speaker||''}" id="spk_${i}" style="flex:1;min-width:90px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;" />
+        </div>
         <button class="btn btn-sm btn-danger" onclick="removePair(${i})">刪除</button>
       </div>
-      ${makeDatePicker(i, 1, DATE_LABELS[0], p.submitDate1||'', !simple)}
-      ${makeDatePicker(i, 2, DATE_LABELS[1], p.submitDate2||'', !simple)}
-      ${makeDatePicker(i, 3, DATE_LABELS[2], p.presentationTime||'', false)}
+      ${makeDatePicker(i, 1, DATE_LABELS[0], p.submitDate1||'', !simple || isHoliday)}
+      ${makeDatePicker(i, 2, DATE_LABELS[1], p.submitDate2||'', !simple || isHoliday)}
+      ${makeDatePicker(i, 3, isHoliday ? '放假日期' : DATE_LABELS[2], p.presentationTime||'', false)}
     </div>`;
   }).join('');
 
@@ -272,6 +275,7 @@ async function saveSettings() {
   cfg.pairs.forEach((p, i) => {
     const isAllEmpty = !p.consultant && !p.speaker && !p.submitDate1 && !p.submitDate2 && !p.presentationTime && !p.presentationCount;
     if (isAllEmpty) return;
+    if (isPlaceholderPair(p)) return;
     const missing = [];
     if (!p.consultant) missing.push('顧問');
     if (!p.speaker) missing.push('講者姓名');

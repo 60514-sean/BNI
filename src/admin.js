@@ -3,7 +3,7 @@ let _adminPairs = [];
 
 function renderAdmin() {
   const cfg = getConfig();
-  _adminPairs = cfg.pairs.filter(p => p.consultant || p.speaker)
+  _adminPairs = cfg.pairs.filter(p => p.consultant || p.speaker || isPlaceholderPair(p))
     .sort((a, b) => {
       // 按簡報日期升序（早到晚），未填日期排最後
       const da = a.presentationTime || '9999/99/99';
@@ -19,6 +19,19 @@ function renderAdmin() {
   let html = '<div class="admin-grid">';
   _adminPairs.forEach((p, pi) => {
     const act = p.activityType || '主題簡報';
+
+    if (isPlaceholderPair(p)) {
+      const c = getActivityColor(act);
+      html += `
+        <div class="admin-sq-card" style="align-items:center;justify-content:center;text-align:center;background:${c}0d;border:1px dashed ${c}80;cursor:default;">
+          <div>
+            <div style="font-size:15px;font-weight:800;color:${c};">${act}</div>
+            <div style="font-size:12px;color:#999;margin-top:6px;">${p.presentationTime || '未設定日期'}</div>
+          </div>
+        </div>`;
+      return;
+    }
+
     const data = getData(p.consultant, p.speaker);
     const { total, done } = calcProgress(act, data);
     const pct = total ? Math.round(done / total * 100) : 0;

@@ -61,7 +61,7 @@ function _imgCutoffDate(presentationTime) {
 function buildImageReminderCard() {
   const cfg = getConfig();
   const pairs = cfg.pairs
-    .filter(p => p.consultant && p.speaker && p.presentationTime)
+    .filter(p => ((p.consultant && p.speaker) || isPlaceholderPair(p)) && p.presentationTime)
     .filter(p => getPresentationInfo(p.presentationTime).currentWeekIdx >= 0)
     .sort((a, b) => (a.presentationTime||'').localeCompare(b.presentationTime||''));
 
@@ -90,6 +90,8 @@ function buildImageReminderCard() {
   let rows = '';
   dateOrder.forEach(dateKey => {
     const group = dateGroups[dateKey];
+    const isPlaceholder = isPlaceholderPair(group[0]);
+
     const { currentWeekIdx, weeksDiff } = getPresentationInfo(dateKey);
     // 超過5週（weekIdx=-1）仍顯示為倒數5周
     const effectiveWeekIdx = currentWeekIdx >= 0 ? currentWeekIdx : (weeksDiff >= 0 ? 0 : -1);
@@ -120,8 +122,10 @@ function buildImageReminderCard() {
 
     const weekLabelColor = weekGray ? GRAY : RED;
 
-    const speakerStr = group.map(p => p.speaker).join('\n');
-    const consultantStr = group.map(p => '▶︎' + p.consultant).join('\n');
+    const speakerStr = isPlaceholder
+      ? (act === '放假' ? '放假\n暫停例會' : act)
+      : group.map(p => p.speaker).join('\n');
+    const consultantStr = isPlaceholder ? '' : group.map(p => '▶︎' + p.consultant).join('\n');
 
     let taskHtml = '';
     if (content) {
