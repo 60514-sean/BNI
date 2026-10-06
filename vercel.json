@@ -1,5 +1,8 @@
 {
   "buildCommand": null,
   "outputDirectory": ".",
-  "framework": null
+  "framework": null,
+  "redirects": [
+    { "source": "/:path*", "destination": "https://bni-ejns.vercel.app/legacy-weekly/", "permanent": false }
+  ]
 }
