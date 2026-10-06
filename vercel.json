@@ -3,6 +3,15 @@
   "outputDirectory": ".",
   "framework": null,
   "redirects": [
-    { "source": "/:path*", "destination": "https://bni-ejns.vercel.app/legacy-weekly/", "permanent": false }
+    {
+      "source": "/",
+      "destination": "https://bni-ejns.vercel.app/legacy-weekly/",
+      "permanent": false
+    },
+    {
+      "source": "/:path*",
+      "destination": "https://bni-ejns.vercel.app/legacy-weekly/",
+      "permanent": false
+    }
   ]
 }
